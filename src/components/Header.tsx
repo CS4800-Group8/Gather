@@ -1,4 +1,9 @@
 "use client";
+/**
+ * Header.tsx
+ *   - Renders the floating toolbar on every page.
+ *   - Buttons: My Recipes, Explore Recipes, Login (placeholder for now).
+ */
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -7,40 +12,55 @@ import { siteConfig } from "@/lib/siteConfig";
 export default function Header() {
   const pathname = usePathname();
 
-  return (
-    <header className="header">
-      <div className="container header__inner">
-        <div className="brand">
-          <Link href="/" className="brand__title">
-            <span className="badge">{siteConfig.company}</span>
-          </Link>
-          <Link href="/">
-            <h1 className="brand__title" style={{ fontSize: 18, margin: 0 }}>
-              {siteConfig.name}
-            </h1>
-          </Link>
-        </div>
+  // Determine if a link is active for styling
+  const isActive = (href: string) =>
+    href === "/" ? pathname === "/" : pathname.startsWith(href);
 
-        <nav className="nav" aria-label="Primary">
-          {siteConfig.nav.map((item, idx) => {
-            const isActive =
-              item.href === "/"
-                ? pathname === "/"
-                : pathname.startsWith(item.href);
-            const primary = idx === 1; // make "Explore Recipes" pop a bit
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={`btn ${primary ? "btn--primary" : ""}`}
-                aria-current={isActive ? "page" : undefined}
-              >
-                {item.label}
+  return (
+    <div className="toolbar-wrap">
+      <div className="container">
+        <div className="toolbar">
+          {/* Brand (title + company) — no logo */}
+          <div className="brand">
+            <div className="brand__title">
+              <Link href="/">
+                <span className="brand__name">{siteConfig.name}</span>
               </Link>
-            );
-          })}
-        </nav>
+              <span className="brand__subtitle">{siteConfig.company}</span>
+            </div>
+          </div>
+
+          {/* Explicit nav buttons (three Links with href) */}
+          <nav className="toolbar__nav">
+            {/* My Recipes */}
+            <Link
+              href="/my-recipes"
+              className={`btn btn--accent ${isActive("/my-recipes") ? "is-active" : ""}`}
+            >
+              My Recipes
+            </Link>
+
+            {/* Explore Recipes */}
+            <Link
+              href="/explore-recipes"
+              className={`btn btn--accent ${isActive("/explore-recipes") ? "is-active" : ""}`}
+            >
+              Explore Recipes
+            </Link>
+
+            {/* Visual divider inside toolbar */}
+            <div className="toolbar__spacer" />
+
+            {/* Login placeholder (route not implemented yet) */}
+            <Link
+              href={siteConfig.loginHref}
+              className={`btn btn--login`}
+            >
+              Login
+            </Link>
+          </nav>
+        </div>
       </div>
-    </header>
+    </div>
   );
 }

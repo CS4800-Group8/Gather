@@ -1,3 +1,11 @@
+/**
+ * page.tsx (Home Page)
+ *   - The landing page for "/".
+ *   - Explains that the main content area will be filled by a recipes API.
+ *   - Take note of the "Badge" can use it later to signify if a user wants to like or favorite something
+ *   - Take note of <p> allows to turn the information displayed into segments for better styling (use style= {{ style-you-want }})
+ */
+
 export default function HomePage() {
   return (
     <section className="hero">
@@ -12,9 +20,10 @@ export default function HomePage() {
         filters, etc.). For now, it just confirms the page renders.
       </p>
       <p style={{ marginTop: 10 }}>
-        Start by navigating to <strong>My Recipes</strong> or{" "}
-        <strong>Explore Recipes</strong> using the buttons above.
+        Use the toolbar to visit <strong>My Recipes</strong> or{" "}
+        <strong>Explore Recipes</strong>.
       </p>
+      
     </section>
   );
 }
