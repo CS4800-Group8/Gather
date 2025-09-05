@@ -1,26 +1,170 @@
-@import "tailwindcss";
+]/* -------------------------------------------------------------------------
+   globals.css
+   Purpose:
+     - Site-wide CSS that applies to every page.
+     - Sets colors, fonts, simple layout utilities, and component styles
+       used in our tiny demo (header, buttons, hero box).
 
+   Tips for newcomers:
+     - This file is imported once in app/layout.tsx and then affects the
+       entire app.
+     - You can safely add your own classes and variables here.
+-------------------------------------------------------------------------- */
+
+/* Color variables and small design tokens */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --bg: #0f1115;
+  --panel: #151922;
+  --muted: #9aa4b2;
+  --text: #e8ecf1;
+  --primary: #4da3ff;
+  --primary-ink: #0b2038;
+  --border: #232838;
+  --hover: #1b2030;
+  --radius: 14px;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+/* Box sizing makes width/height easier to reason about */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html, body {
+  height: 100%;
 }
 
+/* Base page styles */
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  margin: 0;
+  color: var(--text);
+  background: radial-gradient(1200px 600px at 80% -10%, #1a2234 0%, var(--bg) 55%),
+              var(--bg);
+  font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+}
+
+/* Links look like normal text by default; we style nav buttons manually */
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+/* A centered container with max width + padding */
+.container {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+/* ===== Header + Nav ===== */
+.header {
+  border-bottom: 1px solid var(--border);
+  backdrop-filter: saturate(130%) blur(6px);
+  position: sticky; /* stays visible when scrolling */
+  top: 0;
+  z-index: 10;
+  background: color-mix(in srgb, var(--bg) 85%, transparent);
+}
+
+.header__inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 0;
+}
+
+.brand {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.brand__title {
+  font-weight: 700;
+  letter-spacing: 0.2px;
+}
+
+.brand__subtitle {
+  font-size: 12px;
+  color: var(--muted);
+  padding: 2px 8px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+}
+
+.nav {
+  display: flex;
+  gap: 8px;
+}
+
+/* Simple button style for nav links */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--panel);
+  font-weight: 600;
+  font-size: 14px;
+  line-height: 1;
+  transition: background 0.2s ease, transform 0.04s ease;
+}
+
+.btn:hover {
+  background: var(--hover);
+}
+
+.btn:active {
+  transform: translateY(1px);
+}
+
+.btn--primary {
+  background: var(--primary);
+  color: var(--primary-ink);
+  border-color: color-mix(in srgb, var(--primary) 30%, var(--border));
+}
+
+.btn--primary:hover {
+  filter: brightness(1.08);
+}
+
+/* ===== Main content area ===== */
+.main {
+  min-height: calc(100dvh - 72px);
+  display: grid;
+  place-items: start;
+}
+
+/* A simple framed box used on each page */
+.hero {
+  margin-top: 24px;
+  padding: 22px;
+  border: 1px dashed var(--border);
+  border-radius: var(--radius);
+  background: color-mix(in srgb, var(--panel) 70%, transparent);
+}
+
+.hero h2 {
+  margin: 0 0 10px;
+  font-size: 20px;
+}
+
+.hero p {
+  margin: 6px 0;
+  color: var(--muted);
+}
+
+/* Small pill for labels like "API Placeholder" */
+.badge {
+  display: inline-block;
+  font-size: 12px;
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: var(--hover);
+  border: 1px solid var(--border);
+  color: var(--muted);
 }
