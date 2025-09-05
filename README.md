@@ -4,13 +4,13 @@ Recipe Finder — Next.js + TypeScript (Full-Stack)
 
 A full-stack recipe finder where people post recipes and rate others’ dishes. Built with React/Next.js (App Router) + TypeScript.
 
----
+
 
 ## Stack
 Web: Next.js (TS) or React, Tailwind (optional but shadcn/ui gives clean and reusable skeleton UI components)
 Data: TBD
 
----
+
 
 ## Quick Start
 - Clone repo --> git clone https://github.com/giahua/CS4800-NVMATech.git
@@ -18,7 +18,7 @@ Data: TBD
 - npm install --> installs node and nextjs
 - npm run dev --> creates a local host
 
----
+
 
 ## Layout Skeleton (TODO)
 - Global: header (logo, search, auth), footer
@@ -27,7 +27,7 @@ Data: TBD
 - Data: Prisma/Postgres/Any other DB you guys want schema + seed; basic search (title/ingredients)
 - Features: (Maybe) have a section where they can access their pantry and list what ingredients they have and get recipes that match available ingredients
 
----
+
 
 ## NOTES IF YOU AREN'T FAMILIAR WITH FRONT-END DEV:
 - take note of the structure of the files, they have several sections or divs --> leads to a "box" style of programming
