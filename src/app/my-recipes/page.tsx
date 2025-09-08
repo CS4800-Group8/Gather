@@ -7,6 +7,8 @@ export default function MyRecipesPage() {
     <section className="hero">
       <h2>My Recipes</h2>
       <p>This page rendered successfully.</p>
+      <p>Upload a recipe and have list of favorited recipes</p>
+
     </section>
   );
 }
