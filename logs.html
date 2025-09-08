@@ -3,42 +3,262 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Logs</title>
+  <title>NVMA Tech - Logs</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+    
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #f8fafc;
+    }
+    
+    .nav-icon {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      width: 180px;
+      height: 50px;
+      background: linear-gradient(145deg, #1a1a1a, #2d2d2d);
+      border-radius: 8px;
+      color: white;
+      font-weight: 700;
+      font-size: 22px;
+      letter-spacing: 1px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      transition: all 0.3s ease;
+    }
+    
+    .nav-icon:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+      background: linear-gradient(145deg, #2d2d2d, #3d3d3d);
+    }
+    
+    .nav-link {
+      position: relative;
+      padding: 8px 16px;
+      transition: all 0.3s ease;
+    }
+    
+    .nav-link::after {
+      content: '';
+      position: absolute;
+      bottom: -2px;
+      left: 0;
+      width: 0;
+      height: 2px;
+      background-color: white;
+      transition: width 0.3s ease;
+    }
+    
+    .nav-link:hover::after {
+      width: 100%;
+    }
+    
+    .log-card {
+      transition: all 0.2s ease;
+    }
+    
+    .log-card:hover {
+      transform: translateX(5px);
+      background-color: #f1f5f9;
+    }
+  </style>
 </head>
-<body class="bg-gray-50 text-gray-900 font-sans">
-  <nav class="bg-blue-600 text-white p-4 sticky top-0 shadow-md">
-    <ul class="flex space-x-6 justify-center">
-      <li><a href="index.html" class="hover:underline">Home</a></li>
-      <li><a href="documentation.html" class="hover:underline">Documentation</a></li>
-    </ul>
+<body>
+  <!-- Navigation -->
+  <nav class="bg-black text-white p-4 sticky top-0 shadow-md z-10">
+    <div class="container mx-auto flex items-center">
+      <!-- Logo on the left -->
+      <div class="flex-shrink-0 mr-8">
+        <a href="index.html" class="nav-icon">NVMA TECH</a>
+      </div>
+      
+      <!-- Centered navigation items -->
+      <div class="flex-grow flex justify-center">
+        <ul class="flex space-x-10 text-lg font-medium">
+          <li><a href="projects.html" class="nav-link">Projects</a></li>
+          <li><a href="logs.html" class="nav-link font-bold text-blue-300">Logs</a></li>
+        </ul>
+      </div>
+      
+      <!-- Placeholder for right alignment -->
+      <div class="w-48 flex-shrink-0"></div>
+    </div>
   </nav>
 
-  <section class="max-w-4xl mx-auto p-6 bg-white rounded-2xl shadow">
-    <h1 class="text-3xl font-bold mb-4">Logs</h1>
+  <!-- Main Content -->
+  <main class="container mx-auto py-8 px-4">
+    <!-- Page Header -->
+    <section class="text-center mb-12">
+      <h1 class="text-4xl font-bold text-gray-800 mb-4">Project Logs</h1>
+      <p class="text-xl text-gray-600 max-w-2xl mx-auto">Tracking our progress, meetings, and milestones</p>
+    </section>
 
-    <div class="mb-6">
-      <h2 class="text-xl font-semibold mb-2">Sprint Meeting Logs</h2>
-      <ul class="list-decimal pl-6 space-y-1">
-        <li>Kickoff meeting - Sprint 1 goals discussed.</li>
-        <li>Mid-sprint review - Adjustments made to backlog.</li>
-      </ul>
-    </div>
+    <!-- Sprint Log Meetings -->
+    <section class="max-w-4xl mx-auto mb-12">
+      <h2 class="text-3xl font-semibold text-gray-800 mb-6">Sprint Log Meetings</h2>
+      
+      <div class="bg-white rounded-2xl shadow-lg overflow-hidden">
+        <div class="border-b border-gray-200">
+          <div class="flex justify-between items-center p-6">
+            <h3 class="text-xl font-semibold text-gray-800">Sprint Review & Planning</h3>
+          </div>
+        </div>
+        
+        <div class="p-6">
+          <!-- Sprint Log Items -->
+          <div class="log-card bg-gray-50 p-5 rounded-lg mb-4 cursor-pointer" onclick="window.location.href='sprint-details.html'">
+            <div class="flex justify-between items-start">
+              <div>
+                <h4 class="text-lg font-medium text-gray-800">Sprint 12 Review</h4>
+                <p class="text-gray-600 mt-1">Completed user authentication module and began recipe search implementation</p>
+                <div class="flex items-center mt-3 text-sm text-gray-500">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <span>March 15, 2025 • 2:00 PM - 3:30 PM</span>
+                </div>
+              </div>
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+              </svg>
+            </div>
+          </div>
+          
+          <div class="log-card bg-gray-50 p-5 rounded-lg mb-4 cursor-pointer" onclick="window.location.href='sprint-details.html'">
+            <div class="flex justify-between items-start">
+              <div>
+                <h4 class="text-lg font-medium text-gray-800">Sprint 11 Retrospective</h4>
+                <p class="text-gray-600 mt-1">Discussed improvements to our CI/CD pipeline and code review process</p>
+                <div class="flex items-center mt-3 text-sm text-gray-500">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <span>March 1, 2025 • 1:30 PM - 3:00 PM</span>
+                </div>
+              </div>
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+              </svg>
+            </div>
+          </div>
+          
+          <div class="log-card bg-gray-50 p-5 rounded-lg mb-4 cursor-pointer" onclick="window.location.href='sprint-details.html'">
+            <div class="flex justify-between items-start">
+              <div>
+                <h4 class="text-lg font-medium text-gray-800">Sprint 10 Planning</h4>
+                <p class="text-gray-600 mt-1">Planned recipe favoriting functionality and user profile enhancements</p>
+                <div class="flex items-center mt-3 text-sm text-gray-500">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <span>February 15, 2025 • 10:00 AM - 11:30 AM</span>
+                </div>
+              </div>
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+              </svg>
+            </div>
+          </div>
+          
+          <div class="text-center py-4">
+            <a href="sprint-logs.html" class="inline-flex items-center text-blue-600 hover:text-blue-800 font-medium">
+              View all sprint logs
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 ml-1" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M12.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-2.293-2.293a1 1 0 010-1.414z" clip-rule="evenodd" />
+              </svg>
+            </a>
+          </div>
+        </div>
+      </div>
+    </section>
 
-    <div>
-      <h2 class="text-xl font-semibold mb-2">Daily Meeting Logs</h2>
-      <ul class="list-decimal pl-6 space-y-1">
-        <li>Day 1: Team aligned on tasks.</li>
-        <li>Day 2: Blockers identified and resolved.</li>
-        <li>Day 3: Progress on feature implementation.</li>
-      </ul>
-    </div>
-  </section>
+    <!-- Daily Quick Meetings -->
+    <section class="max-w-4xl mx-auto">
+      <h2 class="text-3xl font-semibold text-gray-800 mb-6">Daily Quick Meetings</h2>
+      
+      <div class="bg-white rounded-2xl shadow-lg overflow-hidden">
+        <div class="border-b border-gray-200">
+          <div class="flex justify-between items-center p-6">
+            <h3 class="text-xl font-semibold text-gray-800">Stand-up Updates</h3>
+          </div>
+        </div>
+        
+        <div class="p-6">
+          <!-- Daily Meeting Items -->
+          <div class="log-card bg-gray-50 p-5 rounded-lg mb-4 cursor-pointer" onclick="window.location.href='daily-details.html'">
+            <div class="flex justify-between items-start">
+              <div>
+                <h4 class="text-lg font-medium text-gray-800">September 7, 2025 Stand-up</h4>
+                <p class="text-gray-600 mt-1">Decided on frameworks, project ideas</p>
+                <div class="flex items-center mt-3 text-sm text-gray-500">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <span>60 minutes • 9:00 PM</span>
+                </div>
+              </div>
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+              </svg>
+            </div>
+          </div>
+          
+          <div class="log-card bg-gray-50 p-5 rounded-lg mb-4 cursor-pointer" onclick="window.location.href='daily-details.html'">
+            <div class="flex justify-between items-start">
+              <div>
+                <h4 class="text-lg font-medium text-gray-800">March 19, 2025 Stand-up</h4>
+                <p class="text-gray-600 mt-1">Discussed API integration challenges and deployment pipeline updates</p>
+                <div class="flex items-center mt-3 text-sm text-gray-500">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <span>18 minutes • 9:30 AM</span>
+                </div>
+              </div>
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+              </svg>
+            </div>
+          </div>
+          
+          <div class="log-card bg-gray-50 p-5 rounded-lg mb-4 cursor-pointer" onclick="window.location.href='daily-details.html'">
+            <div class="flex justify-between items-start">
+              <div>
+                <h4 class="text-lg font-medium text-gray-800">March 18, 2025 Stand-up</h4>
+                <p class="text-gray-600 mt-1">Progress updates on UI redesign and database optimization tasks</p>
+                <div class="flex items-center mt-3 text-sm text-gray-500">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <span>12 minutes • 9:30 AM</span>
+                </div>
+              </div>
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+              </svg>
+            </div>
+          </div>
+          
+          <div class="text-center py-4">
+            <a href="daily-logs.html" class="inline-flex items-center text-blue-600 hover:text-blue-800 font-medium">
+              View all daily meeting logs
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 ml-1" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M12.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-2.293-2.293a1 1 0 010-1.414z" clip-rule="evenodd" />
+              </svg>
+            </a>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
 
-<!-- Footer -->
-  <footer class="bg-blue-600 text-white text-center p-4 mt-8">
-    &copy; 2025 NVMA Tech. All rights reserved.
+  <!-- Footer -->
+  <footer class="bg-black text-white text-center p-6 mt-12">
+    <p>&copy; 2025 NVMA Tech. All rights reserved.</p>
   </footer>
-
 </body>
 </html>
