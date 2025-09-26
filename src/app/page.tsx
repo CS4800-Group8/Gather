@@ -28,7 +28,7 @@ export default function HomePage() {
 
       {/* WELCOME BANNER WITH THE BADGE */}
       <div className="hero">
-        <h2>Welcome to Recipe Finder</h2>
+        <h2>Welcome to Gather</h2>
         <p>
           Built by <strong>NVMA Tech</strong>. This main area is intentionally
           minimal so you can wire up your API data.
@@ -59,7 +59,7 @@ export default function HomePage() {
           <button
             type="submit"
             className="badge"
-            style={{ padding: "8px 16px", borderRadius: 8, background: "#4f46e5", color: "#fff", border: "none" }}
+            style={{ padding: "8px 16px", borderRadius: 8, background: "#d3d3ddff", color: "#fff", border: "none" }}
           >
             🔎︎
           </button>
