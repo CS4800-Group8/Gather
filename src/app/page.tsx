@@ -2,15 +2,22 @@
 
 import { useState } from "react";
 
+// Define the shape of your User data
+type User = {
+  id: number;
+  firstname?: string | null;
+  lastname?: string | null;
+};
+
 export default function HomePage() {
-  const [users, setUsers] = useState<any[]>([]);
+  const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(false);
 
   const fetchUsers = async () => {
     setLoading(true);
     try {
       const res = await fetch("/api/users");
-      const data = await res.json();
+      const data: User[] = await res.json();
       setUsers(data);
     } catch (error) {
       console.error("Error fetching users:", error);
@@ -22,7 +29,7 @@ export default function HomePage() {
   return (
     <main className="p-6">
       <h1 className="text-2xl font-bold mb-4">Homepage</h1>
-      
+
       <button
         onClick={fetchUsers}
         className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
@@ -57,4 +64,3 @@ export default function HomePage() {
     </main>
   );
 }
-

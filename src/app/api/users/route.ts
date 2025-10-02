@@ -1,8 +1,17 @@
 import { NextResponse } from "next/server";
-import { PrismaClient } from "@/generated/prisma"; // client path
+import { PrismaClient } from "@/generated/prisma"; // adjust path if needed
 
-const prisma = globalThis.prisma || new PrismaClient();
-if (process.env.NODE_ENV === "development") (globalThis as any).prisma = prisma;
+// Extend the global type so we can cache PrismaClient safely
+declare global {
+  // eslint-disable-next-line no-var
+  var prisma: PrismaClient | undefined;
+}
+
+const prisma = global.prisma || new PrismaClient();
+
+if (process.env.NODE_ENV === "development") {
+  global.prisma = prisma;
+}
 
 export async function GET() {
   try {
@@ -10,6 +19,9 @@ export async function GET() {
     return NextResponse.json(users);
   } catch (error) {
     console.error("Error fetching users:", error);
-    return NextResponse.json({ error: "Failed to fetch users" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Failed to fetch users" },
+      { status: 500 }
+    );
   }
 }
