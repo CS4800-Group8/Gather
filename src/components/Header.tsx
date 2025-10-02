@@ -24,9 +24,13 @@ export default function Header() {
           <div className="brand">
             <div className="brand__title">
               <Link href="/">
-                <span className="brand__name">{siteConfig.name}</span>
+              <span className="brand__name">{siteConfig.name}</span>
               </Link>
-              <span className="brand__subtitle">{siteConfig.company}</span>
+              <span className="brand__subtitle">
+              <a href="https://nvmatechwebsite.vercel.app/" target="_blank" rel="noopener noreferrer">
+                {siteConfig.company}
+              </a>
+              </span>
             </div>
           </div>
 
