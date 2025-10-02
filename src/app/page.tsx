@@ -1,3 +1,4 @@
+// src/app/page.tsx
 "use client";
 
 import { useState } from "react";
@@ -12,15 +13,21 @@ type User = {
 export default function HomePage() {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null); // Add error state
 
   const fetchUsers = async () => {
     setLoading(true);
+    setError(null); // Reset error state
     try {
       const res = await fetch("/api/users");
+      if (!res.ok) {
+        throw new Error(`HTTP error! Status: ${res.status}`);
+      }
       const data: User[] = await res.json();
       setUsers(data);
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error fetching users:", error);
+      setError(error instanceof Error ? error.message : "Failed to fetch users");
     } finally {
       setLoading(false);
     }
@@ -38,6 +45,7 @@ export default function HomePage() {
       </button>
 
       {loading && <p className="mt-4">Loading...</p>}
+      {error && <p className="mt-4 text-red-600">{error}</p>} {/* Display error */}
 
       {users.length > 0 && (
         <div className="mt-6 overflow-x-auto">

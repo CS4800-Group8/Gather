@@ -11,12 +11,12 @@ Data: NeonDB
 ## Quick Start
 - Clone repo --> git clone https://github.com/CS4800-Group8/Gather
 - Open the project in IDE and open a new terminal then type these commands:
-    - npm install --> installs node and nextjs
-    - npm run dev --> creates a local host
+    - npm install
     - npm i -D prisma
     - npm i @prisma/client
     - npx prisma generate
     - npx prisma migrate dev
+    - npm run dev
 
-Note: You might have to install Node.js first onto your local machine
+Note: You might have to install Node.js first onto your local machine. A .env file with the connection string to NeonDB is required before running this project.
 
