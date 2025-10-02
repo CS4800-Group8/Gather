@@ -27,7 +27,7 @@ export default function Header() {
               <span className="brand__name">{siteConfig.name}</span>
               </Link>
               <span className="brand__subtitle">
-              <a href="https://giahua.github.io/CS4800-NVMATech/" target="_blank" rel="noopener noreferrer">
+              <a href="https://nvmatechwebsite.vercel.app/" target="_blank" rel="noopener noreferrer">
                 {siteConfig.company}
               </a>
               </span>
