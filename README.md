@@ -19,4 +19,3 @@ Data: NeonDB
     - npm run dev
 
 Note: You might have to install Node.js first onto your local machine. A .env file with the connection string to NeonDB is required before running this project.
-
