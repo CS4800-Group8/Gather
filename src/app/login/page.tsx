@@ -103,7 +103,7 @@ export default function LoginPage() {
 
           <div className="auth-links">
             <Link href="/register/" className="auth-link">
-              Don't have an account?
+              Don&apos;t have an account?
             </Link>
             <Link href="/forgot-pwd/" className="auth-link">
               Forgot your password?

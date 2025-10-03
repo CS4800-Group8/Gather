@@ -25,7 +25,7 @@ export default function ForgotPasswordPage() {
       const data = await res.json();
 
       if (res.ok) {
-        setMessage("If an account with that email exists, we've sent password reset instructions.");
+        setMessage("If an account with that email exists, we&apos;ve sent password reset instructions.");
       } else {
         setMessage(data.error || "An error occurred");
       }
@@ -41,7 +41,7 @@ export default function ForgotPasswordPage() {
     <main className="container main">
       <div className="hero">
         <h2>Reset Your Password</h2>
-        <p>Enter your email address and we'll send you instructions to reset your password.</p>
+        <p>Enter your email address and we&apos;ll send you instructions to reset your password.</p>
 
         <form onSubmit={handleSubmit} className="auth-form">
           {message && (
