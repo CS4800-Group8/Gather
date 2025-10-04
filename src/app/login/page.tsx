@@ -51,66 +51,37 @@ export default function LoginPage() {
   };
 
   return (
-    <main className="container main">
-      <div className="hero">
-        <h2>Login to Your Account</h2>
-        <p>Enter your credentials to access your recipes</p>
+    <div className="flex flex-col items-center gap-8">
+      <section className="glass-card w-full max-w-md px-8 py-10">
+        <h1 className="text-2xl font-semibold text-amber-700">Log in</h1>
+        <p className="mt-2 text-sm text-amber-500">Enter your credentials to continue.</p>
 
-        <form onSubmit={handleLogin} className="auth-form">
-          {error && (
-            <div className="error-message">
-              {error}
-            </div>
-          )}
-
-          <div className="form-group">
-            <label htmlFor="username" className="form-label">Username</label>
+        {/* Swap this mock form for your real authentication handler when it’s ready. */}
+        <form className="mt-8 space-y-4">
+          <label className="block text-sm font-medium text-amber-700">
+            Email
             <input
-              type="text"
-              id="username"
-              name="username"
-              value={formData.username}
-              onChange={handleChange}
-              placeholder="Enter your username"
-              className="form-input"
-              required
+              type="email"
+              placeholder="you@example.com"
+              className="mt-1 w-full rounded-2xl border border-[#ffeede] bg-white/96 px-4 py-3 text-sm text-amber-700 focus:border-[#ffe1b8] focus:outline-none focus:ring-2 focus:ring-[#ffe8ce]"
             />
-          </div>
-
-          <div className="form-group">
-            <label htmlFor="password" className="form-label">Password</label>
+          </label>
+          <label className="block text-sm font-medium text-amber-700">
+            Password
             <input
               type="password"
-              id="password"
-              name="password"
-              value={formData.password}
-              onChange={handleChange}
-              placeholder="Enter your password"
-              className="form-input"
-              required
+              placeholder="••••••••"
+              className="mt-1 w-full rounded-2xl border border-[#ffeede] bg-white/96 px-4 py-3 text-sm text-amber-700 focus:border-[#ffe1b8] focus:outline-none focus:ring-2 focus:ring-[#ffe8ce]"
             />
-          </div>
-
-          <div className="form-actions">
-            <button 
-              type="submit" 
-              className="btn btn--accent btn--full"
-              disabled={loading}
-            >
-              {loading ? "Logging in..." : "Login"}
-            </button>
-          </div>
-
-          <div className="auth-links">
-            <Link href="/register/" className="auth-link">
-              Don&apos;t have an account?
-            </Link>
-            <Link href="/forgot-pwd/" className="auth-link">
-              Forgot your password?
-            </Link>
-          </div>
+          </label>
+          <button
+            type="button"
+            className="pill-button w-full justify-center bg-[#ffe7b2] text-amber-700 shadow-none hover:bg-[#ffdca0]"
+          >
+            Sign in
+          </button>
         </form>
-      </div>
-    </main>
+      </section>
+    </div>
   );
 }

@@ -1,12 +1,7 @@
-/**
- * explore-recipes/page.tsx
- * Route: /explore-recipes
- */
 export default function ExploreRecipesPage() {
   return (
-    <section className="hero">
-      <h2>Explore Recipes</h2>
-      <p>This page rendered successfully.</p>
+    <section className="glass-card px-6 py-8">
+      <p className="text-sm text-slate-600">Explore recipes placeholder.</p>
     </section>
   );
 }

@@ -19,8 +19,8 @@ const eslintConfig = [
       "out/**",
       "build/**",
       "next-env.d.ts",
-      "src/generated/prisma/*",
-    ] as const, // Ensures ignores is a readonly array of strings
+      "src/generated/prisma/**/*",
+    ],
   },
 ] as const; // Marks the entire config as readonly
 
