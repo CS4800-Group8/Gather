@@ -1,66 +1,65 @@
 "use client";
-/**
- * Header.tsx
- *   - Renders the floating toolbar on every page.
- *   - Buttons: My Recipes, Explore Recipes, Login (placeholder for now).
- */
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { siteConfig } from "@/lib/siteConfig";
 
+const navLinks = siteConfig.nav;
+
+// Shared styles keep every pill aligned with the pastel palette.
+const baseNavClasses =
+  "pill-button bg-white/90 text-amber-500 shadow-none hover:bg-white hover:text-amber-600";
+const activeNavClasses =
+  "pill-button bg-[#ffe7b2] text-amber-700 shadow-none hover:bg-[#ffdca0]";
+const loginClasses =
+  "pill-button bg-[#ffe7b2] text-amber-700 shadow-none hover:bg-[#ffd28a]";
+
 export default function Header() {
   const pathname = usePathname();
-
-  // Determine if a link is active for styling
   const isActive = (href: string) =>
     href === "/" ? pathname === "/" : pathname.startsWith(href);
 
   return (
-    <div className="toolbar-wrap">
-      <div className="container">
-        <div className="toolbar">
-          {/* Brand (title + company) — no logo */}
-          <div className="brand">
-            <div className="brand__title">
-              <Link href="/">
-                <span className="brand__name">{siteConfig.name}</span>
-              </Link>
-              <span className="brand__subtitle">{siteConfig.company}</span>
-            </div>
+    <header className="sticky top-6 z-50 mx-auto w-full max-w-6xl px-6 lg:px-8">
+      <div className="glass-card flex flex-col gap-4 px-6 py-5 shadow-none md:flex-row md:items-center md:justify-between">
+        <Link href="/" className="flex items-start gap-3">
+          <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#fff3cf] text-[#ffb86b]">
+            <span className="text-xl">🥗</span>
           </div>
+          <div className="flex flex-col">
+            <span className="text-lg font-semibold text-amber-700 md:text-xl">
+              {siteConfig.name}
+            </span>
+            <span className="text-xs font-medium uppercase tracking-[0.32em] text-amber-900/40">
+              {siteConfig.company}
+            </span>
+          </div>
+        </Link>
 
-          {/* Explicit nav buttons (three Links with href) */}
-          <nav className="toolbar__nav">
-            {/* My Recipes */}
+        <div className="flex flex-1 flex-wrap items-center justify-end gap-3">
+          <nav className="flex flex-wrap items-center gap-2">
             <Link
-              href="/my-recipes"
-              className={`btn btn--accent ${isActive("/my-recipes") ? "is-active" : ""}`}
+              href="/"
+              className={isActive("/") ? activeNavClasses : baseNavClasses}
             >
-              My Recipes
+              Home
             </Link>
-
-            {/* Explore Recipes */}
-            <Link
-              href="/explore-recipes"
-              className={`btn btn--accent ${isActive("/explore-recipes") ? "is-active" : ""}`}
-            >
-              Explore Recipes
-            </Link>
-
-            {/* Visual divider inside toolbar */}
-            <div className="toolbar__spacer" />
-
-            {/* Login placeholder (route not implemented yet) */}
-            <Link
-              href={siteConfig.loginHref}
-              className={`btn btn--login`}
-            >
-              Login
-            </Link>
+            {navLinks.map((item) => (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={isActive(item.href) ? activeNavClasses : baseNavClasses}
+              >
+                {item.label}
+              </Link>
+            ))}
           </nav>
+
+          <Link href={siteConfig.loginHref} className={loginClasses}>
+            Login
+          </Link>
         </div>
       </div>
-    </div>
+    </header>
   );
 }

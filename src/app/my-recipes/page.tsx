@@ -1,14 +1,7 @@
-/**
- * my-recipes/page.tsx
- * Route: /my-recipes
- */
 export default function MyRecipesPage() {
   return (
-    <section className="hero">
-      <h2>My Recipes</h2>
-      <p>This page rendered successfully.</p>
-      <p>Upload a recipe and have list of favorited recipes</p>
-
+    <section className="glass-card px-6 py-8">
+      <p className="text-sm text-slate-600">My recipes placeholder.</p>
     </section>
   );
 }

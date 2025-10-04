@@ -1,101 +1,92 @@
-/**
- * page.tsx (Home Page)
- *   - The landing page for "/".
- *   - Explains that the main content area will be filled by a recipes API.
- *   - Take note of the "Badge" can use it later to signify if a user wants to like or favorite something
- *   - Take note of <p> allows to turn the information displayed into segments for better styling (use style= {{ style-you-want }})
- */
-
 "use client";
 
-import React from "react";
+import { useState } from "react";
+
+type User = {
+  id: number;
+  firstname: string | null;
+  lastname: string | null;
+};
 
 export default function HomePage() {
-  const [search, setSearch] = React.useState("");
-  const [success, setSuccess] = React.useState(false);
+  const [users, setUsers] = useState<User[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (search.trim()) {
-      setSuccess(true);
-    } else {
-      setSuccess(false);
+  // Pull the latest demo users from Neon through Prisma.
+  const fetchUsers = async () => {
+    setLoading(true);
+    setErrorMessage(null);
+
+    try {
+      const res = await fetch("/api/users");
+      if (!res.ok) {
+        throw new Error("Unable to load users");
+      }
+      const data: User[] = await res.json();
+      setUsers(data);
+    } catch (error) {
+      console.error("Error fetching users:", error);
+      setErrorMessage("We couldn’t load the community table right now.");
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <>
-
-      {/* WELCOME BANNER WITH THE BADGE */}
-      <div className="hero">
-        <h2>Welcome to Recipe Finder</h2>
-        <p>
-          Built by <strong>NVMA Tech</strong>. This main area is intentionally
-          minimal so you can wire up your API data.
-        </p>
-        <p>
-          <span className="badge">API Placeholder</span> This section will be
-          filled with results from a recipes API (e.g., search box, results grid,
-          filters, etc.). For now, it just confirms the page renders.
-        </p>
-        <p style={{ marginTop: 10 }}>
-          Use the toolbar to visit <strong>My Recipes</strong> or{" "}
-          <strong>Explore Recipes</strong>.
-        </p>
+    <section className="glass-card px-6 py-8 sm:px-8">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+        <h1 className="text-2xl font-semibold text-amber-700">Community members</h1>
+        <button
+          type="button"
+          onClick={fetchUsers}
+          disabled={loading}
+          className="pill-button bg-[#ffe7b2] text-amber-700 shadow-none hover:bg-[#ffdca0] disabled:cursor-not-allowed disabled:bg-[#fff1cf]"
+        >
+          {loading ? "Loading..." : "Preview community table"}
+        </button>
       </div>
-      
-      {/* SEARCH BAR PLACEHOLDER */}
-      <div className="hero" style={{ marginBottom: 24 }}>
-        <h2>Search Recipes</h2>
-        <form onSubmit={handleSubmit} style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 8 }}>
-          <input
-            type="text"
-            value={search}
-            onChange={e => { setSearch(e.target.value); setSuccess(false); }}
-            placeholder="Search for a recipe or ingredient..."
-            className="badge"
-            style={{ flex: 1, padding: "8px 12px", borderRadius: 8, border: "1px solid #ccc" }}
-          />
-          <button
-            type="submit"
-            className="badge"
-            style={{ padding: "8px 16px", borderRadius: 8, background: "#4f46e5", color: "#fff", border: "none" }}
-          >
-            🔎︎
-          </button>
-        </form>
-        {success && (
-          <p style={{ color: "#16a34a", fontWeight: 500 }}>Search successful! Showing results for: <span style={{ fontWeight: 700 }}>{search}</span></p>
+
+      {errorMessage && (
+        <div className="mt-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          {errorMessage}
+        </div>
+      )}
+
+      <div className="mt-6 overflow-hidden rounded-3xl border border-white/70 bg-white/95 shadow-[0_18px_40px_rgba(255,217,170,0.24)]">
+        {users.length > 0 ? (
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-amber-100 text-left text-sm text-amber-800">
+              <thead className="bg-[#fff7da] text-amber-500">
+                <tr>
+                  <th scope="col" className="px-6 py-3 text-xs font-semibold uppercase tracking-wider">
+                    ID
+                  </th>
+                  <th scope="col" className="px-6 py-3 text-xs font-semibold uppercase tracking-wider">
+                    First name
+                  </th>
+                  <th scope="col" className="px-6 py-3 text-xs font-semibold uppercase tracking-wider">
+                    Last name
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-amber-100">
+                {users.map((user) => (
+                  <tr key={user.id} className="bg-white/95">
+                    <td className="px-6 py-3 font-semibold text-[#ffc270]">#{user.id.toString().padStart(3, "0")}</td>
+                    <td className="px-6 py-3 capitalize">{user.firstname?.trim() || "—"}</td>
+                    <td className="px-6 py-3 capitalize">{user.lastname?.trim() || "—"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <div className="flex flex-col items-center gap-3 px-6 py-12 text-center text-amber-500">
+            <p className="text-sm">Click the button to load users.</p>
+          </div>
         )}
       </div>
-      
-      {/* NOTES AREA FOR NOW / TODO */}
-      <div className="hero">
-        <h2>Notes</h2>
-        <p>
-          <strong>TODO:</strong> Implement a search query to search for ingredients
-        </p>
-        <p>
-          Search would return ingredients, ex: Search clam returns dishes with clams in them
-        </p>
-      </div>
-
-      {/* DATABASE NOTES */}
-      <div className="hero">
-        <h2>Neon Database</h2>
-        <p>
-          To connect Neon (a serverless Postgres database) to this project:
-        </p>
-        <ol style={{ paddingLeft: 20 }}>
-          <li>Sign up at <a href="https://neon.tech">neon.tech</a> and create a database.</li>
-          <li>Copy your database connection string from the Neon dashboard.</li>
-          <li>Install the PostgreSQL client for Node.js by running <code>npm install pg</code>.</li>
-          <li>Add your Neon connection string to <code>.env.local</code> as <code>DATABASE_URL</code>.</li>
-          <li>Create API routes in <code>src/app/api/</code> to interact with Neon using the <code>pg</code> client.</li>
-        </ol>
-      </div>
-            
-
-    </>
+    </section>
   );
 }
