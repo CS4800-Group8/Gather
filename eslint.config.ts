@@ -9,6 +9,7 @@ const compat = new FlatCompat({
   baseDirectory: __dirname,
 });
 
+// Type definition for the ESLint config (basic inference)
 const eslintConfig = [
   ...compat.extends("next/core-web-vitals", "next/typescript"),
   {
@@ -18,9 +19,9 @@ const eslintConfig = [
       "out/**",
       "build/**",
       "next-env.d.ts",
-      "src/generated/prisma/*"
-    ],
+      "src/generated/prisma/*",
+    ] as const, // Ensures ignores is a readonly array of strings
   },
-];
+] as const; // Marks the entire config as readonly
 
 export default eslintConfig;

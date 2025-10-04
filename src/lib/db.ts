@@ -1,7 +1,5 @@
 import { PrismaClient } from "@/generated/prisma";
 
-console.log("PrismaClient imported:", PrismaClient); // Debug
-
 declare global {
   var prisma: PrismaClient | undefined;
 }
