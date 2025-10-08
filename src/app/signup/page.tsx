@@ -1,76 +1,83 @@
 export default function SignupPage() {
   return (
     <div className="flex flex-col items-center gap-8">
-      <section className="glass-card w-full max-w-md px-8 py-10">
-        <h1 className="text-2xl font-semibold text-amber-700">Create Account</h1>
-        <p className="mt-2 text-sm text-amber-500">Join our recipe community today!</p>
+      <section className="glass-card w-full max-w-lg px-6 py-7 shadow-[0_14px_32px_rgba(255,195,120,0.16)]">
+        <div className="text-center">
+          <h1 className="text-2xl font-semibold text-amber-800 sm:text-3xl">Create your account</h1>
+        </div>
 
-        <form className="mt-8 space-y-4">
-          {/* Username */}
-          <label className="block text-sm font-medium text-amber-700">
-            Username
-            <input
-              type="text"
-              placeholder="johndoe"
-              required
-              className="mt-1 w-full rounded-2xl border border-[#ffeede] bg-white/96 px-4 py-3 text-sm text-amber-700 focus:border-[#ffe1b8] focus:outline-none focus:ring-2 focus:ring-[#ffe8ce]"
-            />
-          </label>
+        <form className="mt-6">
+          <div className="grid gap-4 sm:grid-cols-2">
+            <label className="text-sm font-medium text-amber-700">
+              First name
+              <input
+                type="text"
+                placeholder="Enter first name"
+                required
+                className="mt-1.5 w-full rounded-2xl border border-[#ffeede] bg-white/95 px-4 py-2.5 text-sm text-amber-800 shadow-[0_3px_12px_rgba(255,210,150,0.18)] focus:border-[#ffd59f] focus:outline-none focus:ring-2 focus:ring-[#ffe6c6]"
+              />
+            </label>
 
-          {/* Email */}
-          <label className="block text-sm font-medium text-amber-700">
-            Email
-            <input
-              type="email"
-              placeholder="you@example.com"
-              required
-              className="mt-1 w-full rounded-2xl border border-[#ffeede] bg-white/96 px-4 py-3 text-sm text-amber-700 focus:border-[#ffe1b8] focus:outline-none focus:ring-2 focus:ring-[#ffe8ce]"
-            />
-          </label>
+            <label className="text-sm font-medium text-amber-700">
+              Last name
+              <input
+                type="text"
+                placeholder="Enter last name"
+                required
+                className="mt-1.5 w-full rounded-2xl border border-[#ffeede] bg-white/95 px-4 py-2.5 text-sm text-amber-800 shadow-[0_3px_12px_rgba(255,210,150,0.18)] focus:border-[#ffd59f] focus:outline-none focus:ring-2 focus:ring-[#ffe6c6]"
+              />
+            </label>
 
-          {/* Date of Birth */}
-          <label className="block text-sm font-medium text-amber-700">
-            Date of Birth
-            <input
-              type="date"
-              required
-              className="mt-1 w-full rounded-2xl border border-[#ffeede] bg-white/96 px-4 py-3 text-sm text-amber-700 focus:border-[#ffe1b8] focus:outline-none focus:ring-2 focus:ring-[#ffe8ce]"
-            />
-          </label>
+            <label className="sm:col-span-2 text-sm font-medium text-amber-700">
+              Username
+              <input
+                type="text"
+                placeholder="Choose a username"
+                required
+                className="mt-1.5 w-full rounded-2xl border border-[#ffeede] bg-white/95 px-4 py-2.5 text-sm text-amber-800 shadow-[0_3px_12px_rgba(255,210,150,0.18)] focus:border-[#ffd59f] focus:outline-none focus:ring-2 focus:ring-[#ffe6c6]"
+              />
+            </label>
 
-          {/* Password */}
-          <label className="block text-sm font-medium text-amber-700">
-            Password
-            <input
-              type="password"
-              placeholder="••••••••"
-              required
-              className="mt-1 w-full rounded-2xl border border-[#ffeede] bg-white/96 px-4 py-3 text-sm text-amber-700 focus:border-[#ffe1b8] focus:outline-none focus:ring-2 focus:ring-[#ffe8ce]"
-            />
-          </label>
+            <label className="sm:col-span-2 text-sm font-medium text-amber-700">
+              Email
+              <input
+                type="email"
+                placeholder="Enter your email"
+                required
+                className="mt-1.5 w-full rounded-2xl border border-[#ffeede] bg-white/95 px-4 py-2.5 text-sm text-amber-800 shadow-[0_3px_12px_rgba(255,210,150,0.18)] focus:border-[#ffd59f] focus:outline-none focus:ring-2 focus:ring-[#ffe6c6]"
+              />
+            </label>
 
-          {/* Confirm Password */}
-          <label className="block text-sm font-medium text-amber-700">
-            Confirm Password
-            <input
-              type="password"
-              placeholder="••••••••"
-              required
-              className="mt-1 w-full rounded-2xl border border-[#ffeede] bg-white/96 px-4 py-3 text-sm text-amber-700 focus:border-[#ffe1b8] focus:outline-none focus:ring-2 focus:ring-[#ffe8ce]"
-            />
-          </label>
+            <label className="text-sm font-medium text-amber-700">
+              Password
+              <input
+                type="password"
+                placeholder="Create a password"
+                required
+                className="mt-1.5 w-full rounded-2xl border border-[#ffeede] bg-white/95 px-4 py-2.5 text-sm text-amber-800 shadow-[0_3px_12px_rgba(255,210,150,0.18)] focus:border-[#ffd59f] focus:outline-none focus:ring-2 focus:ring-[#ffe6c6]"
+              />
+            </label>
 
-          {/* Submit Button */}
+            <label className="text-sm font-medium text-amber-700">
+              Confirm password
+              <input
+                type="password"
+                placeholder="Confirm your password"
+                required
+                className="mt-1.5 w-full rounded-2xl border border-[#ffeede] bg-white/95 px-4 py-2.5 text-sm text-amber-800 shadow-[0_3px_12px_rgba(255,210,150,0.18)] focus:border-[#ffd59f] focus:outline-none focus:ring-2 focus:ring-[#ffe6c6]"
+              />
+            </label>
+          </div>
+
           <button
             type="button"
-            className="pill-button w-full justify-center bg-[#ffe7b2] text-amber-700 shadow-none hover:bg-[#ffdca0]"
+            className="pill-button mt-6 w-full justify-center bg-gradient-to-r from-[#ffc873] via-[#ffb551] to-[#ffa53c] text-sm font-semibold text-amber-900 shadow-[0_10px_24px_rgba(255,165,60,0.24)] transition hover:from-[#ffb551] hover:via-[#ffa53c] hover:to-[#ff9435] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#ffb551]"
           >
-            Create Account
+            Create account
           </button>
         </form>
 
-        {/* Link to Login */}
-        <p className="mt-6 text-center text-sm text-amber-600">
+        <p className="mt-5 text-center text-sm text-amber-600">
           Already have an account?{" "}
           <a href="/login" className="font-semibold text-amber-700 hover:underline">
             Log in
@@ -80,4 +87,3 @@ export default function SignupPage() {
     </div>
   );
 }
-
