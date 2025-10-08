@@ -4,7 +4,7 @@ export default function ForgotPasswordPage() {
       <section className="glass-card w-full max-w-md px-8 py-10">
         <h1 className="text-2xl font-semibold text-amber-700">Reset Password</h1>
         <p className="mt-2 text-sm text-amber-500">
-          Enter your email and we'll send you a reset link.
+          Enter your email and we&apos;ll send you a reset link.
         </p>
 
         <form className="mt-8 space-y-4">
