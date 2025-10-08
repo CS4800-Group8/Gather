@@ -29,7 +29,25 @@ export default function LoginPage() {
           >
             Sign in
           </button>
+
+          {/* Forgot Password Link */}
+          <div className="text-center">
+            <a
+              href="/forgot-password"
+              className="text-sm text-amber-600 hover:text-amber-700 hover:underline"
+            >
+              Forgot your password?
+            </a>
+          </div>
         </form>
+
+        {/* Link to Signup */}
+        <p className="mt-6 text-center text-sm text-amber-600">
+          Don't have an account?{" "}
+          <a href="/signup" className="font-semibold text-amber-700 hover:underline">
+            Sign up
+          </a>
+        </p>
       </section>
     </div>
   );

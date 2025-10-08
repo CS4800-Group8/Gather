@@ -55,9 +55,14 @@ export default function Header() {
             ))}
           </nav>
 
-          <Link href={siteConfig.loginHref} className={loginClasses}>
-            Login
-          </Link>
+          <div className="flex items-center gap-2">
+            <Link href="/login" className={baseNavClasses}>
+              Login
+            </Link>
+            <Link href="/signup" className={loginClasses}>
+              Sign up
+            </Link>
+          </div>
         </div>
       </div>
     </header>
