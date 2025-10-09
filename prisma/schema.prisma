@@ -1,11 +1,18 @@
 generator client {
   provider = "prisma-client-js"
+  previewFeatures = ["typedSql", "postgresqlExtensions"] // Not yet update on dev branch
 }
 
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
+
+// model User {
+//   id        Int     @id @default(autoincrement())
+//   firstname String?
+//   lastname  String?
+// }
 
 model User {
   id        Int       @id @default(autoincrement())
@@ -17,3 +24,4 @@ model User {
   username  String    @unique
   dob       DateTime?
 }
+
