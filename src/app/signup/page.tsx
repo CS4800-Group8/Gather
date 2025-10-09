@@ -194,14 +194,14 @@ export default function SignupPage() {
         return;
       }
 
-      // Success 
-      setSuccessMessage("Account created successfully! Redirecting to login...");
+      // Success
+      setSuccessMessage("Account created successfully! Redirecting to sign in...");
       console.log("Created user:", data);
 
 
-      // Redirect to homepage
+      // Redirect to signin page
       setTimeout(() => {
-        router.push("/");
+        router.push("/signin?signup=success");
       }, 1200);
 
     } catch (error) {
@@ -237,9 +237,9 @@ export default function SignupPage() {
                 name="firstname"
                 value={formData.firstname}
                 onChange={handleChange}
-                placeholder="Enter first name"
+                placeholder="your first name"
                 required
-                className="mt-1.5 w-full rounded-2xl border border-[#ffeede] bg-white/95 px-4 py-2.5 text-sm text-amber-800 shadow-[0_3px_12px_rgba(255,210,150,0.18)] focus:border-[#ffd59f] focus:outline-none focus:ring-2 focus:ring-[#ffe6c6]"
+                className="mt-1.5 w-full rounded-2xl border-2 border-amber-200 bg-white px-4 py-2.5 text-sm text-amber-950 placeholder:text-amber-500/60 focus:border-amber-400 focus:outline-none focus:ring-2 focus:ring-amber-100"
               />
               {errors.firstname && (
               <span className="mt-1 block text-xs text-red-600">{errors.firstname}</span>
@@ -254,9 +254,9 @@ export default function SignupPage() {
                 name="lastname"
                 value={formData.lastname}
                 onChange={handleChange}
-                placeholder="Enter last name"
+                placeholder="your last name"
                 required
-                className="mt-1.5 w-full rounded-2xl border border-[#ffeede] bg-white/95 px-4 py-2.5 text-sm text-amber-800 shadow-[0_3px_12px_rgba(255,210,150,0.18)] focus:border-[#ffd59f] focus:outline-none focus:ring-2 focus:ring-[#ffe6c6]"
+                className="mt-1.5 w-full rounded-2xl border-2 border-amber-200 bg-white px-4 py-2.5 text-sm text-amber-950 placeholder:text-amber-500/60 focus:border-amber-400 focus:outline-none focus:ring-2 focus:ring-amber-100"
               />
               {errors.lastname && (
               <span className="mt-1 block text-xs text-red-600">{errors.lastname}</span>
@@ -271,9 +271,9 @@ export default function SignupPage() {
                 name="username"
                 value={formData.username}
                 onChange={handleChange}
-                placeholder="Choose a username"
+                placeholder="choose a username"
                 required
-                className="mt-1.5 w-full rounded-2xl border border-[#ffeede] bg-white/95 px-4 py-2.5 text-sm text-amber-800 shadow-[0_3px_12px_rgba(255,210,150,0.18)] focus:border-[#ffd59f] focus:outline-none focus:ring-2 focus:ring-[#ffe6c6]"
+                className="mt-1.5 w-full rounded-2xl border-2 border-amber-200 bg-white px-4 py-2.5 text-sm text-amber-950 placeholder:text-amber-500/60 focus:border-amber-400 focus:outline-none focus:ring-2 focus:ring-amber-100"
               />
               {errors.username && (
               <span className="mt-1 block text-xs text-red-600">{errors.username}</span>
@@ -288,9 +288,9 @@ export default function SignupPage() {
                 name="email"
                 value={formData.email}
                 onChange={handleChange}
-                placeholder="Enter your email"
+                placeholder="your email"
                 required
-                className="mt-1.5 w-full rounded-2xl border border-[#ffeede] bg-white/95 px-4 py-2.5 text-sm text-amber-800 shadow-[0_3px_12px_rgba(255,210,150,0.18)] focus:border-[#ffd59f] focus:outline-none focus:ring-2 focus:ring-[#ffe6c6]"
+                className="mt-1.5 w-full rounded-2xl border-2 border-amber-200 bg-white px-4 py-2.5 text-sm text-amber-950 placeholder:text-amber-500/60 focus:border-amber-400 focus:outline-none focus:ring-2 focus:ring-amber-100"
               />
               {errors.email && (
               <span className="mt-1 block text-xs text-red-600">{errors.email}</span>
@@ -305,9 +305,9 @@ export default function SignupPage() {
                 name="password"
                 value={formData.password}
                 onChange={handleChange}
-                placeholder="Create a password"
+                placeholder="create a password"
                 required
-                className="mt-1.5 w-full rounded-2xl border border-[#ffeede] bg-white/95 px-4 py-2.5 text-sm text-amber-800 shadow-[0_3px_12px_rgba(255,210,150,0.18)] focus:border-[#ffd59f] focus:outline-none focus:ring-2 focus:ring-[#ffe6c6]"
+                className="mt-1.5 w-full rounded-2xl border-2 border-amber-200 bg-white px-4 py-2.5 text-sm text-amber-950 placeholder:text-amber-500/60 focus:border-amber-400 focus:outline-none focus:ring-2 focus:ring-amber-100"
               />
               {errors.password && (
               <span className="mt-1 block text-xs text-red-600">{errors.password}</span>
@@ -322,9 +322,9 @@ export default function SignupPage() {
                 name="confirmPassword"
                 value={formData.confirmPassword}
                 onChange={handleChange}
-                placeholder="Confirm your password"
+                placeholder="confirm your password"
                 required
-                className="mt-1.5 w-full rounded-2xl border border-[#ffeede] bg-white/95 px-4 py-2.5 text-sm text-amber-800 shadow-[0_3px_12px_rgba(255,210,150,0.18)] focus:border-[#ffd59f] focus:outline-none focus:ring-2 focus:ring-[#ffe6c6]"
+                className="mt-1.5 w-full rounded-2xl border-2 border-amber-200 bg-white px-4 py-2.5 text-sm text-amber-950 placeholder:text-amber-500/60 focus:border-amber-400 focus:outline-none focus:ring-2 focus:ring-amber-100"
               />
               {errors.confirmPassword && (
               <span className="mt-1 block text-xs text-red-600">{errors.confirmPassword}</span>
@@ -348,11 +348,11 @@ export default function SignupPage() {
           </button>
         </form>
 
-        {/* Link to Login */}
+        {/* Link to Sign In */}
         <p className="mt-5 text-center text-sm text-amber-600">
           Already have an account?{" "}
-          <a href="/login" className="font-semibold text-amber-700 hover:underline">
-            Log in
+          <a href="/signin" className="font-semibold text-amber-700 hover:underline">
+            Sign in
           </a>
         </p>
       </section>

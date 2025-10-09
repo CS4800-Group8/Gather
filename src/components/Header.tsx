@@ -11,8 +11,6 @@ const baseNavClasses =
   "pill-button bg-white/90 text-amber-500 shadow-none hover:bg-white hover:text-amber-600";
 const activeNavClasses =
   "pill-button bg-[#ffe7b2] text-amber-700 shadow-none hover:bg-[#ffdca0]";
-const loginClasses =
-  "pill-button bg-[#ffe7b2] text-amber-700 shadow-none hover:bg-[#ffd28a]";
 
 export default function Header() {
   const pathname = usePathname();
@@ -56,10 +54,16 @@ export default function Header() {
           </nav>
 
           <div className="flex items-center gap-2">
-            <Link href="/login" className={baseNavClasses}>
-              Login
+            <Link
+              href="/signin"
+              className={isActive("/signin") ? activeNavClasses : baseNavClasses}
+            >
+              Sign in
             </Link>
-            <Link href="/signup" className={loginClasses}>
+            <Link
+              href="/signup"
+              className={isActive("/signup") ? activeNavClasses : baseNavClasses}
+            >
               Sign up
             </Link>
           </div>

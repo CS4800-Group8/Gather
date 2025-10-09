@@ -17,7 +17,7 @@ export default function RootLayout({
     <html lang="en" className="h-full">
       <body className="relative min-h-screen font-sans text-amber-900 antialiased">
         <div className="pointer-events-none fixed inset-x-0 top-[-200px] z-0 flex justify-center">
-          <div className="h-56 w-[34rem] rounded-full bg-[rgba(255,221,162,0.35)] blur-[110px]" />
+          <div className="h-56 w-[34rem] rounded-full bg-[rgba(255,221,162,0.15)] blur-[120px]" />
         </div>
 
         <div className="relative z-10 flex min-h-screen flex-col">
