@@ -6,6 +6,7 @@
 
 generator client {
   provider = "prisma-client-js"
+  previewFeatures = ["typedSql", "postgresqlExtensions"] // Not yet update on dev branch
 }
 
 datasource db {
