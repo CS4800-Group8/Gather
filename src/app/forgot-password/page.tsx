@@ -28,11 +28,11 @@ export default function ForgotPasswordPage() {
           </button>
         </form>
 
-        {/* Link back to Login */}
+        {/* Link back to Sign In */}
         <p className="mt-6 text-center text-sm text-amber-600">
           Remember your password?{" "}
-          <a href="/login" className="font-semibold text-amber-700 hover:underline">
-            Log in
+          <a href="/signin" className="font-semibold text-amber-700 hover:underline">
+            Sign in
           </a>
         </p>
       </section>

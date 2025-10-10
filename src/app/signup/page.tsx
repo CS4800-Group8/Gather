@@ -27,8 +27,6 @@ export default function SignupPage() {
     confirmPassword: '',
   });
 
-  const [successMessage, setSuccessMessage] = useState('');
-
   // Validation functions
 
   // Validate username // DONE
@@ -112,9 +110,6 @@ export default function SignupPage() {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
 
-    // Clear success message when user starts typing
-    if (successMessage) setSuccessMessage('');
-
     // Real-time validation
     let error = '';
     switch (name) {
@@ -182,6 +177,7 @@ export default function SignupPage() {
           username: formData.username,
           email: formData.email,
           password: formData.password,
+          confirmPassword: formData.confirmPassword, // An fix: Added missing confirmPassword field
         }),
       });
 
@@ -189,24 +185,32 @@ export default function SignupPage() {
 
       if (!res.ok) {
         // API returned an error (e.g., username/email taken)
-        setSuccessMessage("");
         alert(data.error || "Signup failed. Please try again.");
         return;
       }
 
-      // Success 
-      setSuccessMessage("Account created successfully! Redirecting to login...");
+      // An add: Auto-login after successful signup
       console.log("Created user:", data);
 
+      // Collect the signup payload once for storage helpers
+      const hydratedUser = {
+        firstname: formData.firstname,
+        lastname: formData.lastname,
+        username: formData.username,
+        email: formData.email,
+      };
 
-      // Redirect to homepage
-      setTimeout(() => {
-        router.push("/");
-      }, 1200);
+      // Save user data to localStorage
+      localStorage.setItem('user', JSON.stringify(hydratedUser));
+      localStorage.setItem('gatherUser', JSON.stringify(hydratedUser)); // An add: Keep legacy and new keys aligned
+      document.cookie = `gatherUser=${encodeURIComponent(JSON.stringify(hydratedUser))}; path=/; sameSite=Lax`; // An add: Sync cookie with local storage for header hydration
+      window.dispatchEvent(new Event('gather:user-updated')); // An add: Notify the header that a new user is ready
+
+      // Redirect to homepage (logged in)
+      router.push("/");
 
     } catch (error) {
       console.error("Signup error:", error);
-      setSuccessMessage("");
       alert("Something went wrong. Please try again later.");
     }
 };
@@ -217,11 +221,6 @@ export default function SignupPage() {
         <div className="text-center">
           <h1 className="text-2xl font-semibold text-amber-800 sm:text-3xl">Create your account</h1>
           <p className="mt-2 text-sm text-amber-500">Join our recipe community today!</p>
-          {successMessage && (
-          <div className="mt-4 rounded-2xl bg-green-50 border border-green-200 px-4 py-3 text-sm text-green-700">
-            {successMessage}
-          </div>
-        )}
 
         </div>
 
@@ -237,9 +236,9 @@ export default function SignupPage() {
                 name="firstname"
                 value={formData.firstname}
                 onChange={handleChange}
-                placeholder="Enter first name"
+                placeholder="your first name"
                 required
-                className="mt-1.5 w-full rounded-2xl border border-[#ffeede] bg-white/95 px-4 py-2.5 text-sm text-amber-800 shadow-[0_3px_12px_rgba(255,210,150,0.18)] focus:border-[#ffd59f] focus:outline-none focus:ring-2 focus:ring-[#ffe6c6]"
+                className="mt-1.5 w-full rounded-2xl border-2 border-amber-200 bg-white px-4 py-2.5 text-sm text-amber-950 placeholder:text-amber-500/60 focus:border-amber-400 focus:outline-none focus:ring-2 focus:ring-amber-100"
               />
               {errors.firstname && (
               <span className="mt-1 block text-xs text-red-600">{errors.firstname}</span>
@@ -254,9 +253,9 @@ export default function SignupPage() {
                 name="lastname"
                 value={formData.lastname}
                 onChange={handleChange}
-                placeholder="Enter last name"
+                placeholder="your last name"
                 required
-                className="mt-1.5 w-full rounded-2xl border border-[#ffeede] bg-white/95 px-4 py-2.5 text-sm text-amber-800 shadow-[0_3px_12px_rgba(255,210,150,0.18)] focus:border-[#ffd59f] focus:outline-none focus:ring-2 focus:ring-[#ffe6c6]"
+                className="mt-1.5 w-full rounded-2xl border-2 border-amber-200 bg-white px-4 py-2.5 text-sm text-amber-950 placeholder:text-amber-500/60 focus:border-amber-400 focus:outline-none focus:ring-2 focus:ring-amber-100"
               />
               {errors.lastname && (
               <span className="mt-1 block text-xs text-red-600">{errors.lastname}</span>
@@ -271,9 +270,9 @@ export default function SignupPage() {
                 name="username"
                 value={formData.username}
                 onChange={handleChange}
-                placeholder="Choose a username"
+                placeholder="choose a username"
                 required
-                className="mt-1.5 w-full rounded-2xl border border-[#ffeede] bg-white/95 px-4 py-2.5 text-sm text-amber-800 shadow-[0_3px_12px_rgba(255,210,150,0.18)] focus:border-[#ffd59f] focus:outline-none focus:ring-2 focus:ring-[#ffe6c6]"
+                className="mt-1.5 w-full rounded-2xl border-2 border-amber-200 bg-white px-4 py-2.5 text-sm text-amber-950 placeholder:text-amber-500/60 focus:border-amber-400 focus:outline-none focus:ring-2 focus:ring-amber-100"
               />
               {errors.username && (
               <span className="mt-1 block text-xs text-red-600">{errors.username}</span>
@@ -288,9 +287,9 @@ export default function SignupPage() {
                 name="email"
                 value={formData.email}
                 onChange={handleChange}
-                placeholder="Enter your email"
+                placeholder="your email"
                 required
-                className="mt-1.5 w-full rounded-2xl border border-[#ffeede] bg-white/95 px-4 py-2.5 text-sm text-amber-800 shadow-[0_3px_12px_rgba(255,210,150,0.18)] focus:border-[#ffd59f] focus:outline-none focus:ring-2 focus:ring-[#ffe6c6]"
+                className="mt-1.5 w-full rounded-2xl border-2 border-amber-200 bg-white px-4 py-2.5 text-sm text-amber-950 placeholder:text-amber-500/60 focus:border-amber-400 focus:outline-none focus:ring-2 focus:ring-amber-100"
               />
               {errors.email && (
               <span className="mt-1 block text-xs text-red-600">{errors.email}</span>
@@ -305,9 +304,9 @@ export default function SignupPage() {
                 name="password"
                 value={formData.password}
                 onChange={handleChange}
-                placeholder="Create a password"
+                placeholder="create a password"
                 required
-                className="mt-1.5 w-full rounded-2xl border border-[#ffeede] bg-white/95 px-4 py-2.5 text-sm text-amber-800 shadow-[0_3px_12px_rgba(255,210,150,0.18)] focus:border-[#ffd59f] focus:outline-none focus:ring-2 focus:ring-[#ffe6c6]"
+                className="mt-1.5 w-full rounded-2xl border-2 border-amber-200 bg-white px-4 py-2.5 text-sm text-amber-950 placeholder:text-amber-500/60 focus:border-amber-400 focus:outline-none focus:ring-2 focus:ring-amber-100"
               />
               {errors.password && (
               <span className="mt-1 block text-xs text-red-600">{errors.password}</span>
@@ -322,9 +321,9 @@ export default function SignupPage() {
                 name="confirmPassword"
                 value={formData.confirmPassword}
                 onChange={handleChange}
-                placeholder="Confirm your password"
+                placeholder="confirm your password"
                 required
-                className="mt-1.5 w-full rounded-2xl border border-[#ffeede] bg-white/95 px-4 py-2.5 text-sm text-amber-800 shadow-[0_3px_12px_rgba(255,210,150,0.18)] focus:border-[#ffd59f] focus:outline-none focus:ring-2 focus:ring-[#ffe6c6]"
+                className="mt-1.5 w-full rounded-2xl border-2 border-amber-200 bg-white px-4 py-2.5 text-sm text-amber-950 placeholder:text-amber-500/60 focus:border-amber-400 focus:outline-none focus:ring-2 focus:ring-amber-100"
               />
               {errors.confirmPassword && (
               <span className="mt-1 block text-xs text-red-600">{errors.confirmPassword}</span>
@@ -348,11 +347,11 @@ export default function SignupPage() {
           </button>
         </form>
 
-        {/* Link to Login */}
+        {/* Link to Sign In */}
         <p className="mt-5 text-center text-sm text-amber-600">
           Already have an account?{" "}
-          <a href="/login" className="font-semibold text-amber-700 hover:underline">
-            Log in
+          <a href="/signin" className="font-semibold text-amber-700 hover:underline">
+            Sign in
           </a>
         </p>
       </section>
