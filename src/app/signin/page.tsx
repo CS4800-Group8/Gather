@@ -1,12 +1,10 @@
 'use client';
 
-import { useState, Suspense } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 
 function SignInForm() {
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const signupSuccess = searchParams.get('signup') === 'success';
 
   const [emailOrUsername, setEmailOrUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -38,6 +36,14 @@ function SignInForm() {
         return;
       }
 
+      // An fix: Save user data to localStorage for logged-in state
+      localStorage.setItem('user', JSON.stringify({
+        firstname: data.user.firstname,
+        lastname: data.user.lastname,
+        username: data.user.username,
+        email: data.user.email,
+      }));
+
       // Success - redirect to home
       router.push('/');
     } catch (error) {
@@ -53,12 +59,6 @@ function SignInForm() {
         <div className="text-center">
           <h1 className="text-2xl font-semibold text-amber-800 sm:text-3xl">Welcome back</h1>
           <p className="mt-2 text-sm text-amber-500">Sign in to continue to your account</p>
-
-          {signupSuccess && (
-            <div className="mt-4 rounded-2xl bg-green-50 border border-green-200 px-4 py-3 text-sm text-green-700">
-              Account created successfully! Please sign in.
-            </div>
-          )}
 
           {errorMessage && (
             <div className="mt-4 rounded-2xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
@@ -126,9 +126,5 @@ function SignInForm() {
 }
 
 export default function SignInPage() {
-  return (
-    <Suspense fallback={<div className="flex justify-center items-center min-h-[400px]">Loading...</div>}>
-      <SignInForm />
-    </Suspense>
-  );
+  return <SignInForm />;
 }
