@@ -27,8 +27,6 @@ export default function SignupPage() {
     confirmPassword: '',
   });
 
-  const [successMessage, setSuccessMessage] = useState('');
-
   // Validation functions
 
   // Validate username // DONE
@@ -112,9 +110,6 @@ export default function SignupPage() {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
 
-    // Clear success message when user starts typing
-    if (successMessage) setSuccessMessage('');
-
     // Real-time validation
     let error = '';
     switch (name) {
@@ -190,24 +185,26 @@ export default function SignupPage() {
 
       if (!res.ok) {
         // API returned an error (e.g., username/email taken)
-        setSuccessMessage("");
         alert(data.error || "Signup failed. Please try again.");
         return;
       }
 
-      // Success
-      setSuccessMessage("Account created successfully! Redirecting to sign in...");
+      // An fix: Auto-login after successful signup
       console.log("Created user:", data);
 
+      // Save user data to localStorage
+      localStorage.setItem('user', JSON.stringify({
+        firstname: formData.firstname,
+        lastname: formData.lastname,
+        username: formData.username,
+        email: formData.email,
+      }));
 
-      // Redirect to signin page
-      setTimeout(() => {
-        router.push("/signin?signup=success");
-      }, 1200);
+      // Redirect to homepage (logged in)
+      router.push("/");
 
     } catch (error) {
       console.error("Signup error:", error);
-      setSuccessMessage("");
       alert("Something went wrong. Please try again later.");
     }
 };
@@ -218,11 +215,6 @@ export default function SignupPage() {
         <div className="text-center">
           <h1 className="text-2xl font-semibold text-amber-800 sm:text-3xl">Create your account</h1>
           <p className="mt-2 text-sm text-amber-500">Join our recipe community today!</p>
-          {successMessage && (
-          <div className="mt-4 rounded-2xl bg-green-50 border border-green-200 px-4 py-3 text-sm text-green-700">
-            {successMessage}
-          </div>
-        )}
 
         </div>
 
