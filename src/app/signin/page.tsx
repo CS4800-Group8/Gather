@@ -17,13 +17,42 @@ function SignInForm() {
     setIsLoading(true);
 
     try {
+      const identifier = emailOrUsername.trim();
+      let loginEmail = identifier;
+
+      if (identifier && !identifier.includes('@')) {
+        try {
+          // An fix: Resolve usernames to emails so the existing API keeps working
+          const lookup = await fetch('/api/users');
+          if (lookup.ok) {
+            const users: Array<{ username?: string; email?: string }> = await lookup.json();
+            const match = users.find(
+              (entry: { username?: string; email?: string }) =>
+                entry.username?.toLowerCase() === identifier.toLowerCase()
+            );
+            if (match?.email) {
+              loginEmail = match.email;
+            }
+          }
+        } catch (lookupError) {
+          console.error('Username lookup failed', lookupError);
+        }
+      }
+
+      if (!loginEmail) {
+        // An add: Guard against empty identifier before calling the API
+        setErrorMessage('Email or username is required.');
+        setIsLoading(false);
+        return;
+      }
+
       const res = await fetch('/api/auth/signin', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          emailOrUsername,
+          emailOrUsername: loginEmail, // An add: Allow username or email to pass straight through
           password,
         }),
       });
@@ -37,14 +66,20 @@ function SignInForm() {
       }
 
       // An fix: Save user data to localStorage for logged-in state
-      localStorage.setItem('user', JSON.stringify({
+      const storedUser = {
         firstname: data.user.firstname,
         lastname: data.user.lastname,
         username: data.user.username,
         email: data.user.email,
-      }));
+      };
+
+      localStorage.setItem('gatherUser', JSON.stringify(storedUser));
+      localStorage.setItem('user', JSON.stringify(storedUser));
+      document.cookie = `gatherUser=${encodeURIComponent(JSON.stringify(storedUser))}; path=/; sameSite=Lax`; // An add: Mirror local storage in a cookie for refreshes
+      window.dispatchEvent(new Event('gather:user-updated'));
 
       // Success - redirect to home
+      setIsLoading(false);
       router.push('/');
     } catch (error) {
       console.error('Sign in error:', error);

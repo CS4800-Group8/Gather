@@ -189,16 +189,22 @@ export default function SignupPage() {
         return;
       }
 
-      // An fix: Auto-login after successful signup
+      // An add: Auto-login after successful signup
       console.log("Created user:", data);
 
-      // Save user data to localStorage
-      localStorage.setItem('user', JSON.stringify({
+      // Collect the signup payload once for storage helpers
+      const hydratedUser = {
         firstname: formData.firstname,
         lastname: formData.lastname,
         username: formData.username,
         email: formData.email,
-      }));
+      };
+
+      // Save user data to localStorage
+      localStorage.setItem('user', JSON.stringify(hydratedUser));
+      localStorage.setItem('gatherUser', JSON.stringify(hydratedUser)); // An add: Keep legacy and new keys aligned
+      document.cookie = `gatherUser=${encodeURIComponent(JSON.stringify(hydratedUser))}; path=/; sameSite=Lax`; // An add: Sync cookie with local storage for header hydration
+      window.dispatchEvent(new Event('gather:user-updated')); // An add: Notify the header that a new user is ready
 
       // Redirect to homepage (logged in)
       router.push("/");
