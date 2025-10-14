@@ -9,7 +9,7 @@ const navLinks = siteConfig.nav;
 
 // An fix: Made buttons darker and improved contrast
 const baseNavClasses =
-  "pill-button bg-white/90 text-amber-600 shadow-none hover:bg-white hover:text-amber-700";
+  "pill-button bg-white/90 text-amber-600 shadow-none hover:bg-[#fff0c7] hover:text-amber-700";
 const activeNavClasses =
   "pill-button bg-amber-600 text-white shadow-md hover:bg-amber-700";
 
@@ -25,6 +25,7 @@ export default function Header() {
     lastname?: string | null;
     username?: string | null;
     email?: string;
+    avatar?: string;
   } | null>(null);
   const [showProfile, setShowProfile] = useState(false);
 
@@ -63,8 +64,16 @@ export default function Header() {
   );
   const primaryName = nameParts.join(" ");
   const initialSource = primaryName || user?.username || "A";
-  const avatarInitial = initialSource.charAt(0).toUpperCase();
+  const avatarInitial = user?.avatar || initialSource.charAt(0).toUpperCase();
   const displayName = primaryName || user?.username || "Gather member";
+
+  const getAvatarBgColor = () => {
+    const avatar = user?.avatar;
+    if (avatar === 'A') return 'bg-amber-500';
+    if (avatar === 'B') return 'bg-orange-500';
+    if (avatar === 'C') return 'bg-yellow-600';
+    return 'bg-amber-500';
+  };
 
   const handleSignOut = () => {
     try {
@@ -80,8 +89,8 @@ export default function Header() {
   };
 
   return (
-    <header className="sticky top-6 z-50 mx-auto w-full max-w-6xl px-6 lg:px-8">
-      <div className="glass-card flex flex-col gap-4 px-6 py-5 shadow-none md:flex-row md:items-center md:justify-between">
+    <header className="fixed top-0 left-0 right-0 z-50 w-full border-b border-yellow-200/60 bg-yellow-100 backdrop-blur-md shadow-sm">
+      <div className="mx-auto flex w-full max-w-7xl flex-row items-center justify-between gap-4 px-6 py-4 lg:px-8">
         <Link href="/" className="flex items-start gap-3">
           <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#fff3cf] text-[#ffb86b]">
             <span className="text-xl">🥗</span>
@@ -96,7 +105,7 @@ export default function Header() {
           </div>
         </Link>
 
-        <div className="flex flex-1 flex-wrap items-center justify-end gap-3">
+        <div className="flex flex-wrap items-center justify-end gap-3">
           <nav className="flex flex-wrap items-center gap-2">
             <Link
               href="/"
@@ -122,24 +131,30 @@ export default function Header() {
                 <button
                   type="button"
                   onClick={() => setShowProfile((current) => !current)}
-                  className="flex h-11 w-11 items-center justify-center rounded-full bg-amber-500 text-base font-semibold text-white shadow-[0_12px_24px_rgba(255,183,88,0.32)] transition hover:bg-amber-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400"
+                  className={`flex h-11 w-11 items-center justify-center rounded-full ${getAvatarBgColor()} text-base font-semibold text-white shadow-[0_12px_24px_rgba(255,183,88,0.32)] transition hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400`}
                 >
                   {avatarInitial}
                 </button>
 
                 {showProfile && (
-                  <div className="absolute right-0 mt-3 w-60 rounded-3xl border border-[#ffeede]/90 bg-white/95 p-4 text-sm text-amber-700 shadow-[0_22px_44px_rgba(255,183,88,0.26)]">
-                    <p className="text-lg font-semibold capitalize text-amber-800">
-                      {displayName.toLowerCase()}
-                    </p>
-                    <p className="mt-1 text-xs uppercase tracking-[0.25em] text-amber-400">
-                      @{user?.username ?? "gatherer"}
-                    </p>
-                    <p className="mt-2 break-words text-xs text-amber-500">{user?.email}</p>
+                  <div className="absolute right-0 mt-3 w-64 rounded-3xl border border-[#ffeede]/90 bg-white/95 p-3 text-sm text-amber-700 shadow-[0_22px_44px_rgba(255,183,88,0.26)]">
+                    <Link
+                      href="/profile"
+                      className="block w-full rounded-2xl bg-amber-100 px-4 py-3 text-left hover:bg-amber-200 transition-colors mb-2"
+                    >
+                      <p className="text-base font-semibold capitalize text-amber-800">
+                        {displayName.toLowerCase()}
+                      </p>
+                      <p className="mt-0.5 text-xs text-amber-600">
+                        @{user?.username ?? "gatherer"}
+                      </p>
+                      <p className="mt-1 break-words text-xs text-amber-500">{user?.email}</p>
+                    </Link>
+                    
                     <button
                       type="button"
                       onClick={handleSignOut}
-                      className="pill-button mt-4 w-full justify-center bg-[#ffe7b2] text-amber-700 shadow-none transition hover:bg-[#ffdca0]"
+                      className="w-full rounded-2xl bg-amber-100 px-4 py-3 text-sm font-semibold text-amber-700 hover:bg-amber-200 transition-colors"
                     >
                       Sign out
                     </button>
