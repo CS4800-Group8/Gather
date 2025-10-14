@@ -193,11 +193,13 @@ export default function SignupPage() {
       console.log("Created user:", data);
 
       // Collect the signup payload once for storage helpers
+      // AnN: New users get default melon avatar
       const hydratedUser = {
         firstname: formData.firstname,
         lastname: formData.lastname,
         username: formData.username,
         email: formData.email,
+        avatar: '🍉', // Default melon avatar for new users
       };
 
       // Save user data to localStorage

@@ -66,11 +66,13 @@ function SignInForm() {
       }
 
       // An fix: Save user data to localStorage for logged-in state
+      // AnN: Set default melon avatar if user doesn't have one
       const storedUser = {
         firstname: data.user.firstname,
         lastname: data.user.lastname,
         username: data.user.username,
         email: data.user.email,
+        avatar: '🍉', // Default melon avatar for new/existing users
       };
 
       localStorage.setItem('gatherUser', JSON.stringify(storedUser));

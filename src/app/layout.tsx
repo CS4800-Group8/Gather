@@ -15,7 +15,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className="h-full">
-      <body className="relative min-h-screen font-sans text-amber-900 antialiased">
+      <body className="relative min-h-screen bg-gradient-to-br from-yellow-50 via-amber-50 to-orange-50 font-sans text-amber-900 antialiased">
         <div className="relative z-10 flex min-h-screen flex-col">
           <Header />
           <main className="mx-auto w-full max-w-6xl flex-1 px-6 pb-16 pt-24 lg:px-8">

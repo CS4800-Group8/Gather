@@ -14,10 +14,21 @@ interface Meal {
   strTags: string | null;
 }
 
+// AnN: Fruit avatar presets for users
+type AvatarType = '🍉' | '🍊' | '🍋' | '🍇';
+
+const AVATAR_OPTIONS: Array<{ emoji: AvatarType; name: string; bgColor: string }> = [
+  { emoji: '🍉', name: 'Melon', bgColor: 'bg-green-100' },
+  { emoji: '🍊', name: 'Orange', bgColor: 'bg-orange-100' },
+  { emoji: '🍋', name: 'Lemon', bgColor: 'bg-yellow-100' },
+  { emoji: '🍇', name: 'Grape', bgColor: 'bg-purple-100' },
+];
+
 export default function ProfilePage() {
   const [activeTab, setActiveTab] = useState<TabKey>('my');
   const [displayName, setDisplayName] = useState('username');
-  const [avatarBadge, setAvatarBadge] = useState<'A' | 'B' | 'C'>('A');
+  const [avatarBadge, setAvatarBadge] = useState<AvatarType>('🍉'); // Default: Melon
+  const [showAvatarPicker, setShowAvatarPicker] = useState(false);
   const [recipes, setRecipes] = useState<Meal[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -55,17 +66,38 @@ export default function ProfilePage() {
         return;
       }
 
-      const parsed = JSON.parse(stored) as { username?: string; avatar?: 'A' | 'B' | 'C' };
+      const parsed = JSON.parse(stored) as { username?: string; avatar?: AvatarType };
       if (parsed.username && parsed.username.trim().length > 0) {
         setDisplayName(parsed.username);
       }
-      if (parsed.avatar && ['A', 'B', 'C'].includes(parsed.avatar)) {
+      // Load saved avatar or default to melon
+      if (parsed.avatar && ['🍉', '🍊', '🍋', '🍇'].includes(parsed.avatar)) {
         setAvatarBadge(parsed.avatar);
       }
     } catch (error) {
       console.warn('Unable to hydrate profile header from storage', error);
     }
   }, []);
+
+  // AnN: Handle avatar change
+  const handleAvatarChange = (newAvatar: AvatarType) => {
+    setAvatarBadge(newAvatar);
+    setShowAvatarPicker(false);
+
+    // Save to localStorage
+    try {
+      const stored = localStorage.getItem('user') || localStorage.getItem('gatherUser');
+      if (stored) {
+        const userData = JSON.parse(stored);
+        userData.avatar = newAvatar;
+        localStorage.setItem('gatherUser', JSON.stringify(userData));
+        localStorage.setItem('user', JSON.stringify(userData));
+        window.dispatchEvent(new Event('gather:user-updated'));
+      }
+    } catch (error) {
+      console.error('Failed to save avatar:', error);
+    }
+  };
 
   const getRecipesForTab = () => {
     if (activeTab === 'my') return recipes.slice(0, 5);
@@ -84,14 +116,46 @@ export default function ProfilePage() {
   ];
 
   return (
-    <div className="min-h-screen bg-yellow-50 pb-16 pt-12">
+    <div className="min-h-screen pb-16 pt-12">
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-10 px-4 sm:px-6 lg:px-8">
         <section className="px-6 py-8">
           {/* Profile header */}
           <div className="mb-10 flex items-center justify-between">
             <div className="flex items-center gap-6">
-              <div className="flex h-32 w-32 items-center justify-center rounded-full border-4 border-amber-400 bg-amber-100 text-5xl font-bold uppercase text-amber-800 shadow-lg">
-                {avatarBadge}
+              {/* AnN: Clickable avatar with picker */}
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => setShowAvatarPicker(!showAvatarPicker)}
+                  className="flex h-32 w-32 items-center justify-center rounded-full border-4 border-amber-400 bg-amber-100 text-7xl shadow-lg hover:scale-105 transition-transform duration-200 cursor-pointer hover:border-amber-500"
+                  aria-label="Change avatar"
+                >
+                  {avatarBadge}
+                </button>
+
+                {/* Avatar picker dropdown */}
+                {showAvatarPicker && (
+                  <div className="absolute left-0 top-36 z-20 rounded-2xl border-2 border-amber-200 bg-white/95 backdrop-blur p-4 shadow-xl">
+                    <p className="text-xs font-semibold text-amber-800 mb-3 text-center">Choose Your Avatar</p>
+                    <div className="flex gap-3">
+                      {AVATAR_OPTIONS.map((option) => (
+                        <button
+                          key={option.emoji}
+                          type="button"
+                          onClick={() => handleAvatarChange(option.emoji)}
+                          className={`flex flex-col items-center gap-2 rounded-xl p-3 transition-all duration-200 hover:scale-110 ${
+                            avatarBadge === option.emoji
+                              ? 'bg-amber-200 ring-2 ring-amber-400'
+                              : 'bg-amber-50 hover:bg-amber-100'
+                          }`}
+                        >
+                          <span className="text-4xl">{option.emoji}</span>
+                          <span className="text-xs font-medium text-amber-800">{option.name}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
               <div className="flex flex-col gap-4">
                 <h1 className="text-4xl font-bold text-amber-900">
@@ -115,13 +179,6 @@ export default function ProfilePage() {
                 </div>
               </div>
             </div>
-            <button
-              type="button"
-              className="flex items-center gap-2 rounded-lg border-2 border-amber-400 bg-white px-6 py-3 text-sm font-semibold text-amber-700 hover:bg-amber-50 transition"
-              aria-label="Settings"
-            >
-              SETTINGS
-            </button>
           </div>
 
           {/* Recipe tabs */}
