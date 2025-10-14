@@ -14,6 +14,6 @@ export const siteConfig = {
     { href: "/explore-recipes", label: "Explore Recipes" },
     // You can add more nav items later here…
   ],
-  // Placeholder route (not yet implemented) to show where Login would go and put outside of nav because not sure if use it...
-  loginHref: "/login",
+  // Placeholder route (not yet implemented) to show where Sign In would go and put outside of nav because not sure if use it...
+  signinHref: "/signin",
 };

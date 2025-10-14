@@ -1,11 +1,6 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
+  previewFeatures = ["typedSql", "postgresqlExtensions"] // Not yet update on dev branch
 }
 
 datasource db {
@@ -20,13 +15,13 @@ datasource db {
 // }
 
 model User {
-  id        Int      @id @default(autoincrement())
+  id        Int       @id @default(autoincrement())
   firstname String
   lastname  String
-  username  String   @unique
-  email     String   @unique
+  createdAt DateTime  @default(now())
+  email     String    @unique
   password  String
-  dob       DateTime
-  createdAt DateTime @default(now())
+  username  String    @unique
+  dob       DateTime?
 }
 

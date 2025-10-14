@@ -19,4 +19,33 @@
   .pill-button {
     @apply inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold transition;
   }
+
+  /* Button variants for improved UI */
+  .btn-primary {
+    @apply bg-amber-600 text-white shadow-md hover:bg-amber-700 focus:ring-2 focus:ring-amber-500 focus:ring-offset-2;
+  }
+
+  .btn-secondary {
+    @apply bg-white/90 text-amber-700 border border-amber-200 shadow-sm hover:bg-amber-50 focus:ring-2 focus:ring-amber-300;
+  }
+
+  .btn-ghost {
+    @apply bg-transparent text-amber-600 hover:bg-amber-50 hover:text-amber-700;
+  }
+
+  /* Smooth animations */
+  .animate-in {
+    animation: fadeIn 0.3s ease-in;
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(-4px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
 }
