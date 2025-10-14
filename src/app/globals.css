@@ -8,8 +8,9 @@
   }
 
   body {
-    @apply min-h-screen bg-yellow-50 font-sans text-amber-900 antialiased;}
+    @apply min-h-screen bg-yellow-50 font-sans text-amber-900 antialiased;
   }
+}
 
 @layer components {
   .glass-card {

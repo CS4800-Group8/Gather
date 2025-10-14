@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 export default function SignupPage() {
 
   const router = useRouter();
-
+  
   {/* State to store form data */}
   const [formData, setFormData] = useState({
     username: '',
@@ -174,8 +174,8 @@ export default function SignupPage() {
         body: JSON.stringify({
           firstname: formData.firstname,
           lastname: formData.lastname,
-          username: formData.username,
-          email: formData.email,
+          username: formData.username.toLowerCase(), // Viet fix: lowercase username input when sign up
+          email: formData.email.toLowerCase(), // Viet fix: lowercase email input when sign up
           password: formData.password,
           confirmPassword: formData.confirmPassword, // An fix: Added missing confirmPassword field
         }),

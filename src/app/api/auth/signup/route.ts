@@ -6,7 +6,7 @@ import bcrypt from "bcryptjs";
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { firstname, lastname, username, email, password, confirmPassword } = body;
+    const { firstname, lastname, username, email, password, confirmPassword/**, dob*/} = body;
 
     // Validate required fields
     // if (!firstname || !lastname || !username || !email || !password || !confirmPassword) {
@@ -49,6 +49,7 @@ export async function POST(req: Request) {
         username,
         email,
         password: hashedPassword, // Store hashed password
+        dob: null, // Optional field - set to null when not provided
       },
     });
 

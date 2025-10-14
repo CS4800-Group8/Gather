@@ -17,7 +17,7 @@ function SignInForm() {
     setIsLoading(true);
 
     try {
-      const identifier = emailOrUsername.trim();
+      const identifier = emailOrUsername.trim().toLowerCase(); // Viet fix: lowercase the username/email input
       let loginEmail = identifier;
 
       if (identifier && !identifier.includes('@')) {
