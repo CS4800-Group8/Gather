@@ -20,7 +20,6 @@ export default function Header() {
     href === "/" ? pathname === "/" : pathname.startsWith(href);
 
   // An fix: Check if user is logged in
-  // AnN update: Add avatar field to user type on 10/14
   const [user, setUser] = useState<{
     firstname?: string | null;
     lastname?: string | null;
@@ -65,17 +64,15 @@ export default function Header() {
   );
   const primaryName = nameParts.join(" ");
   const initialSource = primaryName || user?.username || "A";
-  // AnN update: Use selected avatar from profile or fallback to initial on 10/14
   const avatarInitial = user?.avatar || initialSource.charAt(0).toUpperCase();
   const displayName = primaryName || user?.username || "Gather member";
 
-  // AnN add: Get avatar background color based on selection on 10/14
   const getAvatarBgColor = () => {
     const avatar = user?.avatar;
     if (avatar === 'A') return 'bg-amber-500';
     if (avatar === 'B') return 'bg-orange-500';
     if (avatar === 'C') return 'bg-yellow-600';
-    return 'bg-amber-500'; // default
+    return 'bg-amber-500';
   };
 
   const handleSignOut = () => {
@@ -92,7 +89,6 @@ export default function Header() {
   };
 
   return (
-    // AnN add: Fixed header to stick all the way to top with no spacing on 14/10
     <header className="fixed top-0 left-0 right-0 z-50 w-full border-b border-yellow-200/60 bg-yellow-100 backdrop-blur-md shadow-sm">
       <div className="mx-auto flex w-full max-w-7xl flex-row items-center justify-between gap-4 px-6 py-4 lg:px-8">
         <Link href="/" className="flex items-start gap-3">
@@ -132,7 +128,6 @@ export default function Header() {
             {user ? (
               // An fix: Compact avatar toggles a quick profile menu
               <div className="relative">
-                {/* AnN update: Use dynamic avatar background color on 10/14 */}
                 <button
                   type="button"
                   onClick={() => setShowProfile((current) => !current)}
@@ -142,25 +137,24 @@ export default function Header() {
                 </button>
 
                 {showProfile && (
-                  <div className="absolute right-0 mt-3 w-60 rounded-3xl border border-[#ffeede]/90 bg-white/95 p-4 text-sm text-amber-700 shadow-[0_22px_44px_rgba(255,183,88,0.26)]">
-                    {/* AnN add: Full name as clickable profile link like Facebook on 14/10 */}
+                  <div className="absolute right-0 mt-3 w-64 rounded-3xl border border-[#ffeede]/90 bg-white/95 p-3 text-sm text-amber-700 shadow-[0_22px_44px_rgba(255,183,88,0.26)]">
                     <Link
                       href="/profile"
-                      className="block p-2 -m-2 rounded-2xl hover:bg-[#fff0c7] transition-colors"
+                      className="block w-full rounded-2xl bg-amber-100 px-4 py-3 text-left hover:bg-amber-200 transition-colors mb-2"
                     >
-                      <p className="text-lg font-semibold capitalize text-amber-800">
+                      <p className="text-base font-semibold capitalize text-amber-800">
                         {displayName.toLowerCase()}
                       </p>
-                      <p className="mt-1 text-xs uppercase tracking-[0.25em] text-amber-400">
+                      <p className="mt-0.5 text-xs text-amber-600">
                         @{user?.username ?? "gatherer"}
                       </p>
-                      <p className="mt-2 break-words text-xs text-amber-500">{user?.email}</p>
+                      <p className="mt-1 break-words text-xs text-amber-500">{user?.email}</p>
                     </Link>
                     
                     <button
                       type="button"
                       onClick={handleSignOut}
-                      className="pill-button mt-2 w-full justify-center bg-[#ffe7b2] text-amber-700 shadow-none transition hover:bg-[#ffdca0]"
+                      className="w-full rounded-2xl bg-amber-100 px-4 py-3 text-sm font-semibold text-amber-700 hover:bg-amber-200 transition-colors"
                     >
                       Sign out
                     </button>
