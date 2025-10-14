@@ -64,11 +64,20 @@ export default function Header() {
   );
   const primaryName = nameParts.join(" ");
   const initialSource = primaryName || user?.username || "A";
-  const avatarInitial = user?.avatar || initialSource.charAt(0).toUpperCase();
+  
+  // AnN: Support fruit avatars or fallback to letter
+  const isFruitAvatar = user?.avatar && ['🍉', '🍊', '🍋', '🍇'].includes(user.avatar);
+  const avatarDisplay = isFruitAvatar ? user.avatar : initialSource.charAt(0).toUpperCase();
   const displayName = primaryName || user?.username || "Gather member";
 
   const getAvatarBgColor = () => {
     const avatar = user?.avatar;
+    // Fruit avatars get matching colors
+    if (avatar === '🍉') return 'bg-green-500';
+    if (avatar === '🍊') return 'bg-orange-500';
+    if (avatar === '🍋') return 'bg-yellow-500';
+    if (avatar === '🍇') return 'bg-purple-500';
+    // Legacy letter avatars
     if (avatar === 'A') return 'bg-amber-500';
     if (avatar === 'B') return 'bg-orange-500';
     if (avatar === 'C') return 'bg-yellow-600';
@@ -89,7 +98,7 @@ export default function Header() {
   };
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 w-full border-b border-yellow-200/60 bg-yellow-100 backdrop-blur-md shadow-sm">
+    <header className="fixed top-0 left-0 right-0 z-50 w-full border-b border-amber-300 bg-amber-100/95 backdrop-blur-md shadow-md">
       <div className="mx-auto flex w-full max-w-7xl flex-row items-center justify-between gap-4 px-6 py-4 lg:px-8">
         <Link href="/" className="flex items-start gap-3">
           <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#fff3cf] text-[#ffb86b]">
@@ -131,9 +140,9 @@ export default function Header() {
                 <button
                   type="button"
                   onClick={() => setShowProfile((current) => !current)}
-                  className={`flex h-11 w-11 items-center justify-center rounded-full ${getAvatarBgColor()} text-base font-semibold text-white shadow-[0_12px_24px_rgba(255,183,88,0.32)] transition hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400`}
+                  className={`flex h-11 w-11 items-center justify-center rounded-full ${getAvatarBgColor()} ${isFruitAvatar ? 'text-2xl' : 'text-base font-semibold text-white'} shadow-[0_12px_24px_rgba(255,183,88,0.32)] transition hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400`}
                 >
-                  {avatarInitial}
+                  {avatarDisplay}
                 </button>
 
                 {showProfile && (
@@ -150,6 +159,18 @@ export default function Header() {
                       </p>
                       <p className="mt-1 break-words text-xs text-amber-500">{user?.email}</p>
                     </Link>
+                    
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowProfile(false);
+                        // TODO: Navigate to settings page when backend implements it
+                        console.log('Settings clicked');
+                      }}
+                      className="w-full rounded-2xl bg-amber-100 px-4 py-3 text-sm font-semibold text-amber-700 hover:bg-amber-200 transition-colors mb-2"
+                    >
+                      Settings
+                    </button>
                     
                     <button
                       type="button"
