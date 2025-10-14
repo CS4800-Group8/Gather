@@ -8,8 +8,12 @@
   }
 
   body {
-    @apply min-h-screen bg-gradient-to-tl from-yellow-50 via-yellow-50 to-yellow-100 font-sans text-amber-900 antialiased;}
+    @apply bg-gradient-to-tl from-yellow-50 via-yellow-50 to-yellow-100 font-sans text-amber-900 antialiased;
+    min-height: 100vh;
+    background-attachment: fixed;
+    background-size: 100% 100%;
   }
+}
 
 @layer components {
   .glass-card {
