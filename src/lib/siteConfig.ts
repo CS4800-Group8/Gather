@@ -10,7 +10,6 @@ export const siteConfig = {
   description:
     "Bright, simple recipe finder by NVMA Tech. The main content is intentionally minimal so you can plug in your API results.",
   nav: [
-    { href: "/my-recipes", label: "My Recipes" },
     { href: "/explore-recipes", label: "Explore Recipes" },
     // You can add more nav items later here…
   ],

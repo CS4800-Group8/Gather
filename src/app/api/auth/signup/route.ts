@@ -6,7 +6,7 @@ import bcrypt from "bcryptjs";
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { firstname, lastname, username, email, password, confirmPassword } = body;
+    const { firstname, lastname, username, email, password, confirmPassword} = body;
 
     // Validate required fields
     // if (!firstname || !lastname || !username || !email || !password || !confirmPassword) {
@@ -21,7 +21,6 @@ export async function POST(req: Request) {
     if (!confirmPassword) errors.confirmPassword = 'Please confirm your password';
     if (password && confirmPassword && password !== confirmPassword)
       errors.confirmPassword = 'Passwords do not match';
-
 
     // Check if user already exists // username or email already taken
     const existingUser = await prisma.user.findFirst({

@@ -8,12 +8,13 @@
   }
 
   body {
-    @apply min-h-screen bg-gradient-to-tl from-yellow-50 via-yellow-50 to-yellow-100 font-sans text-amber-900 antialiased;}
+    @apply min-h-screen bg-yellow-50 font-sans text-amber-900 antialiased;
   }
+}
 
 @layer components {
   .glass-card {
-    @apply rounded-card border border-[#ffe9c8]/80 bg-[#fffaf0]/95 shadow-[0_18px_40px_rgba(255,217,170,0.24)] backdrop-blur;
+    @apply rounded-card border border-yellow-200/60 bg-white shadow-sm backdrop-blur;
   }
 
   .pill-button {
