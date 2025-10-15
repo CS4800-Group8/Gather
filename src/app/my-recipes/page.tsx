@@ -42,9 +42,6 @@ export default function MyRecipesPage() {
                 <div className="h-7 w-20 bg-amber-200 rounded-full animate-pulse"></div>
                 <div className="h-7 w-24 bg-amber-200 rounded-full animate-pulse"></div>
               </div>
-
-
-
             </div>
           </div>
         ))}

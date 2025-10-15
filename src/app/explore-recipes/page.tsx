@@ -24,7 +24,6 @@ interface Meal {
 }
 
 export default function ExploreRecipesPage() {
-  
   /* 
    * STATE MANAGEMENT - Using React hooks to manage component data
    * 
@@ -110,8 +109,6 @@ export default function ExploreRecipesPage() {
     fetchRecipes();
   }, []); // Empty dependency array = run once on mount only
 
-
-
   // COMPONENT RENDERING - What gets displayed to the user
   return (
     <section className="px-6 py-8">
@@ -128,7 +125,6 @@ export default function ExploreRecipesPage() {
           <p className="text-red-700">{error}</p>
         </div>
       )}
-
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
         {loading ? (
@@ -243,6 +239,3 @@ export default function ExploreRecipesPage() {
     </section>
   );
 }
-
-
- 

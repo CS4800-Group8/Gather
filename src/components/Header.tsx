@@ -99,7 +99,7 @@ export default function Header() {
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 w-full border-b border-amber-300 bg-amber-100/95 backdrop-blur-md shadow-md">
-      <div className="mx-auto flex w-full max-w-7xl flex-row items-center justify-between gap-4 px-6 py-4 lg:px-8">
+      <div className="mx-auto flex w-full max-w-6xl flex-row items-center justify-between gap-4 px-6 py-4 lg:px-8">
         <Link href="/" className="flex items-start gap-3">
           <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#fff3cf] text-[#ffb86b]">
             <span className="text-xl">🥗</span>
@@ -191,12 +191,14 @@ export default function Header() {
                 >
                   Sign in
                 </Link>
+                {/*
                 <Link
                   href="/signup"
                   className={isActive("/signup") ? activeNavClasses : baseNavClasses}
                 >
                   Sign up
                 </Link>
+                */}
               </>
             )}
           </div>
