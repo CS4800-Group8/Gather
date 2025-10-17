@@ -181,6 +181,21 @@ export default function ProfilePage() {
             </div>
           </div>
 
+          {/* Create Recipe Button - AnN add: Compact Facebook-style design on 16/10 */}
+          <button
+            type="button"
+            onClick={() => {
+              // TODO: Navigate to create recipe page or open modal
+              console.log('Create recipe clicked');
+            }}
+            className="mb-8 flex w-full items-center gap-3 rounded-full border-2 border-amber-300 bg-white px-4 py-3 text-left transition-all hover:bg-amber-50 group"
+          >
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-amber-100 text-2xl">
+              ✨
+            </div>
+            <span className="text-base text-amber-600 font-normal">What's your recipe idea, An?</span>
+          </button>
+
           {/* Recipe tabs */}
           <nav className="flex flex-wrap gap-4">
             {tabConfig.map((tab) => {
