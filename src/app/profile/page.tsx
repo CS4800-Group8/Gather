@@ -66,8 +66,11 @@ export default function ProfilePage() {
         return;
       }
 
-      const parsed = JSON.parse(stored) as { username?: string; avatar?: AvatarType };
-      if (parsed.username && parsed.username.trim().length > 0) {
+      const parsed = JSON.parse(stored) as { firstname?: string; lastname?: string; username?: string; avatar?: AvatarType };
+      // Prioritize firstname over username
+      if (parsed.firstname && parsed.firstname.trim().length > 0) {
+        setDisplayName(parsed.firstname);
+      } else if (parsed.username && parsed.username.trim().length > 0) {
         setDisplayName(parsed.username);
       }
       // Load saved avatar or default to melon
@@ -181,7 +184,7 @@ export default function ProfilePage() {
             </div>
           </div>
 
-          {/* Create Recipe Button - AnN add: Compact Facebook-style design on 16/10 */}
+          {/* Create Recipe Button */}
           <button
             type="button"
             onClick={() => {
@@ -193,7 +196,7 @@ export default function ProfilePage() {
             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-amber-100 text-2xl">
               ✨
             </div>
-            <span className="text-base text-amber-600 font-normal">What's your recipe idea, An?</span>
+            <span className="text-base text-amber-600 font-normal">What&apos;s your recipe idea, {displayName}?</span>
           </button>
 
           {/* Recipe tabs */}
