@@ -66,8 +66,11 @@ export default function ProfilePage() {
         return;
       }
 
-      const parsed = JSON.parse(stored) as { username?: string; avatar?: AvatarType };
-      if (parsed.username && parsed.username.trim().length > 0) {
+      const parsed = JSON.parse(stored) as { firstname?: string; lastname?: string; username?: string; avatar?: AvatarType };
+      // Prioritize firstname over username
+      if (parsed.firstname && parsed.firstname.trim().length > 0) {
+        setDisplayName(parsed.firstname);
+      } else if (parsed.username && parsed.username.trim().length > 0) {
         setDisplayName(parsed.username);
       }
       // Load saved avatar or default to melon
@@ -180,6 +183,21 @@ export default function ProfilePage() {
               </div>
             </div>
           </div>
+
+          {/* Create Recipe Button */}
+          <button
+            type="button"
+            onClick={() => {
+              // TODO: Navigate to create recipe page or open modal
+              console.log('Create recipe clicked');
+            }}
+            className="mb-8 flex w-full items-center gap-3 rounded-full border-2 border-amber-300 bg-white px-4 py-3 text-left transition-all hover:bg-amber-50 group"
+          >
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-amber-100 text-2xl">
+              ✨
+            </div>
+            <span className="text-base text-amber-600 font-normal">What&apos;s your recipe idea, {displayName}?</span>
+          </button>
 
           {/* Recipe tabs */}
           <nav className="flex flex-wrap gap-4">
