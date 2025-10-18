@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Image from 'next/image';
 
 type TabKey = 'my' | 'saved' | 'liked';
 
@@ -286,11 +287,14 @@ function RecipeCard({ recipe }: RecipeCardProps) {
       </button>
 
       <div className="flex gap-6 p-6">
+        {/* AnN fix: Changed img to Image for better performance on 10/17 */}
         <div className="relative h-48 w-48 flex-shrink-0 rounded-lg overflow-hidden">
-          <img
+          <Image
             src={recipe.strMealThumb}
             alt={recipe.strMeal}
-            className="h-full w-full object-cover group-hover:scale-110 transition-transform duration-300"
+            fill
+            className="object-cover group-hover:scale-110 transition-transform duration-300"
+            sizes="192px"
           />
         </div>
         <div className="flex flex-1 flex-col gap-3">
