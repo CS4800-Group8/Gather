@@ -15,12 +15,26 @@ datasource db {
 // }
 
 model User {
-  id        Int       @id @default(autoincrement())
-  firstname String
-  lastname  String
-  createdAt DateTime  @default(now())
-  email     String    @unique
-  password  String
-  username  String    @unique
+  id         Int       @id @default(autoincrement()) // Primary Key
+  firstname  String
+  lastname   String
+  username   String    @unique
+  email      String    @unique
+  password   String
+  createdAt  DateTime  @default(now())
+
+  // One-to-Many relationship: One User can have 0 to many Recipes
+  recipes    Recipe[]
+}
+
+model Recipe {
+  recipeId    Int       @id @default(autoincrement()) // Primary Key
+  userId      Int                                   // Foreign Key referencing User
+  recipeName  String
+  description String?
+  createdAt   DateTime  @default(now())
+
+  // Relationship to User (Many Recipes belong to one User)
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
 }
 
