@@ -158,7 +158,7 @@ export default function Header() {
                       className="block w-full rounded-2xl bg-amber-100 px-4 py-3 text-left hover:bg-amber-200 transition-colors mb-2"
                     >
                       <p className="text-base font-semibold capitalize text-amber-800">
-                        {displayName.toLowerCase()}
+                        {displayName}
                       </p>
                       <p className="mt-0.5 text-xs text-amber-600">
                         @{user?.username ?? "gatherer"}
