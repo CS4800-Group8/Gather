@@ -72,11 +72,21 @@ export default function ProfilePage() {
       }
 
       const parsed = JSON.parse(stored) as { firstname?: string; lastname?: string; username?: string; avatar?: string; avatarId?: string };
-      // AnN fix: Prioritize firstname over username on 10/23
-      if (parsed.firstname && parsed.firstname.trim().length > 0) {
-        setDisplayName(parsed.firstname);
+      // AnN fix: Prefer full name when available on 10/23
+      const first = parsed.firstname?.trim();
+      const last = parsed.lastname?.trim();
+      const normalizedFirst = first ? first.charAt(0).toUpperCase() + first.slice(1) : '';
+      const normalizedLast = last ? last.charAt(0).toUpperCase() + last.slice(1) : '';
+      if (normalizedFirst && normalizedLast) {
+        setDisplayName(`${normalizedFirst} ${normalizedLast}`);
+      } else if (normalizedFirst) {
+        setDisplayName(normalizedFirst);
+      } else if (normalizedLast) {
+        setDisplayName(normalizedLast);
       } else if (parsed.username && parsed.username.trim().length > 0) {
-        setDisplayName(parsed.username);
+        const normalizedUsername =
+          parsed.username.charAt(0).toUpperCase() + parsed.username.slice(1);
+        setDisplayName(normalizedUsername);
       }
       const storedAvatarId = normalizeAvatarId(parsed.avatarId ?? parsed.avatar);
       setAvatarId(storedAvatarId);
