@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { DEFAULT_AVATAR_ID, normalizeAvatarId, resolveAvatarPreset } from '@/lib/avatarPresets';
 
 function SignInForm() {
   const router = useRouter();
@@ -66,13 +67,18 @@ function SignInForm() {
       }
 
       // An fix: Save user data to localStorage for logged-in state
-      // AnN: Set default melon avatar if user doesn't have one
+      // AnN add: Normalize stored avatar ids across sessions on 10/22
+      const normalizedAvatarId = normalizeAvatarId(
+        (data.user && (data.user.avatarId ?? data.user.avatar)) || DEFAULT_AVATAR_ID
+      );
+      const fallbackAvatarPreset = resolveAvatarPreset(normalizedAvatarId);
       const storedUser = {
         firstname: data.user.firstname,
         lastname: data.user.lastname,
         username: data.user.username,
         email: data.user.email,
-        avatar: '🍉', // Default melon avatar for new/existing users
+        avatarId: fallbackAvatarPreset.id,
+        avatar: fallbackAvatarPreset.value,
       };
 
       localStorage.setItem('gatherUser', JSON.stringify(storedUser));

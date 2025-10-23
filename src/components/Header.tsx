@@ -4,12 +4,18 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import { siteConfig } from "@/lib/siteConfig";
+import {
+  DEFAULT_AVATAR_ID,
+  resolveAvatarPreset,
+  normalizeAvatarId,
+} from "@/lib/avatarPresets";
+import AvatarImage from "./AvatarImage"; // AnN add: Use centralized avatar component on 10/23
 
 const navLinks = siteConfig.nav;
 
 // An fix: Made buttons darker and improved contrast
 const baseNavClasses =
-  "pill-button bg-white/90 text-amber-600 shadow-none hover:bg-[#fff0c7] hover:text-amber-700";
+  "pill-button bg-[#ffdca0] text-amber-700 shadow-[0_6px_12px_rgba(255,195,120,0.25)] hover:bg-[#ffc873] hover:text-amber-800";
 const activeNavClasses =
   "pill-button bg-amber-600 text-white shadow-md hover:bg-amber-700";
 
@@ -26,6 +32,7 @@ export default function Header() {
     username?: string | null;
     email?: string;
     avatar?: string;
+    avatarId?: string;
   } | null>(null);
   const [showProfile, setShowProfile] = useState(false);
 
@@ -64,25 +71,17 @@ export default function Header() {
   );
   const primaryName = nameParts.join(" ");
   const initialSource = primaryName || user?.username || "A";
-  
-  // AnN: Support fruit avatars or fallback to letter
-  const isFruitAvatar = user?.avatar && ['🍉', '🍊', '🍋', '🍇'].includes(user.avatar);
-  const avatarDisplay = isFruitAvatar ? user.avatar : initialSource.charAt(0).toUpperCase();
   const displayName = primaryName || user?.username || "Gather member";
 
-  const getAvatarBgColor = () => {
-    const avatar = user?.avatar;
-    // Fruit avatars get matching colors
-    if (avatar === '🍉') return 'bg-green-500';
-    if (avatar === '🍊') return 'bg-orange-500';
-    if (avatar === '🍋') return 'bg-yellow-500';
-    if (avatar === '🍇') return 'bg-purple-500';
-    // Legacy letter avatars
-    if (avatar === 'A') return 'bg-amber-500';
-    if (avatar === 'B') return 'bg-orange-500';
-    if (avatar === 'C') return 'bg-yellow-600';
-    return 'bg-amber-500';
-  };
+  // AnN add: Resolve avatar preset mappings with new config on 10/22
+  const normalizedAvatarId = user
+    ? normalizeAvatarId(user.avatarId ?? user.avatar ?? DEFAULT_AVATAR_ID)
+    : DEFAULT_AVATAR_ID;
+  const avatarPreset = user
+    ? resolveAvatarPreset(normalizedAvatarId, user?.avatar ?? null)
+    : null;
+  // AnN fix: avatarBgClass now only used for fallback letter avatars on 10/23
+  const avatarBgClass = avatarPreset?.bgClass ?? "bg-amber-500";
 
   const handleSignOut = () => {
     try {
@@ -99,7 +98,7 @@ export default function Header() {
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 w-full border-b border-amber-300 bg-amber-100/95 backdrop-blur-md shadow-md">
-      <div className="mx-auto flex w-full max-w-6xl flex-row items-center justify-between gap-4 px-6 py-4 lg:px-8">
+      <div className="mx-12 flex w-full max-w-7xl flex-row items-center justify-start gap-4 px-6 py-4 lg:px-8">
         <Link href="/" className="flex items-start gap-3">
           <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#fff3cf] text-[#ffb86b]">
             <span className="text-xl">🥗</span>
@@ -114,7 +113,7 @@ export default function Header() {
           </div>
         </Link>
 
-        <div className="flex flex-wrap items-center justify-end gap-3">
+        <div className="ml-auto flex flex-wrap items-center justify-end gap-3">
           <nav className="flex flex-wrap items-center gap-2">
             <Link
               href="/"
@@ -140,9 +139,16 @@ export default function Header() {
                 <button
                   type="button"
                   onClick={() => setShowProfile((current) => !current)}
-                  className={`flex h-11 w-11 items-center justify-center rounded-full ${getAvatarBgColor()} ${isFruitAvatar ? 'text-2xl' : 'text-base font-semibold text-white'} shadow-[0_12px_24px_rgba(255,183,88,0.32)] transition hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400`}
+                  className={`flex h-11 w-11 items-center justify-center rounded-full ${avatarPreset?.variant === 'emoji' ? avatarBgClass : 'bg-white'} shadow-[0_12px_24px_rgba(255,183,88,0.32)] transition hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400`}
                 >
-                  {avatarDisplay}
+                  {avatarPreset ? (
+                    // AnN fix: Only show bgClass for emoji, not images on 10/23
+                    <AvatarImage preset={avatarPreset} size="small" />
+                  ) : (
+                    <span className="text-base font-semibold text-white">
+                      {initialSource.charAt(0).toUpperCase()}
+                    </span>
+                  )}
                 </button>
 
                 {showProfile && (
