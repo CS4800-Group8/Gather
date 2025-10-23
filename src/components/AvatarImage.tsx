@@ -19,8 +19,8 @@ const SIZE_MAP: Record<Required<AvatarImageProps>['size'], SizeConfig> = {
   large: { dimension: 120, fontFallback: 'text-6xl', sizesAttr: '120px' },
 };
 
-// AnN add: Centralized avatar component with consistent sizing on 10/22
-// AnN fix: Reworked sizing to avoid uneven borders on 10/23
+// An add: Centralized avatar component with consistent sizing on 10/22
+// An fix: Reworked sizing to avoid uneven borders on 10/23
 export default function AvatarImage({ preset, size = 'medium' }: AvatarImageProps) {
   const config = SIZE_MAP[size];
   const baseStyle: CSSProperties = {

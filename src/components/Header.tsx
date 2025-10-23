@@ -9,7 +9,7 @@ import {
   resolveAvatarPreset,
   normalizeAvatarId,
 } from "@/lib/avatarPresets";
-import AvatarImage from "./AvatarImage"; // AnN add: Use centralized avatar component on 10/23
+import AvatarImage from "./AvatarImage"; // An add: Use centralized avatar component on 10/23
 
 const navLinks = siteConfig.nav;
 
@@ -66,12 +66,14 @@ export default function Header() {
   }, [pathname]);
 
   // An fix: safe fallbacks keep avatar and name from breaking when fields are missing
+  {/*}
   const nameParts = [user?.firstname, user?.lastname].filter(
-    (part): part is string => Boolean(part && part.trim())
+   (part): part is string => Boolean(part && part.trim())
   );
   const primaryName = nameParts.join(" ");
   const initialSource = primaryName || user?.username || "A";
   const displayName = primaryName || user?.username || "Gather member";
+  */}
 
   // An add: Resolve avatar preset mappings with new config on 10/22
   const normalizedAvatarId = user
@@ -80,7 +82,7 @@ export default function Header() {
   const avatarPreset = user
     ? resolveAvatarPreset(normalizedAvatarId, user?.avatar ?? null)
     : null;
-  // AnN fix: avatarBgClass now only used for fallback letter avatars on 10/23
+  // An fix: avatarBgClass now only used for fallback letter avatars on 10/23
   const avatarBgClass = avatarPreset?.bgClass ?? "bg-amber-500";
 
   const handleSignOut = () => {
@@ -141,14 +143,9 @@ export default function Header() {
                   onClick={() => setShowProfile((current) => !current)}
                   className={`flex h-11 w-11 items-center justify-center rounded-full ${avatarPreset?.variant === 'emoji' ? avatarBgClass : 'bg-white'} shadow-[0_12px_24px_rgba(255,183,88,0.32)] transition hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400`}
                 >
-                  {avatarPreset ? (
-                    // AnN fix: Only show bgClass for emoji, not images on 10/23
-                    <AvatarImage preset={avatarPreset} size="small" />
-                  ) : (
-                    <span className="text-base font-semibold text-white">
-                      {initialSource.charAt(0).toUpperCase()}
-                    </span>
-                  )}
+                  {avatarPreset &&
+                    // An fix: Only show bgClass for emoji, not images on 10/23
+                    <AvatarImage preset={avatarPreset} size="small" />}
                 </button>
 
                 {showProfile && (
