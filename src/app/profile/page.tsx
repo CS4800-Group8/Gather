@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import { useEffect, useMemo, useState } from 'react';
 import {
   DEFAULT_AVATAR_ID,
@@ -70,8 +71,11 @@ export default function ProfilePage() {
         return;
       }
 
-      const parsed = JSON.parse(stored) as { username?: string; avatar?: string; avatarId?: string };
-      if (parsed.username && parsed.username.trim().length > 0) {
+      const parsed = JSON.parse(stored) as { firstname?: string; lastname?: string; username?: string; avatar?: string; avatarId?: string };
+      // AnN fix: Prioritize firstname over username on 10/23
+      if (parsed.firstname && parsed.firstname.trim().length > 0) {
+        setDisplayName(parsed.firstname);
+      } else if (parsed.username && parsed.username.trim().length > 0) {
         setDisplayName(parsed.username);
       }
       const storedAvatarId = normalizeAvatarId(parsed.avatarId ?? parsed.avatar);
@@ -193,6 +197,21 @@ export default function ProfilePage() {
             </div>
           </div>
 
+          {/* Create Recipe Button */}
+          <button
+            type="button"
+            onClick={() => {
+              // TODO: Navigate to create recipe page or open modal
+              console.log('Create recipe clicked');
+            }}
+            className="mb-8 flex w-full items-center gap-3 rounded-full border-2 border-amber-300 bg-white px-4 py-3 text-left transition-all hover:bg-amber-50 group"
+          >
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-amber-100 text-2xl">
+              ✨
+            </div>
+            <span className="text-base text-amber-600 font-normal">What&apos;s your recipe idea, {displayName}?</span>
+          </button>
+
           {/* Recipe tabs */}
           <nav className="flex flex-wrap gap-4">
             {tabConfig.map((tab) => {
@@ -281,11 +300,14 @@ function RecipeCard({ recipe }: RecipeCardProps) {
       </button>
 
       <div className="flex gap-6 p-6">
+        {/* AnN fix: Changed img to Image for better performance on 10/17 */}
         <div className="relative h-48 w-48 flex-shrink-0 rounded-lg overflow-hidden">
-          <img
+          <Image
             src={recipe.strMealThumb}
             alt={recipe.strMeal}
-            className="h-full w-full object-cover group-hover:scale-110 transition-transform duration-300"
+            fill
+            className="object-cover group-hover:scale-110 transition-transform duration-300"
+            sizes="192px"
           />
         </div>
         <div className="flex flex-1 flex-col gap-3">
