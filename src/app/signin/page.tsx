@@ -145,15 +145,6 @@ function SignInForm() {
             {isLoading ? 'Signing in...' : 'Sign in'}
           </button>
 
-          {/* Forgot Password Link */}
-          <div className="text-center">
-            <a
-              href="/forgot-password"
-              className="text-sm text-amber-600 hover:text-amber-700 hover:underline"
-            >
-              Forgot your password?
-            </a>
-          </div>
         </form>
 
         {/* Link to Signup */}

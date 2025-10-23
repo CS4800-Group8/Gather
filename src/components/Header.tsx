@@ -73,7 +73,7 @@ export default function Header() {
   const initialSource = primaryName || user?.username || "A";
   const displayName = primaryName || user?.username || "Gather member";
 
-  // AnN add: Resolve avatar preset mappings with new config on 10/22
+  // An add: Resolve avatar preset mappings with new config on 10/22
   const normalizedAvatarId = user
     ? normalizeAvatarId(user.avatarId ?? user.avatar ?? DEFAULT_AVATAR_ID)
     : DEFAULT_AVATAR_ID;
@@ -152,32 +152,14 @@ export default function Header() {
                 </button>
 
                 {showProfile && (
-                  <div className="absolute right-0 mt-3 w-64 rounded-3xl border border-[#ffeede]/90 bg-white/95 p-3 text-sm text-amber-700 shadow-[0_22px_44px_rgba(255,183,88,0.26)]">
-                    <Link
-                      href="/profile"
-                      className="block w-full rounded-2xl bg-amber-100 px-4 py-3 text-left hover:bg-amber-200 transition-colors mb-2"
-                    >
-                      <p className="text-base font-semibold capitalize text-amber-800">
-                        {displayName.toLowerCase()}
-                      </p>
-                      <p className="mt-0.5 text-xs text-amber-600">
-                        @{user?.username ?? "gatherer"}
-                      </p>
-                      <p className="mt-1 break-words text-xs text-amber-500">{user?.email}</p>
-                    </Link>
-                    
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setShowProfile(false);
-                        // TODO: Navigate to settings page when backend implements it
-                        console.log('Settings clicked');
-                      }}
-                      className="w-full rounded-2xl bg-amber-100 px-4 py-3 text-sm font-semibold text-amber-700 hover:bg-amber-200 transition-colors mb-2"
-                    >
-                      Settings
-                    </button>
-                    
+                  <div className="absolute right-0 mt-3 w-60 rounded-3xl border border-[#ffeede]/90 bg-white/95 p-4 text-sm text-amber-700 shadow-[0_22px_44px_rgba(255,183,88,0.26)]">
+                    <p className="text-lg font-semibold capitalize text-amber-800">
+                      {displayName.toLowerCase()}
+                    </p>
+                    <p className="mt-1 text-xs uppercase tracking-[0.25em] text-amber-400">
+                      @{user?.username ?? "gatherer"}
+                    </p>
+                    <p className="mt-2 break-words text-xs text-amber-500">{user?.email}</p>
                     <button
                       type="button"
                       onClick={handleSignOut}
