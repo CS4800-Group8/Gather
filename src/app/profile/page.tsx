@@ -1,6 +1,15 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import Image from 'next/image';
+import { useEffect, useMemo, useState } from 'react';
+import {
+  DEFAULT_AVATAR_ID,
+  AvatarPreset,
+  getAvatarPresets,
+  normalizeAvatarId,
+  resolveAvatarPreset,
+} from '@/lib/avatarPresets';
+import AvatarImage from '@/components/AvatarImage'; // AnN add: Use centralized avatar component on 10/23
 
 type TabKey = 'my' | 'saved' | 'liked';
 
@@ -14,25 +23,21 @@ interface Meal {
   strTags: string | null;
 }
 
-// AnN: Fruit avatar presets for users
-type AvatarType = '🍉' | '🍊' | '🍋' | '🍇';
-
-const AVATAR_OPTIONS: Array<{ emoji: AvatarType; name: string; bgColor: string }> = [
-  { emoji: '🍉', name: 'Melon', bgColor: 'bg-green-100' },
-  { emoji: '🍊', name: 'Orange', bgColor: 'bg-orange-100' },
-  { emoji: '🍋', name: 'Lemon', bgColor: 'bg-yellow-100' },
-  { emoji: '🍇', name: 'Grape', bgColor: 'bg-purple-100' },
-];
-
 export default function ProfilePage() {
   const [activeTab, setActiveTab] = useState<TabKey>('my');
   const [displayName, setDisplayName] = useState('username');
-  const [avatarBadge, setAvatarBadge] = useState<AvatarType>('🍉'); // Default: Melon
+  const [avatarId, setAvatarId] = useState(DEFAULT_AVATAR_ID);
   const [showAvatarPicker, setShowAvatarPicker] = useState(false);
   const [recipes, setRecipes] = useState<Meal[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // AnN: Fetch recipes from TheMealDB API
+  const avatarPresets = useMemo(() => getAvatarPresets(), []);
+  const currentPreset: AvatarPreset = useMemo(
+    () => resolveAvatarPreset(avatarId),
+    [avatarId]
+  );
+
+  // AnN add: Fetch recipes and hydrate avatar picker on 10/22
   useEffect(() => {
     const fetchRecipes = async () => {
       try {
@@ -66,30 +71,42 @@ export default function ProfilePage() {
         return;
       }
 
-      const parsed = JSON.parse(stored) as { username?: string; avatar?: AvatarType };
-      if (parsed.username && parsed.username.trim().length > 0) {
-        setDisplayName(parsed.username);
+      const parsed = JSON.parse(stored) as { firstname?: string; lastname?: string; username?: string; avatar?: string; avatarId?: string };
+      // AnN fix: Prefer full name when available on 10/23
+      const first = parsed.firstname?.trim();
+      const last = parsed.lastname?.trim();
+      const normalizedFirst = first ? first.charAt(0).toUpperCase() + first.slice(1) : '';
+      const normalizedLast = last ? last.charAt(0).toUpperCase() + last.slice(1) : '';
+      if (normalizedFirst && normalizedLast) {
+        setDisplayName(`${normalizedFirst} ${normalizedLast}`);
+      } else if (normalizedFirst) {
+        setDisplayName(normalizedFirst);
+      } else if (normalizedLast) {
+        setDisplayName(normalizedLast);
+      } else if (parsed.username && parsed.username.trim().length > 0) {
+        const normalizedUsername =
+          parsed.username.charAt(0).toUpperCase() + parsed.username.slice(1);
+        setDisplayName(normalizedUsername);
       }
-      // Load saved avatar or default to melon
-      if (parsed.avatar && ['🍉', '🍊', '🍋', '🍇'].includes(parsed.avatar)) {
-        setAvatarBadge(parsed.avatar);
-      }
+      const storedAvatarId = normalizeAvatarId(parsed.avatarId ?? parsed.avatar);
+      setAvatarId(storedAvatarId);
     } catch (error) {
       console.warn('Unable to hydrate profile header from storage', error);
     }
   }, []);
 
-  // AnN: Handle avatar change
-  const handleAvatarChange = (newAvatar: AvatarType) => {
-    setAvatarBadge(newAvatar);
+  // AnN add: Persist selected avatar preset id on 10/22
+  const handleAvatarChange = (newAvatarId: string) => {
+    const nextPreset = resolveAvatarPreset(newAvatarId);
+    setAvatarId(nextPreset.id);
     setShowAvatarPicker(false);
 
-    // Save to localStorage
     try {
       const stored = localStorage.getItem('user') || localStorage.getItem('gatherUser');
       if (stored) {
         const userData = JSON.parse(stored);
-        userData.avatar = newAvatar;
+        userData.avatarId = nextPreset.id;
+        userData.avatar = nextPreset.value;
         localStorage.setItem('gatherUser', JSON.stringify(userData));
         localStorage.setItem('user', JSON.stringify(userData));
         window.dispatchEvent(new Event('gather:user-updated'));
@@ -115,6 +132,11 @@ export default function ProfilePage() {
     { id: 'likes', label: '# likes', value: 48 },
   ];
 
+  const avatarButtonBase =
+    "flex h-32 w-32 items-center justify-center rounded-full text-7xl transition-transform duration-200 cursor-pointer hover:scale-105";
+
+  const avatarButtonClasses = `${avatarButtonBase} border-4 border-amber-400 bg-white shadow-[0_24px_48px_rgba(255,183,88,0.28)] hover:border-amber-500`;
+
   return (
     <div className="min-h-screen pb-16 pt-12">
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-10 px-4 sm:px-6 lg:px-8">
@@ -122,15 +144,16 @@ export default function ProfilePage() {
           {/* Profile header */}
           <div className="mb-10 flex items-center justify-between">
             <div className="flex items-center gap-6">
-              {/* AnN: Clickable avatar with picker */}
+              {/* AnN add: Avatar badge renders emoji or image from preset config on 10/22 */}
               <div className="relative">
                 <button
                   type="button"
                   onClick={() => setShowAvatarPicker(!showAvatarPicker)}
-                  className="flex h-32 w-32 items-center justify-center rounded-full border-4 border-amber-400 bg-amber-100 text-7xl shadow-lg hover:scale-105 transition-transform duration-200 cursor-pointer hover:border-amber-500"
+                  className={avatarButtonClasses}
                   aria-label="Change avatar"
                 >
-                  {avatarBadge}
+                  {/* AnN fix: Only show bgClass for emoji, not images on 10/23 */}
+                  <AvatarImage preset={currentPreset} size="large" />
                 </button>
 
                 {/* Avatar picker dropdown */}
@@ -138,19 +161,22 @@ export default function ProfilePage() {
                   <div className="absolute left-0 top-36 z-20 rounded-2xl border-2 border-amber-200 bg-white/95 backdrop-blur p-4 shadow-xl">
                     <p className="text-xs font-semibold text-amber-800 mb-3 text-center">Choose Your Avatar</p>
                     <div className="flex gap-3">
-                      {AVATAR_OPTIONS.map((option) => (
+                      {avatarPresets.map((option) => (
                         <button
-                          key={option.emoji}
+                          key={option.id}
                           type="button"
-                          onClick={() => handleAvatarChange(option.emoji)}
+                          onClick={() => handleAvatarChange(option.id)}
                           className={`flex flex-col items-center gap-2 rounded-xl p-3 transition-all duration-200 hover:scale-110 ${
-                            avatarBadge === option.emoji
+                            avatarId === option.id
                               ? 'bg-amber-200 ring-2 ring-amber-400'
                               : 'bg-amber-50 hover:bg-amber-100'
                           }`}
                         >
-                          <span className="text-4xl">{option.emoji}</span>
-                          <span className="text-xs font-medium text-amber-800">{option.name}</span>
+                          <div className={`flex h-14 w-14 items-center justify-center rounded-full ${option.variant === 'emoji' ? option.bgClass : 'bg-transparent'}`}>
+                            {/* AnN fix: Only show bgClass for emoji, not images on 10/23 */}
+                            <AvatarImage preset={option} size="medium" />
+                          </div>
+                          <span className="text-xs font-medium text-amber-800">{option.label}</span>
                         </button>
                       ))}
                     </div>
@@ -180,6 +206,21 @@ export default function ProfilePage() {
               </div>
             </div>
           </div>
+
+          {/* Create Recipe Button */}
+          <button
+            type="button"
+            onClick={() => {
+              // TODO: Navigate to create recipe page or open modal
+              console.log('Create recipe clicked');
+            }}
+            className="mb-8 flex w-full items-center gap-3 rounded-full border-2 border-amber-300 bg-white px-4 py-3 text-left transition-all hover:bg-amber-50 group"
+          >
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-amber-100 text-2xl">
+              ✨
+            </div>
+            <span className="text-base text-amber-600 font-normal">What&apos;s your recipe idea, {displayName}?</span>
+          </button>
 
           {/* Recipe tabs */}
           <nav className="flex flex-wrap gap-4">
@@ -230,8 +271,9 @@ export default function ProfilePage() {
                 </div>
               ))
             ) : currentRecipes.length > 0 ? (
-              currentRecipes.map((recipe) => (
-                <RecipeCard key={recipe.idMeal} recipe={recipe} />
+              // AnN fix: Added index to prevent duplicate key errors on 10/23
+              currentRecipes.map((recipe, index) => (
+                <RecipeCard key={`${recipe.idMeal}-${index}`} recipe={recipe} />
               ))
             ) : (
               <article className="rounded-3xl border-2 border-dashed border-[#caa977] bg-[#fff9ed] px-6 py-12 text-center text-sm font-medium text-[#8a6134]">
@@ -268,11 +310,14 @@ function RecipeCard({ recipe }: RecipeCardProps) {
       </button>
 
       <div className="flex gap-6 p-6">
+        {/* AnN fix: Changed img to Image for better performance on 10/17 */}
         <div className="relative h-48 w-48 flex-shrink-0 rounded-lg overflow-hidden">
-          <img
+          <Image
             src={recipe.strMealThumb}
             alt={recipe.strMeal}
-            className="h-full w-full object-cover group-hover:scale-110 transition-transform duration-300"
+            fill
+            className="object-cover group-hover:scale-110 transition-transform duration-300"
+            sizes="192px"
           />
         </div>
         <div className="flex flex-1 flex-col gap-3">
