@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { DEFAULT_AVATAR_ID, resolveAvatarPreset } from "@/lib/avatarPresets";
 
 export default function SignupPage() {
 
@@ -193,13 +194,15 @@ export default function SignupPage() {
       console.log("Created user:", data);
 
       // Collect the signup payload once for storage helpers
-      // AnN: New users get default melon avatar
+      // AnN add: Seed new profiles with default preset id on 10/22
+      const defaultAvatarPreset = resolveAvatarPreset(DEFAULT_AVATAR_ID);
       const hydratedUser = {
         firstname: formData.firstname,
         lastname: formData.lastname,
         username: formData.username,
         email: formData.email,
-        avatar: '🍉', // Default melon avatar for new users
+        avatarId: defaultAvatarPreset.id,
+        avatar: defaultAvatarPreset.value,
       };
 
       // Save user data to localStorage
