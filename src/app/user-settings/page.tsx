@@ -102,7 +102,7 @@ export default function UserSettingsPage() {
               <div className="p-4 bg-amber-50 rounded-2xl">
                 <div>
                   <p className="text-sm font-medium text-amber-600">Username</p>
-                  <p className="text-amber-900">@{user.username || 'Not set'}</p>
+                  <p className="text-amber-900">{user.username || 'Not set'}</p>
                 </div>
               </div>
 

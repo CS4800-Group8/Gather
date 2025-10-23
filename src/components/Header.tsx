@@ -152,14 +152,27 @@ export default function Header() {
                 </button>
 
                 {showProfile && (
-                  <div className="absolute right-0 mt-3 w-60 rounded-3xl border border-[#ffeede]/90 bg-white/95 p-4 text-sm text-amber-700 shadow-[0_22px_44px_rgba(255,183,88,0.26)]">
-                    <p className="text-lg font-semibold capitalize text-amber-800">
-                      {displayName.toLowerCase()}
-                    </p>
-                    <p className="mt-1 text-xs uppercase tracking-[0.25em] text-amber-400">
-                      @{user?.username ?? "gatherer"}
-                    </p>
-                    <p className="mt-2 break-words text-xs text-amber-500">{user?.email}</p>
+                  <div className="absolute right-0 mt-3 w-64 rounded-3xl border border-[#ffeede]/90 bg-white/95 p-3 text-sm text-amber-700 shadow-[0_22px_44px_rgba(255,183,88,0.26)]">
+                    <Link
+                      href="/profile"
+                    >
+                      <p className="w-full rounded-2xl bg-amber-100 px-4 py-3 text-sm font-semibold text-amber-700 hover:bg-amber-200 transition-colors mb-2 justify-center text-center">
+                        {user?.username ?? "gatherer"}
+                      </p>
+
+                    </Link>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowProfile(false);
+                        router.push("/user-settings");
+                      }}
+                      className="w-full rounded-2xl bg-amber-100 px-4 py-3 text-sm font-semibold text-amber-700 hover:bg-amber-200 transition-colors mb-2"
+                    >
+                      Settings
+                    </button>
+
                     <button
                       type="button"
                       onClick={handleSignOut}
