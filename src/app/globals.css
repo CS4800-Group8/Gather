@@ -49,4 +49,31 @@
       transform: translateY(0);
     }
   }
+
+  /* Custom scrollbar styling for popUp */
+  .popUp-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: rgb(217 119 6 / 0.3) transparent;
+  }
+
+  .popUp-scrollbar::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  .popUp-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+    margin: 16px 0; /* Add margin to keep rounded corners visible */
+  }
+
+  .popUp-scrollbar::-webkit-scrollbar-thumb {
+    background-color: rgb(217 119 6 / 0.3);
+    border-radius: 10px;
+    border: 2px solid transparent;
+    background-clip: padding-box;
+  }
+
+  .popUp-scrollbar::-webkit-scrollbar-thumb:hover {
+    background-color: rgb(217 119 6 / 0.5);
+  }
 }
+
