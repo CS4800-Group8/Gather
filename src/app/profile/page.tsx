@@ -2,6 +2,7 @@
 
 import Image from 'next/image';
 import { useEffect, useMemo, useState } from 'react';
+import PopupModal from '@/components/PopupModal'; // Viet add: Use popup modal to display create recipe
 import {
   DEFAULT_AVATAR_ID,
   AvatarPreset,
@@ -10,6 +11,8 @@ import {
   resolveAvatarPreset,
 } from '@/lib/avatarPresets';
 import AvatarImage from '@/components/AvatarImage'; // AnN add: Use centralized avatar component on 10/23
+import { RECIPE_PHOTO_PRESETS, DEFAULT_RECIPE_PHOTO } from '@/lib/recipePhotoPresets'; // AnN add: Recipe photo presets on 10/23
+import { TrashIcon } from '@heroicons/react/24/outline'; // AnN add: Heroicons delete icon on 10/23
 
 type TabKey = 'my' | 'saved' | 'liked';
 
@@ -23,6 +26,15 @@ interface Meal {
   strTags: string | null;
 }
 
+// AnN add: Interface for user's created recipes from database on 10/23
+interface UserRecipe {
+  recipeId: number;
+  recipeName: string;
+  description: string | null;
+  photoUrl: string | null;
+  createdAt: string;
+}
+
 export default function ProfilePage() {
   const [activeTab, setActiveTab] = useState<TabKey>('my');
   const [displayName, setDisplayName] = useState('username');
@@ -30,6 +42,14 @@ export default function ProfilePage() {
   const [showAvatarPicker, setShowAvatarPicker] = useState(false);
   const [recipes, setRecipes] = useState<Meal[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showModal, setShowModal] = useState(false);
+  const [newRecipeName, setNewRecipeName] = useState('');
+  const [newDescription, setNewDescription] = useState('');
+  const [userRecipes, setUserRecipes] = useState<UserRecipe[]>([]); // AnN add: Store user's database recipes on 10/23
+  const [selectedPhotoUrl, setSelectedPhotoUrl] = useState(DEFAULT_RECIPE_PHOTO); // AnN add: Store selected photo preset on 10/23
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false); // AnN add: Show delete confirmation modal on 10/23
+  const [recipeToDelete, setRecipeToDelete] = useState<number | null>(null); // AnN add: Store recipe ID to delete on 10/23
+  const [createRecipeError, setCreateRecipeError] = useState(''); // AnN add: Error message for recipe creation on 10/23
 
   const avatarPresets = useMemo(() => getAvatarPresets(), []);
   const currentPreset: AvatarPreset = useMemo(
@@ -57,6 +77,32 @@ export default function ProfilePage() {
     };
 
     fetchRecipes();
+  }, []);
+
+  // AnN add: Fetch user's created recipes from database on 10/23
+  const fetchUserRecipes = async () => {
+    try {
+      const user = JSON.parse(localStorage.getItem('gatherUser') || '{}');
+      const userId = user?.id;
+
+      if (!userId) return;
+
+      const response = await fetch('/api/recipes', {
+        headers: { 'x-user-id': userId.toString() }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setUserRecipes(data.recipes || []);
+      }
+    } catch (err) {
+      console.error('Error fetching user recipes:', err);
+    }
+  };
+
+  // AnN add: Call fetchUserRecipes on page load on 10/23
+  useEffect(() => {
+    fetchUserRecipes();
   }, []);
 
   // Load user profile from localStorage
@@ -137,6 +183,108 @@ export default function ProfilePage() {
 
   const avatarButtonClasses = `${avatarButtonBase} border-4 border-amber-400 bg-white shadow-[0_24px_48px_rgba(255,183,88,0.28)] hover:border-amber-500`;
 
+  // Viet Add: Submits new recipe to the API and closes the modal on success
+  const handleCreateRecipe = async () => {
+    // AnN add: Validate required fields on 10/23
+    if (!newRecipeName.trim()) {
+      setCreateRecipeError('Please enter a recipe name');
+      return;
+    }
+    if (!newDescription.trim()) {
+      setCreateRecipeError('Please enter a description');
+      return;
+    }
+
+    setCreateRecipeError(''); // Clear any previous errors
+
+    try {
+      // Get current user
+      const user = JSON.parse(localStorage.getItem('gatherUser') || '{}');
+      const userId = user?.id || 1; // Replace with actual auth system later
+
+      // Send POST request to API with recipe data
+      const response = await fetch('/api/recipes', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-user-id': userId.toString(),
+        },
+        body: JSON.stringify({
+          recipeName: newRecipeName,
+          description: newDescription,
+          photoUrl: selectedPhotoUrl,  // AnN add: Include selected photo on 10/23
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        console.error(data.error || 'Failed to create recipe');
+        setCreateRecipeError(data.error || 'Failed to create recipe');
+      } else {
+        console.log('Recipe created:', data.recipe);
+
+        // AnN add: Refresh recipe list after creating on 10/23
+        await fetchUserRecipes();
+
+        // Close modal after done
+        setShowModal(false);
+        setNewRecipeName('');
+        setNewDescription('');
+        setSelectedPhotoUrl(DEFAULT_RECIPE_PHOTO);  // AnN add: Reset photo selection on 10/23
+        setCreateRecipeError(''); // Clear error on success
+      }
+    } catch (error) {
+      console.error('Error submitting recipe:', error);
+      setCreateRecipeError('Something went wrong. Please try again.');
+    }
+  };
+
+  // AnN add: Handle delete recipe with confirmation on 10/23
+  const handleDeleteClick = (recipeId: number) => {
+    setRecipeToDelete(recipeId);
+    setShowDeleteConfirm(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!recipeToDelete) return;
+
+    try {
+      const user = JSON.parse(localStorage.getItem('gatherUser') || '{}');
+      const userId = user?.id;
+
+      const response = await fetch('/api/recipes', {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-user-id': userId.toString(),
+        },
+        body: JSON.stringify({
+          recipeId: recipeToDelete,
+        }),
+      });
+
+      if (response.ok) {
+        console.log('Recipe deleted successfully');
+        // Refresh recipe list
+        await fetchUserRecipes();
+      } else {
+        const data = await response.json();
+        console.error(data.error || 'Failed to delete recipe');
+      }
+    } catch (error) {
+      console.error('Error deleting recipe:', error);
+    } finally {
+      setShowDeleteConfirm(false);
+      setRecipeToDelete(null);
+    }
+  };
+
+  const handleDeleteCancel = () => {
+    setShowDeleteConfirm(false);
+    setRecipeToDelete(null);
+  };
+
   return (
     <div className="min-h-screen pb-16 pt-12">
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-10 px-4 sm:px-6 lg:px-8">
@@ -211,7 +359,8 @@ export default function ProfilePage() {
           <button
             type="button"
             onClick={() => {
-              // TODO: Navigate to create recipe page or open modal
+              //Navigate to open modal
+              setShowModal(true)
               console.log('Create recipe clicked');
             }}
             className="mb-8 flex w-full items-center gap-3 rounded-full border-2 border-amber-300 bg-white px-4 py-3 text-left transition-all hover:bg-amber-50 group"
@@ -221,6 +370,158 @@ export default function ProfilePage() {
             </div>
             <span className="text-base text-amber-600 font-normal">What&apos;s your recipe idea, {displayName}?</span>
           </button>
+
+          {/* Create Recipe Tab */}
+          <PopupModal isOpen={showModal} onClose={() => setShowModal(false)}>
+
+            <div className='flex flex-col justify-between items-start text-amber-600 gap-5'>
+              {/* HEADER */}
+              <div className='flex justify-around items-center w-full gap-16'>
+                <button
+                  className="text-gray-500 hover:text-red-500 text-2xl"
+                  onClick={() => setShowModal(false)}
+                  aria-label="Close"
+                >
+                  &times;
+                </button>
+
+                <p className='text-xl font-bold'>Create Recipe</p>  
+
+                <button
+                  onClick={handleCreateRecipe}
+                  className='border-2 border-amber-400 bg-amber-100 text-amber-900 font-semibold shadow-md rounded-lg px-4 py-2 hover:bg-amber-200 hover:border-amber-500 hover:-translate-y-1 transition-all'>
+                  Post
+                </button>
+              </div>
+
+              {/* AnN add: Error message display on 10/23 */}
+              {createRecipeError && (
+                <div className='w-full px-3 py-2 bg-red-50 border border-red-200 rounded-lg'>
+                  <p className='text-sm text-red-600 text-center'>{createRecipeError}</p>
+                </div>
+              )}
+
+              {/* Profile */}
+              <div className='flex w-full justify-between gap-10'>
+                <div className='flex gap-5 items-center'>
+                  <div className='h-15 w-15 flex items-center justify-center rounded-full border-2 border-amber-400 text-white
+                  hover:-translate-y-1 transition-all'>
+                    <AvatarImage preset={currentPreset} size="small" />
+                  </div>
+                  <p className='text-md font-bold'>{displayName}</p>
+                </div>
+              </div>
+
+              {/* AnN add: Photo picker (preset photos like avatar system) on 10/23 */}
+              <div className='flex flex-col w-full gap-2'>
+                <p className='text-sm font-semibold'>Choose Photo</p>
+                <div className='grid grid-cols-5 gap-2'>
+                  {RECIPE_PHOTO_PRESETS.map((preset) => (
+                    <button
+                      key={preset.id}
+                      type="button"
+                      onClick={() => setSelectedPhotoUrl(preset.photoUrl)}
+                      className={`relative h-20 w-20 rounded-lg overflow-hidden border-2 transition-all hover:scale-105 ${
+                        selectedPhotoUrl === preset.photoUrl
+                          ? 'border-amber-500 ring-2 ring-amber-400'
+                          : 'border-gray-300 hover:border-amber-400'
+                      }`}
+                    >
+                      <Image
+                        src={preset.photoUrl}
+                        alt={preset.label}
+                        fill
+                        className="object-cover"
+                        sizes="80px"
+                      />
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Recipe Name */}
+              <div className='flex flex-col w-full gap-2 justify-center'>
+                <p className='text-sm font-semibold'>Recipe Name</p>
+                <input type="text"
+                value={newRecipeName}
+                onChange={(e) => setNewRecipeName(e.target.value)}
+                className="text-md py-2 px-4 border-2 border-amber-300 rounded-xl w-full focus:border-amber-500 focus:ring-2 focus:ring-amber-200 focus:outline-none transition-all hover:border-amber-400"
+                placeholder="Enter recipe name"
+                />
+              </div>
+              
+              {/* Ingredients & Quantity */}
+              {/*
+              <div className='flex flex-col w-full text-md'>
+                <div className='flex gap-5'>
+                  <div className='flex flex-col justify-center'>
+                    <p>Ingredients</p>
+                    <input className='border mb-3 px-2 py-1 text-sm rounded-xl hover:opacity-70 hover:border-gray-400' type="text" placeholder='Ingredients' />
+                    <input className='border mb-3 px-2 py-1 text-sm rounded-xl hover:opacity-70 hover:border-gray-400' type="text" />
+                  </div>
+                  <div className='flex flex-col'>
+                    <p>Quantity</p>
+                    <input className='border mb-3 px-2 py-1 text-sm rounded-xl hover:opacity-70 hover:border-gray-400' type="text" placeholder='Quantity' />
+                    <input className='border mb-3 px-2 py-1 text-sm rounded-xl hover:opacity-70 hover:border-gray-400' type="text" />
+                  </div>
+                </div>
+                <button className='border p-1 rounded-xl w-[50px] text-sm hover:border-gray-400 hover:opacity-70 transition-all'>+Add</button>
+              </div>*/}
+              
+              {/* Instruction */}
+              <div className='flex flex-col gap-2 w-full'>
+                <p className='text-sm font-semibold'>Description</p>
+                <textarea
+                  name="instruction"
+                  id="instruction"
+                  rows={4}
+                  value={newDescription}
+                  onChange={(e) => setNewDescription(e.target.value)}
+                  className="border-2 border-amber-300 rounded-xl p-3 w-full text-sm focus:border-amber-500 focus:ring-2 focus:ring-amber-200 focus:outline-none transition-all hover:border-amber-400 resize-none"
+                  placeholder="Describe your recipe..."
+                />
+              </div>
+
+              {/* Category 
+              <div className='flex w-full gap-10'>
+                <p>Categories</p>
+                <select 
+                name="category" 
+                id="category"
+                className='border rounded-md px-20 hover:border-gray-400'>
+                </select>
+              </div>*/}
+            </div>
+          </PopupModal>
+
+          {/* AnN add: Delete confirmation modal on 10/23 */}
+          <PopupModal isOpen={showDeleteConfirm} onClose={handleDeleteCancel}>
+            <div className='flex flex-col items-center text-amber-800 gap-5 p-6'>
+              {/* Title */}
+              <h3 className='text-xl font-semibold text-amber-900'>Delete Recipe?</h3>
+
+              {/* Message */}
+              <p className='text-center text-amber-700 text-sm'>
+                Are you sure you want to delete this recipe? This action cannot be undone.
+              </p>
+
+              {/* Buttons */}
+              <div className='flex gap-3 w-full mt-2'>
+                <button
+                  onClick={handleDeleteCancel}
+                  className='flex-1 px-4 py-2 rounded-lg border border-amber-300 bg-white text-amber-800 hover:bg-amber-50 transition-colors'
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleDeleteConfirm}
+                  className='flex-1 px-4 py-2 rounded-lg bg-red-500 text-white hover:bg-red-600 transition-colors'
+                >
+                  Delete
+                </button>
+              </div>
+            </div>
+          </PopupModal>
 
           {/* Recipe tabs */}
           <nav className="flex flex-wrap gap-4">
@@ -270,8 +571,13 @@ export default function ProfilePage() {
                   </div>
                 </div>
               ))
-            ) : currentRecipes.length > 0 ? (
-              // AnN fix: Added index to prevent duplicate key errors on 10/23
+            ) : activeTab === 'my' && userRecipes.length > 0 ? (
+              // AnN add: Show user's created recipes on My Recipe tab on 10/23
+              userRecipes.map((recipe) => (
+                <UserRecipeCard key={recipe.recipeId} recipe={recipe} onDelete={handleDeleteClick} />
+              ))
+            ) : activeTab !== 'my' && currentRecipes.length > 0 ? (
+              // AnN fix: Show TheMealDB recipes on Saved/Liked tabs on 10/23
               currentRecipes.map((recipe, index) => (
                 <RecipeCard key={`${recipe.idMeal}-${index}`} recipe={recipe} />
               ))
@@ -346,6 +652,55 @@ function RecipeCard({ recipe }: RecipeCardProps) {
               ))}
             </div>
           )}
+        </div>
+      </div>
+    </article>
+  );
+}
+
+// AnN add: Card component for user's created recipes on 10/23
+type UserRecipeCardProps = {
+  recipe: UserRecipe;
+  onDelete: (recipeId: number) => void;
+};
+
+function UserRecipeCard({ recipe, onDelete }: UserRecipeCardProps) {
+  return (
+    <article className="glass-card overflow-hidden hover:shadow-xl transition-all duration-300 cursor-pointer group relative">
+      <button
+        className="absolute top-4 right-4 z-10 w-10 h-10 rounded-full bg-white/90 backdrop-blur flex items-center justify-center shadow-lg hover:bg-white transition-all duration-200 hover:scale-110"
+        aria-label="Delete recipe"
+        onClick={() => onDelete(recipe.recipeId)}
+      >
+        <TrashIcon className="w-5 h-5 text-amber-600 hover:text-red-500 transition-colors" />
+      </button>
+
+      <div className="flex gap-6 p-6">
+        <div className="relative h-48 w-48 flex-shrink-0 rounded-lg overflow-hidden">
+          {recipe.photoUrl ? (
+            <Image
+              src={recipe.photoUrl}
+              alt={recipe.recipeName}
+              fill
+              className="object-cover group-hover:scale-110 transition-transform duration-300"
+              sizes="192px"
+            />
+          ) : (
+            <div className="h-full w-full bg-gradient-to-br from-amber-100 to-amber-200 flex items-center justify-center">
+              <span className="text-6xl">🍽️</span>
+            </div>
+          )}
+        </div>
+        <div className="flex flex-1 flex-col gap-3">
+          <div>
+            <h3 className="text-2xl font-bold text-amber-900 mb-2">{recipe.recipeName}</h3>
+            {recipe.description && (
+              <p className="text-sm text-amber-700 line-clamp-3">{recipe.description}</p>
+            )}
+            <p className="text-xs text-amber-600 mt-2">
+              Created: {new Date(recipe.createdAt).toLocaleDateString()}
+            </p>
+          </div>
         </div>
       </div>
     </article>
