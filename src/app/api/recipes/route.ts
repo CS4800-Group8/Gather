@@ -1,62 +1,61 @@
-// app/api/recipes/route.ts
-import { NextResponse } from 'next/server';
-
-// ⚠️ In-memory store (persists only while the server stays warm).
-// Swap this with a real DB later.
-type NewRecipeInput = {
-  name: string;
-  instructions: string;
-  category?: string;
-  imageUrl?: string; // optional for now (you can wire real upload later)
-};
-
-type StoredRecipe = {
-  id: string;
-  name: string;
-  instructions: string;
-  category?: string;
-  imageUrl?: string;
-  createdAt: string;
-};
-
-const RECIPES: StoredRecipe[] = [];
+import { NextResponse } from 'next/server'
+import prisma from '@/lib/prisma';
 
 export async function POST(req: Request) {
   try {
-    const body = (await req.json()) as Partial<NewRecipeInput>;
-    const name = body.name?.trim();
-    const instructions = body.instructions?.trim();
-    const category = body.category?.trim();
-    const imageUrl = body.imageUrl?.trim();
+    // Parse and sanitize request body
+    const body = await req.json().catch(() => ({}))
+    const recipeName = (body?.recipeName ?? '').toString().trim()
+    const description = body?.description ? body.description.toString() : null
 
-    if (!name || !instructions) {
-      return NextResponse.json(
-        { error: 'name and instructions are required.' },
-        { status: 400 }
-      );
+    // Get userId from request header (replace with real auth later)
+    const userIdHeader = req.headers.get('x-user-id')
+    const userId = userIdHeader ? Number(userIdHeader) : NaN
+
+    // Validate required fields
+    if (!userId || Number.isNaN(userId)) {
+      return NextResponse.json({ error: 'Missing user id' }, { status: 401 })
+    }
+    if (!recipeName) {
+      return NextResponse.json({ error: 'Recipe name is required' }, { status: 400 })
     }
 
-    const recipe: StoredRecipe = {
-      id: crypto.randomUUID(),
-      name,
-      instructions,
-      category,
-      imageUrl,
-      createdAt: new Date().toISOString(),
-    };
+    // Create new recipe record in DB
+    const recipe = await prisma.recipe.create({
+      data: { userId, recipeName, description: description || undefined }, // Expects JSON body: { recipeName: string, description?: string }
+      select: { recipeId: true, recipeName: true, description: true, createdAt: true },
+    })
 
-    RECIPES.unshift(recipe);
-    return NextResponse.json({ recipe }, { status: 201 });
-  } catch (err) {
-    console.error('Create recipe failed:', err);
-    return NextResponse.json(
-      { error: 'Failed to create recipe' },
-      { status: 500 }
-    );
+    // Respond with created recipe
+    return NextResponse.json({ recipe }, { status: 201 })
+  } catch (e) {
+    console.error('Create recipe error:', e)
+    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 })
   }
 }
 
-// Optional: simple GET to verify items while developing
-export async function GET() {
-  return NextResponse.json({ recipes: RECIPES });
+export async function GET(req: Request) {
+  try {
+    // Get userId from request header (replace with real auth later)
+    const userIdHeader = req.headers.get('x-user-id');
+    const userId = userIdHeader ? Number(userIdHeader) : NaN;
+
+    // Validate user
+    if (!userId || Number.isNaN(userId)) {
+      return NextResponse.json({ error: 'Missing user id' }, { status: 401 });
+    }
+
+    // Fetch recipes belonging to the user, newest first
+    const recipes = await prisma.recipe.findMany({
+      where: { userId },
+      orderBy: { createdAt: 'desc' },
+      select: { recipeId: true, recipeName: true, description: true, createdAt: true },
+    });
+
+    return NextResponse.json({ recipes });
+  } catch (e) {
+    console.error('GET /api/recipes error:', e);
+    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+  }
 }
+
