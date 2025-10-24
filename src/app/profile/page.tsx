@@ -2,6 +2,7 @@
 
 import Image from 'next/image';
 import { useEffect, useMemo, useState } from 'react';
+import PopupModal from '@/components/PopupModal'; // Viet add: Use popup modal to display create recipe
 import {
   DEFAULT_AVATAR_ID,
   AvatarPreset,
@@ -30,6 +31,9 @@ export default function ProfilePage() {
   const [showAvatarPicker, setShowAvatarPicker] = useState(false);
   const [recipes, setRecipes] = useState<Meal[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showModal, setShowModal] = useState(false);
+  const [newRecipeName, setNewRecipeName] = useState('');
+  const [newDescription, setNewDescription] = useState('');
 
   const avatarPresets = useMemo(() => getAvatarPresets(), []);
   const currentPreset: AvatarPreset = useMemo(
@@ -137,6 +141,43 @@ export default function ProfilePage() {
 
   const avatarButtonClasses = `${avatarButtonBase} border-4 border-amber-400 bg-white shadow-[0_24px_48px_rgba(255,183,88,0.28)] hover:border-amber-500`;
 
+  // Viet Add: Submits new recipe to the API and closes the modal on success
+  const handleCreateRecipe = async () => {
+    try {
+      // Get current user
+      const user = JSON.parse(localStorage.getItem('gatherUser') || '{}');
+      const userId = user?.id || 1; // Replace with actual auth system later
+
+      // Send POST request to API with recipe data
+      const response = await fetch('/api/recipes', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-user-id': userId.toString(),
+        },
+        body: JSON.stringify({
+          recipeName: newRecipeName,
+          description: newDescription,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        console.error(data.error || 'Failed to create recipe');
+      } else {
+        console.log('Recipe created:', data.recipe);
+
+        // Close modal after done
+        setShowModal(false);
+        setNewRecipeName('');
+        setNewDescription('');
+      }
+    } catch (error) {
+      console.error('Error submitting recipe:', error);
+    }
+  };
+
   return (
     <div className="min-h-screen pb-16 pt-12">
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-10 px-4 sm:px-6 lg:px-8">
@@ -211,7 +252,8 @@ export default function ProfilePage() {
           <button
             type="button"
             onClick={() => {
-              // TODO: Navigate to create recipe page or open modal
+              //Navigate to open modal
+              setShowModal(true)
               console.log('Create recipe clicked');
             }}
             className="mb-8 flex w-full items-center gap-3 rounded-full border-2 border-amber-300 bg-white px-4 py-3 text-left transition-all hover:bg-amber-50 group"
@@ -221,6 +263,106 @@ export default function ProfilePage() {
             </div>
             <span className="text-base text-amber-600 font-normal">What&apos;s your recipe idea, {displayName}?</span>
           </button>
+
+          {/* Create Recipe Tab */}
+          <PopupModal isOpen={showModal} onClose={() => setShowModal(false)}>
+
+            <div className='flex flex-col justify-between items-start text-amber-600 gap-5'>
+              {/* HEADER */}
+              <div className='flex justify-around items-center w-full gap-16'>
+                <button
+                  className="text-gray-500 hover:text-red-500 text-2xl"
+                  onClick={() => setShowModal(false)}
+                  aria-label="Close"
+                >
+                  &times;
+                </button>
+
+                <p className='text-xl font-bold'>Create Recipe</p>  
+
+                <button
+                  onClick={handleCreateRecipe}
+                  className='border border-gray-400 shado-md rounded-lg px-2 py-1 hover:opacity-70 hover:-translate-y-1 transition-all'>
+                  Post
+                </button>    
+              </div>
+
+              {/* Profile */}
+              <div className='flex w-full justify-between gap-10'>
+                <div className='flex gap-5 items-center'>
+                  <div className='h-15 w-15 flex items-center justify-center rounded-full border-2 border-amber-400 text-white
+                  hover:-translate-y-1 transition-all'>
+                    <AvatarImage preset={currentPreset} size="small" />
+                  </div>
+                  <p className='text-md font-bold'>{displayName}</p>
+                </div>
+              </div>
+
+              {/* Picture 
+              <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-gray-300 rounded-xl cursor-pointer 
+              hover:border-amber-400 hover:opacity-50 transition">
+                <Image
+                src='/uploadphoto.jpg'
+                alt="Upload photo"
+                width={60}
+                height={60}
+                className='mix-blend-multiply'/>
+                <span className="text-md">Upload a photo</span>
+                <input type="file" className="hidden" />
+              </label>*/}
+
+              {/* Recipe Name */}
+              <div className='flex flex-col w-full gap-2 justify-center'>
+                <input type="text" 
+                value={newRecipeName}
+                onChange={(e) => setNewRecipeName(e.target.value)}
+                className="text-md py-1 px-3 border rounded-xl w-full hover:opacity-70 hover:border-gray-400"
+                placeholder="Recipe name"
+                />
+              </div>
+              
+              {/* Ingredients & Quantity */}
+              {/*
+              <div className='flex flex-col w-full text-md'>
+                <div className='flex gap-5'>
+                  <div className='flex flex-col justify-center'>
+                    <p>Ingredients</p>
+                    <input className='border mb-3 px-2 py-1 text-sm rounded-xl hover:opacity-70 hover:border-gray-400' type="text" placeholder='Ingredients' />
+                    <input className='border mb-3 px-2 py-1 text-sm rounded-xl hover:opacity-70 hover:border-gray-400' type="text" />
+                  </div>
+                  <div className='flex flex-col'>
+                    <p>Quantity</p>
+                    <input className='border mb-3 px-2 py-1 text-sm rounded-xl hover:opacity-70 hover:border-gray-400' type="text" placeholder='Quantity' />
+                    <input className='border mb-3 px-2 py-1 text-sm rounded-xl hover:opacity-70 hover:border-gray-400' type="text" />
+                  </div>
+                </div>
+                <button className='border p-1 rounded-xl w-[50px] text-sm hover:border-gray-400 hover:opacity-70 transition-all'>+Add</button>
+              </div>*/}
+              
+              {/* Instruction */}
+              <div className='flex flex-col gap-2 w-full'>
+                <p>Description</p>
+                <textarea 
+                  name="instruction"
+                  id="instruction"
+                  rows={3}
+                  value={newDescription}
+                  onChange={(e) => setNewDescription(e.target.value)}
+                  className="border rounded-xl p-2 w-full text-sm hover:opacity-70 hover:border-gray-400"
+                />
+              </div>
+
+              {/* Category 
+              <div className='flex w-full gap-10'>
+                <p>Categories</p>
+                <select 
+                name="category" 
+                id="category"
+                className='border rounded-md px-20 hover:border-gray-400'>
+                </select>
+              </div>*/}
+            </div>
+          </PopupModal>
 
           {/* Recipe tabs */}
           <nav className="flex flex-wrap gap-4">
