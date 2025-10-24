@@ -1,12 +1,11 @@
 'use client';
 
-import { useState, Suspense } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { DEFAULT_AVATAR_ID, normalizeAvatarId, resolveAvatarPreset } from '@/lib/avatarPresets';
 
 function SignInForm() {
   const router = useRouter();
-  const searchParams = useSearchParams(); // AnN add: Get redirect parameter on 10/23
 
   const [emailOrUsername, setEmailOrUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -88,10 +87,9 @@ function SignInForm() {
       document.cookie = `gatherUser=${encodeURIComponent(JSON.stringify(storedUser))}; path=/; sameSite=Lax`; // An add: Mirror local storage in a cookie for refreshes
       window.dispatchEvent(new Event('gather:user-updated'));
 
-      // AnN add: Success - redirect to original page or home on 10/23
+      // Success - redirect to home
       setIsLoading(false);
-      const redirectTo = searchParams.get('redirect') || '/';
-      router.push(redirectTo);
+      router.push('/');
     } catch (error) {
       console.error('Sign in error:', error);
       setErrorMessage('Something went wrong. Please try again later.');
@@ -163,9 +161,5 @@ function SignInForm() {
 }
 
 export default function SignInPage() {
-  return (
-    <Suspense fallback={<div className="text-center text-amber-600">Loading...</div>}>
-      <SignInForm />
-    </Suspense>
-  );
+  return <SignInForm />;
 }
