@@ -32,6 +32,7 @@ model Recipe {
   userId      Int                                   // Foreign Key referencing User
   recipeName  String
   description String?
+  photoUrl    String? // Store recipe photo path 
   createdAt   DateTime  @default(now())
 
   // Relationship to User (Many Recipes belong to one User)
