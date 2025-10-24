@@ -73,6 +73,7 @@ function SignInForm() {
       );
       const fallbackAvatarPreset = resolveAvatarPreset(normalizedAvatarId);
       const storedUser = {
+        id: data.user.id,     // Viet add: get user id when sign-in to connect with their recipe 
         firstname: data.user.firstname,
         lastname: data.user.lastname,
         username: data.user.username,
