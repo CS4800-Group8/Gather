@@ -38,4 +38,3 @@ model Recipe {
   // Relationship to User (Many Recipes belong to one User)
   user        User      @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
 }
-
