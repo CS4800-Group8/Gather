@@ -11,7 +11,6 @@ import {
   resolveAvatarPreset,
 } from '@/lib/avatarPresets';
 import AvatarImage from '@/components/AvatarImage'; // AnN add: Use centralized avatar component on 10/23
-import { RECIPE_PHOTO_PRESETS, DEFAULT_RECIPE_PHOTO } from '@/lib/recipePhotoPresets'; // AnN add: Recipe photo presets on 10/23
 import { TrashIcon } from '@heroicons/react/24/outline'; // AnN add: Heroicons delete icon on 10/23
 
 type TabKey = 'my' | 'saved' | 'liked';
@@ -46,10 +45,13 @@ export default function ProfilePage() {
   const [newRecipeName, setNewRecipeName] = useState('');
   const [newDescription, setNewDescription] = useState('');
   const [userRecipes, setUserRecipes] = useState<UserRecipe[]>([]); // AnN add: Store user's database recipes on 10/23
-  const [selectedPhotoUrl, setSelectedPhotoUrl] = useState(DEFAULT_RECIPE_PHOTO); // AnN add: Store selected photo preset on 10/23
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false); // AnN add: Show delete confirmation modal on 10/23
   const [recipeToDelete, setRecipeToDelete] = useState<number | null>(null); // AnN add: Store recipe ID to delete on 10/23
   const [createRecipeError, setCreateRecipeError] = useState(''); // AnN add: Error message for recipe creation on 10/23
+  const [uploading, setUploading] = useState(false); // AnN add: S3 upload status on 10/29
+  const [uploadError, setUploadError] = useState(''); // AnN add: S3 upload error on 10/29
+  const [selectedFile, setSelectedFile] = useState<File | null>(null); // AnN add: Store selected file before upload on 10/29
+  const [previewUrl, setPreviewUrl] = useState<string>(''); // AnN add: Local preview URL on 10/29
 
   const avatarPresets = useMemo(() => getAvatarPresets(), []);
   const currentPreset: AvatarPreset = useMemo(
@@ -194,10 +196,34 @@ export default function ProfilePage() {
       setCreateRecipeError('Please enter a description');
       return;
     }
+    // AnN add: Require photo upload on 10/29
+    if (!selectedFile) {
+      setCreateRecipeError('Please upload a photo for your recipe');
+      return;
+    }
 
     setCreateRecipeError(''); // Clear any previous errors
+    setUploading(true); // AnN add: Show uploading state on 10/29
 
     try {
+      // AnN edit: Upload to S3 only when posting on 10/29
+      const formData = new FormData();
+      formData.append('file', selectedFile);
+
+      const uploadResponse = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData,
+      });
+
+      const uploadData = await uploadResponse.json();
+
+      if (!uploadResponse.ok) {
+        throw new Error(uploadData.error || 'Upload failed');
+      }
+
+      const photoUrlToUse = uploadData.imageUrl;
+      console.log('Photo uploaded to S3:', photoUrlToUse);
+
       // Get current user
       const user = JSON.parse(localStorage.getItem('gatherUser') || '{}');
       const userId = user?.id || 1; // Replace with actual auth system later
@@ -212,7 +238,7 @@ export default function ProfilePage() {
         body: JSON.stringify({
           recipeName: newRecipeName,
           description: newDescription,
-          photoUrl: selectedPhotoUrl,  // AnN add: Include selected photo on 10/23
+          photoUrl: photoUrlToUse,  // AnN edit: Use uploaded S3 URL on 10/29
         }),
       });
 
@@ -227,17 +253,61 @@ export default function ProfilePage() {
         // AnN add: Refresh recipe list after creating on 10/23
         await fetchUserRecipes();
 
-        // Close modal after done
-        setShowModal(false);
-        setNewRecipeName('');
-        setNewDescription('');
-        setSelectedPhotoUrl(DEFAULT_RECIPE_PHOTO);  // AnN add: Reset photo selection on 10/23
-        setCreateRecipeError(''); // Clear error on success
+        // AnN edit: Use handleCloseModal to reset all form state on 10/29
+        handleCloseModal();
       }
     } catch (error) {
       console.error('Error submitting recipe:', error);
-      setCreateRecipeError('Something went wrong. Please try again.');
+      setCreateRecipeError('Failed to create recipe. Please try again.');
+    } finally {
+      setUploading(false); // AnN add: Clear uploading state on 10/29
     }
+  };
+
+  // AnN add: Handle modal close and reset form state on 10/29
+  const handleCloseModal = () => {
+    setShowModal(false);
+    setNewRecipeName('');
+    setNewDescription('');
+    setUploadError('');
+    setCreateRecipeError('');
+    setSelectedFile(null);
+    if (previewUrl) {
+      URL.revokeObjectURL(previewUrl); // Clean up memory
+    }
+    setPreviewUrl('');
+  };
+
+  // AnN edit: Store file and show preview (upload only on Post) on 10/29
+  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      setUploadError('Please select an image file');
+      return;
+    }
+
+    // Validate file size (4MB for Vercel compatibility)
+    if (file.size > 4 * 1024 * 1024) {
+      setUploadError('Image must be less than 4MB');
+      return;
+    }
+
+    setUploadError('');
+    setCreateRecipeError(''); // AnN add: Clear recipe error when photo uploaded on 10/29
+
+    // Clean up previous preview URL
+    if (previewUrl) {
+      URL.revokeObjectURL(previewUrl);
+    }
+
+    // Store file and create local preview
+    setSelectedFile(file);
+    const objectUrl = URL.createObjectURL(file);
+    setPreviewUrl(objectUrl);
+    console.log('Photo selected, will upload when you click Post');
   };
 
   // AnN add: Handle delete recipe with confirmation on 10/23
@@ -372,14 +442,14 @@ export default function ProfilePage() {
           </button>
 
           {/* Create Recipe Tab */}
-          <PopupModal isOpen={showModal} onClose={() => setShowModal(false)}>
+          <PopupModal isOpen={showModal} onClose={handleCloseModal}>
 
             <div className='flex flex-col justify-between items-start text-amber-600 gap-5'>
               {/* HEADER */}
               <div className='flex justify-around items-center w-full gap-16'>
                 <button
                   className="text-gray-500 hover:text-red-500 text-2xl"
-                  onClick={() => setShowModal(false)}
+                  onClick={handleCloseModal}
                   aria-label="Close"
                 >
                   &times;
@@ -389,8 +459,9 @@ export default function ProfilePage() {
 
                 <button
                   onClick={handleCreateRecipe}
-                  className='border-2 border-amber-400 bg-amber-100 text-amber-900 font-semibold shadow-md rounded-lg px-4 py-2 hover:bg-amber-200 hover:border-amber-500 hover:-translate-y-1 transition-all'>
-                  Post
+                  disabled={uploading}
+                  className='border-2 border-amber-400 bg-amber-100 text-amber-900 font-semibold shadow-md rounded-lg px-4 py-2 hover:bg-amber-200 hover:border-amber-500 hover:-translate-y-1 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0'>
+                  {uploading ? 'Posting...' : 'Post'}
                 </button>
               </div>
 
@@ -412,30 +483,68 @@ export default function ProfilePage() {
                 </div>
               </div>
 
-              {/* AnN add: Photo picker (preset photos like avatar system) on 10/23 */}
+              {/* AnN edit: File upload for recipe photos (S3) on 10/29 */}
               <div className='flex flex-col w-full gap-2'>
-                <p className='text-sm font-semibold'>Choose Photo</p>
-                <div className='grid grid-cols-5 gap-2'>
-                  {RECIPE_PHOTO_PRESETS.map((preset) => (
-                    <button
-                      key={preset.id}
-                      type="button"
-                      onClick={() => setSelectedPhotoUrl(preset.photoUrl)}
-                      className={`relative h-20 w-20 rounded-lg overflow-hidden border-2 transition-all hover:scale-105 ${
-                        selectedPhotoUrl === preset.photoUrl
-                          ? 'border-amber-500 ring-2 ring-amber-400'
-                          : 'border-gray-300 hover:border-amber-400'
-                      }`}
-                    >
+                <p className='text-sm font-semibold'>Recipe Photo</p>
+
+                {/* Upload error message */}
+                {uploadError && (
+                  <div className='px-3 py-2 bg-red-50 border border-red-200 rounded-lg'>
+                    <p className='text-xs text-red-600'>{uploadError}</p>
+                  </div>
+                )}
+
+                {/* File input */}
+                <div className='flex flex-col gap-3'>
+                  <label
+                    htmlFor="photo-upload"
+                    className={`flex flex-col items-center justify-center w-full h-20 border-2 rounded-lg cursor-pointer transition-all ${
+                      uploading
+                        ? 'border-gray-300 bg-gray-50'
+                        : 'border-amber-300 bg-amber-50 hover:bg-amber-100 hover:border-amber-400'
+                    }`}
+                  >
+                    <div className='flex flex-col items-center justify-center py-2'>
+                      {previewUrl ? (
+                        <>
+                          <svg className="h-6 w-6 text-green-600 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                          </svg>
+                          <p className='text-xs text-amber-700 font-medium'>Photo selected</p>
+                          <p className='text-[10px] text-amber-600'>Click to change</p>
+                        </>
+                      ) : (
+                        <>
+                          <svg className="h-6 w-6 text-amber-600 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                          </svg>
+                          <p className='text-xs text-amber-700 font-medium'>Click to upload photo</p>
+                          <p className='text-[10px] text-amber-600'>PNG, JPG up to 4MB</p>
+                        </>
+                      )}
+                    </div>
+                    <input
+                      id="photo-upload"
+                      type="file"
+                      className="hidden"
+                      accept="image/*"
+                      onChange={handlePhotoUpload}
+                    />
+                  </label>
+
+                  {/* Preview selected image */}
+                  {previewUrl && (
+                    <div className='relative w-full h-36 rounded-lg overflow-hidden border border-amber-300'>
                       <Image
-                        src={preset.photoUrl}
-                        alt={preset.label}
+                        src={previewUrl}
+                        alt="Recipe preview"
                         fill
                         className="object-cover"
-                        sizes="80px"
+                        sizes="400px"
+                        unoptimized
                       />
-                    </button>
-                  ))}
+                    </div>
+                  )}
                 </div>
               </div>
 
