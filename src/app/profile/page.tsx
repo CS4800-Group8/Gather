@@ -14,15 +14,31 @@ import AvatarImage from '@/components/AvatarImage'; // AnN add: Use centralized 
 
 type TabKey = 'my' | 'saved' | 'liked';
 
-// Using TheMealDB API structure (matches explore-recipes)
+// Recipe interface - supports both MealDB API and user-created recipes
 interface Meal {
-  idMeal: string;
-  strMeal: string;
-  strMealThumb: string;
-  strCategory: string;
-  strArea: string;
-  strTags: string | null;
+  idMeal: string;           // Recipe ID
+  strMeal: string;          // Recipe name
+  strMealThumb: string;     // Recipe image URL
+  strCategory: string;      // Category (e.g., "Vegetarian", "Seafood")
+  strArea: string;          // Cuisine type (e.g., "Italian", "Chinese")
+  strTags: string | null;   // Tags (only for MealDB recipes, not used for user recipes)
+  strYoutube?: string;      // YouTube URL for video tutorials (optional)
 }
+
+// Helper function to extract YouTube video ID from URL
+const getYouTubeVideoId = (url: string): string | null => {
+  if (!url) return null;
+  
+  // Handle youtube.com/watch?v=VIDEO_ID format
+  const watchMatch = url.match(/(?:youtube\.com\/watch\?v=)([a-zA-Z0-9_-]+)/);
+  if (watchMatch) return watchMatch[1];
+  
+  // Handle youtu.be/VIDEO_ID format
+  const shortMatch = url.match(/(?:youtu\.be\/)([a-zA-Z0-9_-]+)/);
+  if (shortMatch) return shortMatch[1];
+  
+  return null;
+};
 
 export default function ProfilePage() {
   const [activeTab, setActiveTab] = useState<TabKey>('my');
@@ -34,6 +50,11 @@ export default function ProfilePage() {
   const [showModal, setShowModal] = useState(false);
   const [newRecipeName, setNewRecipeName] = useState('');
   const [newDescription, setNewDescription] = useState('');
+  const [newYoutubeUrl, setNewYoutubeUrl] = useState('');
+  
+  // Recipe detail popup state
+  const [selectedRecipe, setSelectedRecipe] = useState<Meal | null>(null);
+  const [isDetailPopupOpen, setIsDetailPopupOpen] = useState(false);
 
   const avatarPresets = useMemo(() => getAvatarPresets(), []);
   const currentPreset: AvatarPreset = useMemo(
@@ -141,6 +162,20 @@ export default function ProfilePage() {
 
   const avatarButtonClasses = `${avatarButtonBase} border-4 border-amber-400 bg-white shadow-[0_24px_48px_rgba(255,183,88,0.28)] hover:border-amber-500`;
 
+  // Open recipe detail popup
+  const openRecipeDetail = (recipe: Meal) => {
+    setSelectedRecipe(recipe);
+    setIsDetailPopupOpen(true);
+    document.body.style.overflow = 'hidden';
+  };
+
+  // Close recipe detail popup
+  const closeRecipeDetail = () => {
+    setIsDetailPopupOpen(false);
+    setSelectedRecipe(null);
+    document.body.style.overflow = 'unset';
+  };
+
   // Viet Add: Submits new recipe to the API and closes the modal on success
   const handleCreateRecipe = async () => {
     try {
@@ -158,6 +193,7 @@ export default function ProfilePage() {
         body: JSON.stringify({
           recipeName: newRecipeName,
           description: newDescription,
+          youtubeUrl: newYoutubeUrl || undefined, // Include YouTube URL if provided
         }),
       });
 
@@ -172,6 +208,7 @@ export default function ProfilePage() {
         setShowModal(false);
         setNewRecipeName('');
         setNewDescription('');
+        setNewYoutubeUrl('');
       }
     } catch (error) {
       console.error('Error submitting recipe:', error);
@@ -298,19 +335,6 @@ export default function ProfilePage() {
                 </div>
               </div>
 
-              {/* Picture 
-              <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-gray-300 rounded-xl cursor-pointer 
-              hover:border-amber-400 hover:opacity-50 transition">
-                <Image
-                src='/uploadphoto.jpg'
-                alt="Upload photo"
-                width={60}
-                height={60}
-                className='mix-blend-multiply'/>
-                <span className="text-md">Upload a photo</span>
-                <input type="file" className="hidden" />
-              </label>*/}
-
               {/* Recipe Name */}
               <div className='flex flex-col w-full gap-2 justify-center'>
                 <input type="text" 
@@ -350,6 +374,47 @@ export default function ProfilePage() {
                   onChange={(e) => setNewDescription(e.target.value)}
                   className="border rounded-xl p-2 w-full text-sm hover:opacity-70 hover:border-gray-400"
                 />
+              </div>
+
+              {/* Media Upload Section - Placeholder for Backend Team */}
+              <div className='flex flex-col gap-3 w-full'>
+                <p className='font-semibold'>Add Media (Optional)</p>
+                
+                {/* Image Upload Placeholder */}
+                <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-gray-300 rounded-xl cursor-pointer 
+                hover:border-amber-400 hover:bg-amber-50 transition-all group">
+                  <div className='flex flex-col items-center gap-2'>
+                    <div className='text-4xl group-hover:scale-110 transition-transform'>📸</div>
+                    <span className="text-sm text-amber-700 font-medium">Upload Recipe Image</span>
+                    <span className="text-xs text-gray-500">Click to browse or drag and drop</span>
+                  </div>
+                  {/* TODO: Backend team - Add file input functionality here with DB connectoin*/}
+                  <input 
+                    type="file" 
+                    accept="image/*"
+                    className="hidden" 
+                    onChange={() => {
+                      // TODO: image upload
+                      console.log('Image upload clicked - Backend team implement here');
+                    }}
+                  />
+                </label>
+
+                {/* YouTube URL Placeholder */}
+                <div className='flex flex-col gap-2'>
+                  <div className='flex items-center gap-2'>
+                    <span className='text-lg'>▶️</span>
+                    <p className='text-sm'>YouTube Video Tutorial</p>
+                  </div>
+                  <input 
+                    type="url"
+                    value={newYoutubeUrl}
+                    onChange={(e) => setNewYoutubeUrl(e.target.value)}
+                    className="text-sm py-2 px-3 border rounded-xl w-full hover:opacity-70 hover:border-gray-400 focus:border-amber-400 focus:outline-none transition-colors"
+                    placeholder="https://www.youtube.com/watch?v=..."
+                  />
+                  <p className='text-xs text-gray-500'>Paste a YouTube link to add a video tutorial</p>
+                </div>
               </div>
 
               {/* Category 
@@ -415,7 +480,7 @@ export default function ProfilePage() {
             ) : currentRecipes.length > 0 ? (
               // AnN fix: Added index to prevent duplicate key errors on 10/23
               currentRecipes.map((recipe, index) => (
-                <RecipeCard key={`${recipe.idMeal}-${index}`} recipe={recipe} />
+                <RecipeCard key={`${recipe.idMeal}-${index}`} recipe={recipe} onClick={() => openRecipeDetail(recipe)} />
               ))
             ) : (
               <article className="rounded-3xl border-2 border-dashed border-[#caa977] bg-[#fff9ed] px-6 py-12 text-center text-sm font-medium text-[#8a6134]">
@@ -425,26 +490,121 @@ export default function ProfilePage() {
           </div>
         </section>
       </div>
+
+      {/* RECIPE DETAIL POPUP */}
+      {isDetailPopupOpen && selectedRecipe && (
+        <div 
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+          onClick={closeRecipeDetail}
+        >
+          <div 
+            className="popUp-scrollbar bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden shadow-2xl relative flex flex-col"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* PopUp */}
+            <div className="flex-shrink-0 bg-white border-b border-amber-200 px-6 py-4 flex justify-between items-center z-10">
+              <h2 className="text-2xl font-bold text-amber-900">{selectedRecipe.strMeal}</h2>
+              <button
+                onClick={closeRecipeDetail}
+                className="w-10 h-10 rounded-full hover:bg-amber-100 flex items-center justify-center transition-colors text-amber-900"
+                aria-label="Close popup"
+              >
+                <svg 
+                  width="24" 
+                  height="24" 
+                  viewBox="0 0 24 24" 
+                  fill="none" 
+                  stroke="currentColor" 
+                  strokeWidth="2" 
+                  strokeLinecap="round" 
+                  strokeLinejoin="round"
+                >
+                  <line x1="18" y1="6" x2="6" y2="18"></line>
+                  <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+              </button>
+            </div>
+
+            {/* PopUp Content - Scrollable Area */}
+            <div className="overflow-y-auto flex-1 popUp-scrollbar p-6">
+              {/* Recipe Image */}
+              <div className="relative w-full h-96 rounded-xl overflow-hidden mb-6">
+                <Image
+                  src={selectedRecipe.strMealThumb}
+                  alt={selectedRecipe.strMeal}
+                  fill
+                  className="object-cover"
+                  sizes="(max-width: 896px) 100vw, 896px"
+                />
+              </div>
+
+              {/* Recipe Info Grid */}
+              <div className="grid md:grid-cols-2 gap-6 mb-6">
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2 text-amber-700">
+                    <span className="text-xl">🍴</span>
+                    <span className="font-semibold">Category:</span>
+                    <span>{selectedRecipe.strCategory}</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-amber-700">
+                    <span className="text-xl">🌍</span>
+                    <span className="font-semibold">Cuisine:</span>
+                    <span>{selectedRecipe.strArea}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* YouTube Video Player */}
+              {selectedRecipe.strYoutube && (() => {
+                const videoId = getYouTubeVideoId(selectedRecipe.strYoutube);
+                return videoId ? (
+                  <div className="mb-6">
+                    <h3 className="font-bold text-amber-900 mb-3 text-xl flex items-center gap-2">
+                      <span>▶️</span>
+                      Video Tutorial
+                    </h3>
+                    <div className="relative w-full" style={{ paddingBottom: '56.25%' }}>
+                      <iframe
+                        className="absolute top-0 left-0 w-full h-full rounded-xl"
+                        src={`https://www.youtube.com/embed/${videoId}`}
+                        title="YouTube video player"
+                        frameBorder="0"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                        allowFullScreen
+                      />
+                    </div>
+                  </div>
+                ) : null;
+              })()}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
 
 const tabConfig: Array<{ id: TabKey; label: string; icon: string }> = [
-  { id: 'my', label: 'My Recipe', icon: '🍜' },
-  { id: 'saved', label: 'Saved Recipe', icon: '🍴' },
+  { id: 'my', label: 'My Recipes', icon: '🍜' },
+  { id: 'saved', label: 'Saved Recipes', icon: '🍴' },
   { id: 'liked', label: 'Liked', icon: '❤️' },
 ];
 
 type RecipeCardProps = {
   recipe: Meal;
+  onClick?: () => void;
 };
 
-function RecipeCard({ recipe }: RecipeCardProps) {
+function RecipeCard({ recipe, onClick }: RecipeCardProps) {
   return (
-    <article className="glass-card overflow-hidden hover:shadow-xl transition-all duration-300 cursor-pointer group relative">
+    <article 
+      className="glass-card overflow-hidden hover:shadow-xl transition-all duration-300 cursor-pointer group relative"
+      onClick={onClick}
+    >
       <button
         className="absolute top-4 right-4 z-10 w-12 h-12 rounded-full bg-white/90 backdrop-blur flex items-center justify-center shadow-lg hover:bg-white transition-all duration-200 hover:scale-110"
         aria-label="Save recipe"
+        onClick={(e) => e.stopPropagation()}
       >
         <span className="text-2xl text-amber-600 hover:text-red-500 transition-colors">
           ♡
@@ -476,16 +636,13 @@ function RecipeCard({ recipe }: RecipeCardProps) {
               </div>
             </div>
           </div>
-          {recipe.strTags && (
-            <div className="flex flex-wrap gap-2 mt-2">
-              {recipe.strTags.split(',').slice(0, 3).map((tag, idx) => (
-                <span
-                  key={idx}
-                  className="px-3 py-1 text-xs font-medium bg-amber-100 text-amber-800 rounded-full"
-                >
-                  {tag.trim()}
-                </span>
-              ))}
+          {/* YouTube Tutorial Tag */}
+          {recipe.strYoutube && (
+            <div className="flex gap-2 mt-2">
+              <span className="px-3 py-1 text-xs font-medium bg-red-100 text-red-800 rounded-full flex items-center gap-1">
+                <span>▶️</span>
+                Video Tutorial
+              </span>
             </div>
           )}
         </div>
