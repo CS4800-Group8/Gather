@@ -33,6 +33,20 @@ interface UserRecipe {
   description: string | null;
   photoUrl: string | null;
   createdAt: string;
+  // Viet add: ingredients and categories to interface
+  ingredients?: Ingredient[];
+  categories?: Category[];
+}
+
+// Viet add: Interface for ingredients and categories
+interface Ingredient {
+  id: number;
+  name: string;
+  quantity: string;
+}
+interface Category {
+  id: number;
+  name: string;
 }
 
 export default function ProfilePage() {
@@ -43,8 +57,16 @@ export default function ProfilePage() {
   const [recipes, setRecipes] = useState<Meal[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
-  const [newRecipeName, setNewRecipeName] = useState('');
-  const [newDescription, setNewDescription] = useState('');
+  const [newRecipeName, setNewRecipeName] = useState(''); // Viet add: store recipe name to database
+  const [newDescription, setNewDescription] = useState(''); // Viet add: store description to database
+  // Ingredients
+  const [ingredient, setIngredient] = useState(''); // Viet add: store current input ingredient to database
+  const [ingredients, setIngredients] = useState<Ingredient[]>([]); // Viet add: store every ingredients to database
+  const [quantity, setQuantity] = useState(''); // Viet add: store quantity to database
+  // Categories
+  const [category, setCategory] = useState(''); // Viet add: store current input category to database
+  const [categories, setCategories] = useState<Category[]>([]); // Viet add: store every category to database
+
   const [userRecipes, setUserRecipes] = useState<UserRecipe[]>([]); // AnN add: Store user's database recipes on 10/23
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false); // AnN add: Show delete confirmation modal on 10/23
   const [recipeToDelete, setRecipeToDelete] = useState<number | null>(null); // AnN add: Store recipe ID to delete on 10/23
@@ -240,6 +262,9 @@ export default function ProfilePage() {
           recipeName: newRecipeName,
           description: newDescription,
           photoUrl: photoUrlToUse,  // AnN edit: Use uploaded S3 URL on 10/29
+          // Viet add: ingredients and categories
+          ingredients: ingredients.map(i => ({ id: i.id, quantity: i.quantity })),
+          categoryIds: categories.map(c => c.id),
         }),
       });
 
@@ -265,6 +290,116 @@ export default function ProfilePage() {
     }
   };
 
+  // Viet add: Handle add ingredient
+  const handleAddIngredient = async () => {
+    const name = ingredient.trim();
+    const qty = quantity.trim();
+
+    if (!name) {
+      setCreateRecipeError('Please enter an ingredient name');
+      return;
+    }
+
+    try {
+      const res = await fetch('/api/ingredients', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, quantity: qty }),
+      });
+
+      const data = await res.json();
+
+      // Handle ingredient exists already
+      if (res.status === 409 && data.id) {
+        setIngredients((prev) => [
+          ...prev,
+          { id: data.id, name, quantity: qty },
+        ]);
+      }
+
+      // Handle new ingredient
+      else if (res.ok) {
+        setIngredients((prev) => [
+          ...prev,
+          { id: data.id, name: data.name, quantity: qty },
+        ]);
+      }
+
+      // Handle other errors
+      else {
+        setCreateRecipeError(data.error || 'Failed to add ingredient');
+        return;
+      }
+
+      // Clear input fields & error message
+      setIngredient('');
+      setQuantity('');
+      setCreateRecipeError('');
+    } catch (err) {
+      console.error(err);
+      setCreateRecipeError('Network error while adding ingredient');
+    }
+  };
+
+  // Viet add: Handle add category
+  const handleAddCategory = async () => {
+    const name = category.trim();
+
+    if (!name) {
+      setCreateRecipeError('Please enter a category name');
+      return;
+    }
+
+    try {
+      const res = await fetch('/api/categories', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name }),
+      });
+
+      const data = await res.json();
+
+      // Category already exists
+      if (res.status === 409 && data.id) {
+        setCategories((prev) => [
+          ...prev,
+          { id: data.id, name }, 
+        ]);
+      }
+
+      // Category successfully created
+      else if (res.ok) {
+        setCategories((prev) => [
+          ...prev,
+          { id: data.id, name: data.name },
+        ]);
+      }
+
+      // Other errors
+      else {
+        setCreateRecipeError(data.error || 'Failed to add category');
+        return;
+      }
+
+      // Clear input and error message
+      setCategory('');
+      setCreateRecipeError('');
+    } catch (err) {
+      console.error(err);
+      setCreateRecipeError('Network error while adding category');
+    }
+  };
+
+  // Viet add: Handle removing an ingredient
+  const handleRemoveIngredient = (id: number) => {
+    setIngredients((prev) => prev.filter((ing) => ing.id !== id));
+  };
+
+  // Viet add: Handle removing a category
+  const handleRemoveCategory = (id: number) => {
+    setCategories((prev) => prev.filter((cat) => cat.id !== id));
+  };
+
   // AnN add: Handle modal close and reset form state on 10/29
   const handleCloseModal = () => {
     setShowModal(false);
@@ -273,6 +408,11 @@ export default function ProfilePage() {
     setUploadError('');
     setCreateRecipeError('');
     setSelectedFile(null);
+    setIngredient('');
+    setQuantity('');
+    setCategory('');
+    setIngredients([]);
+    setCategories([]);
     if (previewUrl) {
       URL.revokeObjectURL(previewUrl); // Clean up memory
     }
@@ -560,23 +700,52 @@ export default function ProfilePage() {
                 />
               </div>
               
-              {/* Ingredients & Quantity */}
-              {/*
-              <div className='flex flex-col w-full text-md'>
+              {/* Viet add: Ingredients & Quantity */}   
+              <div className='flex flex-col w-full text-md gap-3'>
                 <div className='flex gap-5'>
-                  <div className='flex flex-col justify-center'>
-                    <p>Ingredients</p>
-                    <input className='border mb-3 px-2 py-1 text-sm rounded-xl hover:opacity-70 hover:border-gray-400' type="text" placeholder='Ingredients' />
-                    <input className='border mb-3 px-2 py-1 text-sm rounded-xl hover:opacity-70 hover:border-gray-400' type="text" />
+                  <div className='flex flex-col gap-2'>
+                    <p className='text-sm font-semibold'>Ingredients</p>
+                    <input 
+                    className='border-2 border-amber-300 px-4 py-2 text-sm rounded-xl focus:border-amber-500 focus:ring-2 focus:ring-amber-200 focus:outline-none hover:border-amber-400 transition-all' 
+                    type="text" 
+                    placeholder='Ingredient name'
+                    value={ingredient}
+                    onChange={(e) => setIngredient(e.target.value)}/>
                   </div>
-                  <div className='flex flex-col'>
-                    <p>Quantity</p>
-                    <input className='border mb-3 px-2 py-1 text-sm rounded-xl hover:opacity-70 hover:border-gray-400' type="text" placeholder='Quantity' />
-                    <input className='border mb-3 px-2 py-1 text-sm rounded-xl hover:opacity-70 hover:border-gray-400' type="text" />
+                  <div className='flex flex-col gap-2'>
+                    <p className='text-sm font-semibold'>Quantity</p>
+                    <input 
+                    className='border-2 border-amber-300 px-4 py-2 text-sm rounded-xl focus:border-amber-500 focus:ring-2 focus:ring-amber-200 focus:outline-none hover:border-amber-400 transition-all' 
+                    type="text" 
+                    placeholder='Quantity number'
+                    value={quantity}
+                    onChange={(e) => setQuantity(e.target.value)}/>
                   </div>
                 </div>
-                <button className='border p-1 rounded-xl w-[50px] text-sm hover:border-gray-400 hover:opacity-70 transition-all'>+Add</button>
-              </div>*/}
+                <button 
+                className='bg-amber-100 border-2 border-amber-300 p-1 rounded-xl w-auto shadow-md text-sm text-amber-900 hover:bg-amber-200 hover:border-amber-500 transition-all'
+                onClick={handleAddIngredient}>
+                +Add
+                </button>
+              </div>
+              
+              {/* Viet add: Category */}
+              <div className='flex w-full gap-5 items-center'>
+                <p className='text-sm font-semibold'>Categories</p>
+                <div>
+                  <input 
+                  type='text'
+                  className='border-2 border-amber-300 px-3 py-1 text-sm rounded-xl focus:border-amber-500 focus:ring-2 focus:ring-amber-200 focus:outline-none hover:border-amber-400 transition-all'
+                  placeholder='Category name'
+                  value={category}
+                  onChange={(e) => setCategory(e.target.value)}/>
+                  <button 
+                  className='bg-amber-100 border-2 border-amber-300 p-1 rounded-full w-[30px] shadow-lg text-sm text-amber-900 hover:bg-amber-200 hover:border-amber-500 transition-all'
+                  onClick={handleAddCategory}>
+                    +
+                  </button>
+                </div>
+              </div>
 
               {/* Instruction */}
               <div className='flex flex-col gap-2 w-full'>
@@ -591,15 +760,45 @@ export default function ProfilePage() {
                   placeholder="Describe your recipe..."
                 />
               </div>
-              {/* Category 
-              <div className='flex w-full gap-10'>
-                <p>Categories</p>
-                <select 
-                name="category" 
-                id="category"
-                className='border rounded-md px-20 hover:border-gray-400'>
-                </select>
-              </div>*/}
+
+            {/* Viet add: Show added ingredients */}
+            {ingredients.length > 0 && (
+              <div className='mt-2 flex flex-wrap gap-2 items-center'>
+                <p className='text-sm font-semibold'>Ingredients:</p>
+                {ingredients.map((i) => (
+                  <span
+                    key={i.id}
+                    className='bg-amber-100 border border-amber-300 px-2 py-1 rounded-full text-xs text-amber-900'
+                  >
+                    {i.name} - {i.quantity}
+                    <button 
+                    onClick={() => handleRemoveIngredient(i.id)}
+                    className='text-red-500 ml-1 hover:text-red-700 font-bold'>
+                      x
+                    </button>
+                  </span>
+                ))}
+              </div>
+            )}
+            {/* Viet add: Show added categories */}
+            {categories.length > 0 && (
+              <div className='mt-2 flex flex-wrap gap-2 items-center'>
+                <p className='text-sm font-semibold'>Categories:</p>
+                {categories.map((c) => (
+                  <span
+                    key={c.id}
+                    className='bg-amber-100 border border-amber-300 px-2 py-1 rounded-full text-xs text-amber-900'
+                  >
+                    {c.name}
+                    <button 
+                    onClick={() => handleRemoveCategory(c.id)}
+                    className='text-red-500 ml-1 hover:text-red-700 font-bold'>
+                      x
+                    </button>
+                  </span>
+                ))}
+              </div>
+            )}
             </div>
           </PopupModal>
 
@@ -808,7 +1007,35 @@ function UserRecipeCard({ recipe, onDelete }: UserRecipeCardProps) {
             {recipe.description && (
               <p className="text-sm text-amber-700 line-clamp-3">{recipe.description}</p>
             )}
-            <p className="text-xs text-amber-600 mt-2">
+            {/* Viet add: ingredients and categories display */}
+            {recipe.ingredients && recipe.ingredients.length > 0 && (
+              <div>
+                <p className="text-sm font-semibold text-amber-900">Ingredients:</p>
+                <ul className="text-sm text-amber-800 list-disc list-inside">
+                  {recipe.ingredients.map((ri) => (
+                    <li key={ri.id}>
+                      {ri.name} — {ri.quantity}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            {recipe.categories && recipe.categories.length > 0 && (
+              <div className='flex flex-col gap-1'>
+                <p className="text-sm font-semibold text-amber-900">Categories:</p>
+                <div>
+                  {recipe.categories.map((rc) => (
+                    <span 
+                    key={rc.id} 
+                    className='bg-amber-100 border border-amber-300 px-3 py-2 rounded-xl text-xs mr-2'>
+                      {rc.name}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+            
+            <p className="text-xs text-amber-600 mt-3">
               Created: {new Date(recipe.createdAt).toLocaleDateString()}
             </p>
           </div>
