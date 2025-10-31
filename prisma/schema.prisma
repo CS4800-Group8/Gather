@@ -23,6 +23,7 @@ model User {
   // One-to-Many relationship: One User can have 0 to many Recipes
   recipes         Recipe[]
   favoriteRecipes FavoriteRecipe[] // Many-to-many link with Recipe
+  favoriteAPIRecipes FavoriteAPIRecipe[]
 }
 
 //
@@ -113,4 +114,15 @@ model RecipeCategory {
   category Category @relation(fields: [categoryId], references: [categoryId], onDelete: Cascade)
 
   @@id([recipeId, categoryId])
+}
+
+//
+// ==================== FAVORITE API RECIPE ====================
+// 
+model FavoriteAPIRecipe {
+  userId   Int
+  apiId    String // TheMealDB's idMeal
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@id([userId, apiId])
 }
