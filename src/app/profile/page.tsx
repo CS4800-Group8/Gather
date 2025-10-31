@@ -13,18 +13,20 @@ import {
 import AvatarImage from '@/components/AvatarImage'; // AnN add: Use centralized avatar component on 10/23
 import { TrashIcon } from '@heroicons/react/24/outline'; // AnN add: Heroicons delete icon on 10/23
 
+// AnN edit: Keep all tabs for teammates to implement later on 10/30
 type TabKey = 'my' | 'saved' | 'liked';
 
-// Recipe interface - supports both MealDB API and user-created recipes
-interface Meal {
-  idMeal: string;           // Recipe ID
-  strMeal: string;          // Recipe name
-  strMealThumb: string;     // Recipe image URL
-  strCategory: string;      // Category (e.g., "Vegetarian", "Seafood")
-  strArea: string;          // Cuisine type (e.g., "Italian", "Chinese")
-  strTags: string | null;   // Tags (only for MealDB recipes, not used for user recipes)
-  strYoutube?: string;      // YouTube URL for video tutorials (optional)
-}
+// AnN edit: Removed Meal interface - no longer needed on 10/30
+
+// AnN add: Helper function to extract YouTube video ID from URL on 10/30
+const getYouTubeVideoId = (url: string): string | null => {
+  if (!url) return null;
+  const watchMatch = url.match(/(?:youtube\.com\/watch\?v=)([a-zA-Z0-9_-]+)/);
+  if (watchMatch) return watchMatch[1];
+  const shortMatch = url.match(/(?:youtu\.be\/)([a-zA-Z0-9_-]+)/);
+  if (shortMatch) return shortMatch[1];
+  return null;
+};
 
 // AnN add: Interface for user's created recipes from database on 10/23
 interface UserRecipe {
@@ -32,6 +34,8 @@ interface UserRecipe {
   recipeName: string;
   description: string | null;
   photoUrl: string | null;
+  instructions?: string | null; // AnN add: Cooking instructions on 10/30
+  videoUrl?: string | null; // AnN add: YouTube video link on 10/30
   createdAt: string;
   // Viet add: ingredients and categories to interface
   ingredients?: Ingredient[];
@@ -54,8 +58,6 @@ export default function ProfilePage() {
   const [displayName, setDisplayName] = useState('username');
   const [avatarId, setAvatarId] = useState(DEFAULT_AVATAR_ID);
   const [showAvatarPicker, setShowAvatarPicker] = useState(false);
-  const [recipes, setRecipes] = useState<Meal[]>([]);
-  const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [newRecipeName, setNewRecipeName] = useState(''); // Viet add: store recipe name to database
   const [newDescription, setNewDescription] = useState(''); // Viet add: store description to database
@@ -75,34 +77,16 @@ export default function ProfilePage() {
   const [uploadError, setUploadError] = useState(''); // AnN add: S3 upload error on 10/29
   const [selectedFile, setSelectedFile] = useState<File | null>(null); // AnN add: Store selected file before upload on 10/29
   const [previewUrl, setPreviewUrl] = useState<string>(''); // AnN add: Local preview URL on 10/29
+  const [newInstructions, setNewInstructions] = useState(''); // AnN add: Store cooking instructions on 10/30
+  const [newVideoUrl, setNewVideoUrl] = useState(''); // AnN add: Store YouTube video URL on 10/30
+  const [selectedUserRecipe, setSelectedUserRecipe] = useState<UserRecipe | null>(null); // AnN add: Selected recipe for detail popup on 10/30
+  const [showUserRecipePopup, setShowUserRecipePopup] = useState(false); // AnN add: Show user recipe detail popup on 10/30
 
   const avatarPresets = useMemo(() => getAvatarPresets(), []);
   const currentPreset: AvatarPreset = useMemo(
     () => resolveAvatarPreset(avatarId),
     [avatarId]
   );
-
-  // AnN add: Fetch recipes and hydrate avatar picker on 10/22
-  useEffect(() => {
-    const fetchRecipes = async () => {
-      try {
-        setLoading(true);
-        const promises = Array.from({ length: 8 }, () =>
-          fetch('https://www.themealdb.com/api/json/v1/1/random.php')
-            .then(res => res.json())
-            .then(data => data.meals[0])
-        );
-        const meals = await Promise.all(promises);
-        setRecipes(meals);
-      } catch (err) {
-        console.error('Error fetching recipes:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchRecipes();
-  }, []);
 
   // AnN add: Fetch user's created recipes from database on 10/23
   const fetchUserRecipes = async () => {
@@ -187,14 +171,7 @@ export default function ProfilePage() {
     }
   };
 
-  const getRecipesForTab = () => {
-    if (activeTab === 'my') return recipes.slice(0, 5);
-    if (activeTab === 'saved') return recipes.slice(0, 5);
-    if (activeTab === 'liked') return recipes.slice(0, 4);
-    return [];
-  };
-
-  const currentRecipes = getRecipesForTab();
+  // AnN edit: Removed getRecipesForTab and currentRecipes - no longer needed on 10/30
 
   // TODO: Backend team will connect these stats to real data
   const statsButtons = [
@@ -262,6 +239,8 @@ export default function ProfilePage() {
           recipeName: newRecipeName,
           description: newDescription,
           photoUrl: photoUrlToUse,  // AnN edit: Use uploaded S3 URL on 10/29
+          instructions: newInstructions || null, // AnN add: Send instructions on 10/30
+          videoUrl: newVideoUrl || null, // AnN add: Send video URL on 10/30
           // Viet add: ingredients and categories
           ingredients: ingredients.map(i => ({ id: i.id, quantity: i.quantity })),
           categoryIds: categories.map(c => c.id),
@@ -405,6 +384,8 @@ export default function ProfilePage() {
     setShowModal(false);
     setNewRecipeName('');
     setNewDescription('');
+    setNewInstructions(''); // AnN add: Reset instructions on 10/30
+    setNewVideoUrl(''); // AnN add: Reset video URL on 10/30
     setUploadError('');
     setCreateRecipeError('');
     setSelectedFile(null);
@@ -417,6 +398,20 @@ export default function ProfilePage() {
       URL.revokeObjectURL(previewUrl); // Clean up memory
     }
     setPreviewUrl('');
+  };
+
+  // AnN add: Open user recipe detail popup on 10/30
+  const handleOpenUserRecipePopup = (recipe: UserRecipe) => {
+    setSelectedUserRecipe(recipe);
+    setShowUserRecipePopup(true);
+    document.body.style.overflow = 'hidden';
+  };
+
+  // AnN add: Close user recipe detail popup on 10/30
+  const handleCloseUserRecipePopup = () => {
+    setShowUserRecipePopup(false);
+    setSelectedUserRecipe(null);
+    document.body.style.overflow = 'unset';
   };
 
   // AnN edit: Store file and show preview (upload only on Post) on 10/29
@@ -761,6 +756,32 @@ export default function ProfilePage() {
                 />
               </div>
 
+              {/* AnN add: Instructions textarea on 10/30 */}
+              <div className='flex flex-col gap-2 w-full'>
+                <p className='text-sm font-semibold'>Instructions <span className='text-xs text-amber-600'>(Optional)</span></p>
+                <textarea
+                  name="instructions"
+                  id="instructions"
+                  rows={5}
+                  value={newInstructions}
+                  onChange={(e) => setNewInstructions(e.target.value)}
+                  className="border-2 border-amber-300 rounded-xl p-3 w-full text-sm focus:border-amber-500 focus:ring-2 focus:ring-amber-200 focus:outline-none transition-all hover:border-amber-400 resize-none"
+                  placeholder="1. First step...&#10;2. Second step...&#10;3. Third step..."
+                />
+              </div>
+
+              {/* AnN add: YouTube video URL input on 10/30 */}
+              <div className='flex flex-col gap-2 w-full'>
+                <p className='text-sm font-semibold'>YouTube Video <span className='text-xs text-amber-600'>(Optional)</span></p>
+                <input
+                  type='text'
+                  value={newVideoUrl}
+                  onChange={(e) => setNewVideoUrl(e.target.value)}
+                  placeholder="https://www.youtube.com/watch?v=..."
+                  className='border-2 border-amber-300 px-4 py-2 text-sm rounded-xl focus:border-amber-500 focus:ring-2 focus:ring-amber-200 focus:outline-none hover:border-amber-400 transition-all'
+                />
+              </div>
+
             {/* Viet add: Show added ingredients */}
             {ingredients.length > 0 && (
               <div className='mt-2 flex flex-wrap gap-2 items-center'>
@@ -853,134 +874,89 @@ export default function ProfilePage() {
             })}
           </nav>
 
-          {/* Recipe cards with loading state */}
+          {/* AnN edit: Show content based on active tab on 10/30 */}
           <div className="mt-8 flex flex-col gap-6">
-            {loading ? (
-              Array.from({ length: 3 }).map((_, index) => (
-                <div
-                  key={index}
-                  className="glass-card overflow-hidden"
-                >
-                  <div className="flex gap-6 p-6">
-                    <div className="h-48 w-48 flex-shrink-0 rounded-lg bg-gradient-to-br from-amber-100 to-amber-200 animate-pulse">
-                      <div className="flex h-full w-full items-center justify-center text-amber-400 text-4xl">
-                        🍽️
-                      </div>
-                    </div>
-                    <div className="flex-1 space-y-4">
-                      <div className="h-8 bg-amber-200 rounded-md animate-pulse"></div>
-                      <div className="h-5 bg-amber-100 rounded-md w-3/4 animate-pulse"></div>
-                      <div className="h-5 bg-amber-100 rounded-md w-1/2 animate-pulse"></div>
-                      <div className="flex gap-2">
-                        <div className="h-7 w-20 bg-amber-200 rounded-full animate-pulse"></div>
-                        <div className="h-7 w-24 bg-amber-200 rounded-full animate-pulse"></div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ))
-            ) : activeTab === 'my' && userRecipes.length > 0 ? (
-              // AnN add: Show user's created recipes on My Recipe tab on 10/23
-              userRecipes.map((recipe) => (
-                <UserRecipeCard key={recipe.recipeId} recipe={recipe} onDelete={handleDeleteClick} />
-              ))
-            ) : activeTab !== 'my' && currentRecipes.length > 0 ? (
-              // AnN fix: Show TheMealDB recipes on Saved/Liked tabs on 10/23
-              currentRecipes.map((recipe, index) => (
-                <RecipeCard key={`${recipe.idMeal}-${index}`} recipe={recipe} />
-              ))
+            {activeTab === 'my' ? (
+              // My Recipes tab - show user's created recipes
+              userRecipes.length > 0 ? (
+                userRecipes.map((recipe) => (
+                  <UserRecipeCard
+                    key={recipe.recipeId}
+                    recipe={recipe}
+                    onDelete={handleDeleteClick}
+                    onClick={handleOpenUserRecipePopup}
+                  />
+                ))
+              ) : (
+                <article className="rounded-3xl border-2 border-dashed border-[#caa977] bg-[#fff9ed] px-6 py-12 text-center text-sm font-medium text-[#8a6134]">
+                  No recipes here yet—start cooking up something delicious!
+                </article>
+              )
             ) : (
+              // Saved/Liked tabs - placeholder for teammates to implement
               <article className="rounded-3xl border-2 border-dashed border-[#caa977] bg-[#fff9ed] px-6 py-12 text-center text-sm font-medium text-[#8a6134]">
-                No recipes here yet—start cooking up something delicious!
+                Placeholder
               </article>
             )}
           </div>
         </section>
+
+        {/* AnN add: User Recipe Detail Popup on 10/30 */}
+        {showUserRecipePopup && selectedUserRecipe && (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={handleCloseUserRecipePopup}>
+            <div className="popUp-scrollbar bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden shadow-2xl relative flex flex-col" onClick={(e) => e.stopPropagation()}>
+              <div className="flex-shrink-0 bg-white border-b border-amber-200 px-6 py-4 flex justify-between items-center z-10">
+                <h2 className="text-2xl font-bold text-amber-900">{selectedUserRecipe.recipeName}</h2>
+                <button onClick={handleCloseUserRecipePopup} className="w-10 h-10 rounded-full hover:bg-amber-100 flex items-center justify-center transition-colors text-amber-900" aria-label="Close popup">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                </button>
+              </div>
+              <div className="overflow-y-auto flex-1 popUp-scrollbar p-6">
+                {selectedUserRecipe.photoUrl && (<div className="relative w-full h-96 rounded-xl overflow-hidden mb-6"><Image src={selectedUserRecipe.photoUrl} alt={selectedUserRecipe.recipeName} fill className="object-cover" sizes="(max-width: 896px) 100vw, 896px" /></div>)}
+                {selectedUserRecipe.description && (<div className="mb-6"><h3 className="font-bold text-amber-900 mb-2 text-xl">Description</h3><p className="text-amber-800">{selectedUserRecipe.description}</p></div>)}
+                {selectedUserRecipe.categories && selectedUserRecipe.categories.length > 0 && (<div className="mb-6"><h3 className="font-bold text-amber-900 mb-2 text-xl">Category</h3><div className="flex gap-2 flex-wrap">{selectedUserRecipe.categories.map((cat) => (<span key={cat.id} className="px-3 py-1 text-sm font-medium bg-amber-100 text-amber-800 rounded-full">{cat.name}</span>))}</div></div>)}
+                {selectedUserRecipe.ingredients && selectedUserRecipe.ingredients.length > 0 && (<div className="mb-6"><h3 className="font-bold text-amber-900 mb-3 text-xl">Ingredients</h3><ul className="grid md:grid-cols-2 gap-2">{selectedUserRecipe.ingredients.map((ing) => (<li key={ing.id} className="flex items-center gap-2 text-amber-800"><span className="text-amber-600">•</span>{ing.quantity} {ing.name}</li>))}</ul></div>)}
+                {selectedUserRecipe.instructions && (<div className="mb-6"><h3 className="font-bold text-amber-900 mb-3 text-xl">Instructions</h3><div className="prose max-w-none text-amber-800 whitespace-pre-line">{selectedUserRecipe.instructions}</div></div>)}
+                {selectedUserRecipe.videoUrl && (() => {const videoId = getYouTubeVideoId(selectedUserRecipe.videoUrl); return videoId ? (<div className="mb-6"><h3 className="font-bold text-amber-900 mb-3 text-xl flex items-center gap-2"><span>▶️</span>Video Tutorial</h3><div className="relative w-full" style={{paddingBottom: '56.25%'}}><iframe className="absolute top-0 left-0 w-full h-full rounded-xl" src={`https://www.youtube.com/embed/${videoId}`} title="YouTube video player" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowFullScreen /></div></div>) : null;})()}
+                <p className="text-sm text-amber-600 mt-6">Created: {new Date(selectedUserRecipe.createdAt).toLocaleDateString()}</p>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
 }
 
+// AnN edit: Keep all tabs for teammates to implement saved/liked later on 10/30
 const tabConfig: Array<{ id: TabKey; label: string; icon: string }> = [
   { id: 'my', label: 'My Recipes', icon: '🍜' },
   { id: 'saved', label: 'Saved Recipes', icon: '🍴' },
   { id: 'liked', label: 'Liked', icon: '❤️' },
 ];
 
-type RecipeCardProps = {
-  recipe: Meal;
-  onClick?: () => void;
-};
-
-function RecipeCard({ recipe, onClick }: RecipeCardProps) {
-  return (
-    <article className="glass-card overflow-hidden hover:shadow-xl transition-all duration-300 cursor-pointer group relative">
-      <button
-        className="absolute top-4 right-4 z-10 w-12 h-12 rounded-full bg-white/90 backdrop-blur flex items-center justify-center shadow-lg hover:bg-white transition-all duration-200 hover:scale-110"
-        aria-label="Save recipe"
-      >
-        <span className="text-2xl text-amber-600 hover:text-red-500 transition-colors">
-          ♡
-        </span>
-      </button>
-
-      <div className="flex gap-6 p-6">
-        {/* AnN fix: Changed img to Image for better performance on 10/17 */}
-        <div className="relative h-48 w-48 flex-shrink-0 rounded-lg overflow-hidden">
-          <Image
-            src={recipe.strMealThumb}
-            alt={recipe.strMeal}
-            fill
-            className="object-cover group-hover:scale-110 transition-transform duration-300"
-            sizes="192px"
-          />
-        </div>
-        <div className="flex flex-1 flex-col gap-3">
-          <div>
-            <h3 className="text-2xl font-bold text-amber-900 mb-2">{recipe.strMeal}</h3>
-            <div className="space-y-2">
-              <div className="flex items-center gap-2 text-amber-700">
-                <span className="text-lg">🍴</span>
-                <span className="text-sm">{recipe.strCategory}</span>
-              </div>
-              <div className="flex items-center gap-2 text-amber-700">
-                <span className="text-lg">🌍</span>
-                <span className="text-sm">{recipe.strArea} Cuisine</span>
-              </div>
-            </div>
-          </div>
-
-          {recipe.strTags && (
-            <div className="flex flex-wrap gap-2 mt-2">
-              {recipe.strTags.split(',').slice(0, 3).map((tag, idx) => (
-                <span
-                  key={idx}
-                  className="px-3 py-1 text-xs font-medium bg-amber-100 text-amber-800 rounded-full"
-                >
-                  {tag.trim()}
-                </span>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
-    </article>
-  );
-}
+// AnN edit: Removed RecipeCard component and Meal interface - no longer needed on 10/30
 
 // AnN add: Card component for user's created recipes on 10/23
 type UserRecipeCardProps = {
   recipe: UserRecipe;
   onDelete: (recipeId: number) => void;
+  onClick: (recipe: UserRecipe) => void; // AnN add: Click handler on 10/30
 };
 
-function UserRecipeCard({ recipe, onDelete }: UserRecipeCardProps) {
+function UserRecipeCard({ recipe, onDelete, onClick }: UserRecipeCardProps) {
   return (
-    <article className="glass-card overflow-hidden hover:shadow-xl transition-all duration-300 cursor-pointer group relative">
+    <article
+      className="glass-card overflow-hidden hover:shadow-xl transition-all duration-300 cursor-pointer group relative"
+      onClick={() => onClick(recipe)} // AnN add: Make card clickable on 10/30
+    >
       <button
         className="absolute top-4 right-4 z-10 w-10 h-10 rounded-full bg-white/90 backdrop-blur flex items-center justify-center shadow-lg hover:bg-white transition-all duration-200 hover:scale-110"
         aria-label="Delete recipe"
-        onClick={() => onDelete(recipe.recipeId)}
+        onClick={(e) => {
+          e.stopPropagation(); // AnN add: Prevent card click when deleting on 10/30
+          onDelete(recipe.recipeId);
+        }}
       >
         <TrashIcon className="w-5 h-5 text-amber-600 hover:text-red-500 transition-colors" />
       </button>

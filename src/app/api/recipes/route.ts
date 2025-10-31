@@ -8,6 +8,8 @@ export async function POST(req: Request) {
     const recipeName = (body?.recipeName ?? '').toString().trim()
     const description = body?.description ? body.description.toString() : null
     const photoUrl = body?.photoUrl ? body.photoUrl.toString() : null  // AnN add: Accept photo URL on 10/23
+    const instructions = body?.instructions ? body.instructions.toString() : null // AnN add: Accept instructions on 10/30
+    const videoUrl = body?.videoUrl ? body.videoUrl.toString() : null // AnN add: Accept video URL on 10/30
     const ingredients: { id: number; quantity?: string }[] = body?.ingredients || [] // Viet add: Accept ingredients
     const categories: number[] = body?.categoryIds || [] // Viet add: Accept categories
 
@@ -25,7 +27,14 @@ export async function POST(req: Request) {
 
     // Create new recipe record in DB
     const recipe = await prisma.recipe.create({
-      data: { userId, recipeName, description: description || undefined, photoUrl: photoUrl || undefined }, // AnN add: Save photo URL on 10/23
+      data: {
+        userId,
+        recipeName,
+        description: description || undefined,
+        photoUrl: photoUrl || undefined, // AnN add: Save photo URL on 10/23
+        instructions: instructions || undefined, // AnN add: Save instructions on 10/30
+        videoUrl: videoUrl || undefined, // AnN add: Save video URL on 10/30
+      },
     })
 
     // Viet add: link ingredients to recipe
@@ -99,6 +108,8 @@ export async function GET(req: Request) {
       recipeName: r.recipeName,
       description: r.description,
       photoUrl: r.photoUrl,
+      instructions: r.instructions, // AnN add: Return instructions on 10/30
+      videoUrl: r.videoUrl, // AnN add: Return video URL on 10/30
       createdAt: r.createdAt,
       ingredients: r.recipeIngredients.map((ri) => ({
         id: ri.ingredient.ingredientId,
