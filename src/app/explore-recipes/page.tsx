@@ -28,6 +28,21 @@ interface Meal {
   [key: `strMeasure${number}`]: string | undefined;
 }
 
+// Helper function to extract YouTube video ID from URL
+const getYouTubeVideoId = (url: string): string | null => {
+  if (!url) return null;
+  
+  // Handle youtube.com/watch?v=VIDEO_ID format
+  const watchMatch = url.match(/(?:youtube\.com\/watch\?v=)([a-zA-Z0-9_-]+)/);
+  if (watchMatch) return watchMatch[1];
+  
+  // Handle youtu.be/VIDEO_ID format
+  const shortMatch = url.match(/(?:youtu\.be\/)([a-zA-Z0-9_-]+)/);
+  if (shortMatch) return shortMatch[1];
+  
+  return null;
+};
+
 export default function ExploreRecipesPage() {
   /* 
    * STATE MANAGEMENT - Using React hooks to manage component data
@@ -304,24 +319,25 @@ export default function ExploreRecipesPage() {
                   </div>
                 </div>
 
-                {/*
-                 * 1. recipe.strTags.split(',') - Split "Pasta,Curry" into ["Pasta", "Curry"]
-                 * 2. .slice(0, 2) - Take only first 2 tags (avoid overflow)
-                 * 3. .map() - Create a pill for each tag
-                 * 4. tag.trim() - Remove extra spaces
-                 */}
-                {recipe.strTags && (
-                  <div className="flex gap-2 flex-wrap">
-                    {recipe.strTags.split(',').slice(0, 2).map((tag, idx) => (
-                      <span
-                        key={idx}
-                        className="px-3 py-1 text-xs font-medium bg-amber-100 text-amber-800 rounded-full"
-                      >
-                        {tag.trim()}
-                      </span>
-                    ))}
-                  </div>
-                )}
+              
+                <div className="flex gap-2 flex-wrap">
+                  {recipe.strTags && recipe.strTags.split(',').slice(0, 2).map((tag, idx) => (
+                    <span
+                      key={idx}
+                      className="px-3 py-1 text-xs font-medium bg-amber-100 text-amber-800 rounded-full"
+                    >
+                      {tag.trim()}
+                    </span>
+                  ))}
+                  
+                  {/* YouTube Tutorial Tag */}
+                  {recipe.strYoutube && (
+                    <span className="px-3 py-1 text-xs font-medium bg-red-100 text-red-800 rounded-full flex items-center gap-1">
+                      <span>▶️</span>
+                      Video Tutorial
+                    </span>
+                  )}
+                </div>
               </div>
             </div>
           ))
@@ -464,20 +480,28 @@ export default function ExploreRecipesPage() {
                 </div>
               )}
 
-              {/* YouTube Link */}
-              {selectedRecipe.strYoutube && (
-                <div className="mb-6">
-                  <a
-                    href={selectedRecipe.strYoutube}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
-                  >
-                    <span>▶️</span>
-                    Watch Video Tutorial
-                  </a>
-                </div>
-              )}
+              {/* YouTube Video Player */}
+              {selectedRecipe.strYoutube && (() => {
+                const videoId = getYouTubeVideoId(selectedRecipe.strYoutube);
+                return videoId ? (
+                  <div className="mb-6">
+                    <h3 className="font-bold text-amber-900 mb-3 text-xl flex items-center gap-2">
+                      <span>▶️</span>
+                      Video Tutorial
+                    </h3>
+                    <div className="relative w-full" style={{ paddingBottom: '56.25%' }}>
+                      <iframe
+                        className="absolute top-0 left-0 w-full h-full rounded-xl"
+                        src={`https://www.youtube.com/embed/${videoId}`}
+                        title="YouTube video player"
+                        frameBorder="0"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                        allowFullScreen
+                      />
+                    </div>
+                  </div>
+                ) : null;
+              })()}
             </div>
           </div>
         </div>

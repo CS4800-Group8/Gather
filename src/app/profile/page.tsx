@@ -15,14 +15,15 @@ import { TrashIcon } from '@heroicons/react/24/outline'; // AnN add: Heroicons d
 
 type TabKey = 'my' | 'saved' | 'liked';
 
-// Using TheMealDB API structure (matches explore-recipes)
+// Recipe interface - supports both MealDB API and user-created recipes
 interface Meal {
-  idMeal: string;
-  strMeal: string;
-  strMealThumb: string;
-  strCategory: string;
-  strArea: string;
-  strTags: string | null;
+  idMeal: string;           // Recipe ID
+  strMeal: string;          // Recipe name
+  strMealThumb: string;     // Recipe image URL
+  strCategory: string;      // Category (e.g., "Vegetarian", "Seafood")
+  strArea: string;          // Cuisine type (e.g., "Italian", "Chinese")
+  strTags: string | null;   // Tags (only for MealDB recipes, not used for user recipes)
+  strYoutube?: string;      // YouTube URL for video tutorials (optional)
 }
 
 // AnN add: Interface for user's created recipes from database on 10/23
@@ -576,7 +577,7 @@ export default function ProfilePage() {
                 </div>
                 <button className='border p-1 rounded-xl w-[50px] text-sm hover:border-gray-400 hover:opacity-70 transition-all'>+Add</button>
               </div>*/}
-              
+
               {/* Instruction */}
               <div className='flex flex-col gap-2 w-full'>
                 <p className='text-sm font-semibold'>Description</p>
@@ -590,7 +591,6 @@ export default function ProfilePage() {
                   placeholder="Describe your recipe..."
                 />
               </div>
-
               {/* Category 
               <div className='flex w-full gap-10'>
                 <p>Categories</p>
@@ -703,16 +703,17 @@ export default function ProfilePage() {
 }
 
 const tabConfig: Array<{ id: TabKey; label: string; icon: string }> = [
-  { id: 'my', label: 'My Recipe', icon: '🍜' },
-  { id: 'saved', label: 'Saved Recipe', icon: '🍴' },
+  { id: 'my', label: 'My Recipes', icon: '🍜' },
+  { id: 'saved', label: 'Saved Recipes', icon: '🍴' },
   { id: 'liked', label: 'Liked', icon: '❤️' },
 ];
 
 type RecipeCardProps = {
   recipe: Meal;
+  onClick?: () => void;
 };
 
-function RecipeCard({ recipe }: RecipeCardProps) {
+function RecipeCard({ recipe, onClick }: RecipeCardProps) {
   return (
     <article className="glass-card overflow-hidden hover:shadow-xl transition-all duration-300 cursor-pointer group relative">
       <button
@@ -749,6 +750,7 @@ function RecipeCard({ recipe }: RecipeCardProps) {
               </div>
             </div>
           </div>
+
           {recipe.strTags && (
             <div className="flex flex-wrap gap-2 mt-2">
               {recipe.strTags.split(',').slice(0, 3).map((tag, idx) => (
