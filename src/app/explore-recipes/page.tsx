@@ -28,6 +28,21 @@ interface Meal {
   [key: `strMeasure${number}`]: string | undefined;
 }
 
+// Helper function to extract YouTube video ID from URL
+const getYouTubeVideoId = (url: string): string | null => {
+  if (!url) return null;
+  
+  // Handle youtube.com/watch?v=VIDEO_ID format
+  const watchMatch = url.match(/(?:youtube\.com\/watch\?v=)([a-zA-Z0-9_-]+)/);
+  if (watchMatch) return watchMatch[1];
+  
+  // Handle youtu.be/VIDEO_ID format
+  const shortMatch = url.match(/(?:youtu\.be\/)([a-zA-Z0-9_-]+)/);
+  if (shortMatch) return shortMatch[1];
+  
+  return null;
+};
+
 export default function ExploreRecipesPage() {
   /* 
    * STATE MANAGEMENT - Using React hooks to manage component data
@@ -53,33 +68,15 @@ export default function ExploreRecipesPage() {
   const [isPopUpOpen, setIsPopUpOpen] = useState(false);
   
   // Likes state (stored in localStorage)
-  const [likedRecipes, setLikedRecipes] = useState<Set<string>>(new Set());
+  const [favoritedRecipes, setFavoritedRecipes] = useState<Set<string>>(new Set());
 
   // Load likes from localStorage
   useEffect(() => {
-    const storedLikes = localStorage.getItem('likedRecipes');
+    const storedLikes = localStorage.getItem('favoritedRecipes');
     if (storedLikes) {
-      setLikedRecipes(new Set(JSON.parse(storedLikes)));
+      setFavoritedRecipes(new Set(JSON.parse(storedLikes)));
     }
   }, []);
-
-  // Toggle like functionality
-  const toggleLike = (recipeId: string, e?: React.MouseEvent) => {
-    if (e) {
-      e.stopPropagation(); // Prevent card click when clicking like button
-    }
-    
-    setLikedRecipes(prev => {
-      const newLikes = new Set(prev);
-      if (newLikes.has(recipeId)) {
-        newLikes.delete(recipeId);
-      } else {
-        newLikes.add(recipeId);
-      }
-      localStorage.setItem('likedRecipes', JSON.stringify([...newLikes]));
-      return newLikes;
-    });
-  };
 
   // Open popUp with full recipe details
   const openRecipePopUp = async (recipe: Meal) => {
@@ -194,6 +191,142 @@ export default function ExploreRecipesPage() {
     fetchRecipes();
   }, []); // Empty dependency array = run once on mount only
 
+  // Add this function to handle saving to FavoriteAPIRecipe table
+  const saveFavoriteAPIRecipe = async (apiId: string) => {
+    try {
+      // Get current user from localStorage
+      const stored = localStorage.getItem('gatherUser') || localStorage.getItem('user');
+      if (!stored) {
+        console.error('User not logged in');
+        return false;
+      }
+
+      const userData = JSON.parse(stored);
+      const userId = userData.id;
+
+      if (!userId) {
+        console.error('User ID not found');
+        return false;
+      }
+
+      const favoriteRecipeData = {
+        userId: userId,
+        apiId: apiId
+      };
+
+      const response = await fetch('/api/favorite-api-recipes', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(favoriteRecipeData),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('Failed to save favorite recipe:', errorData.error);
+        return false;
+      }
+
+      return true;
+    } catch (error) {
+      console.error('Error saving favorite recipe:', error);
+      return false;
+    }
+  };
+
+  // Add this function to remove from FavoriteAPIRecipe table
+  const removeFavoriteAPIRecipe = async (apiId: string) => {
+    try {
+      // Get current user from localStorage
+      const stored = localStorage.getItem('gatherUser') || localStorage.getItem('user');
+      if (!stored) {
+        console.error('User not logged in');
+        return false;
+      }
+
+      const userData = JSON.parse(stored);
+      const userId = userData.id;
+
+      if (!userId) {
+        console.error('User ID not found');
+        return false;
+      }
+
+      const response = await fetch('/api/favorite-api-recipes', {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId: userId,
+          apiId: apiId
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('Failed to remove favorite recipe:', errorData.error);
+        return false;
+      }
+
+      return true;
+    } catch (error) {
+      console.error('Error removing favorite recipe:', error);
+      return false;
+    }
+  };
+
+  // Update the existing toggleLike function
+  const toggleFavorite = async (apiId: string, e?: React.MouseEvent) => {
+    if (e) {
+      e.stopPropagation(); // Prevent card click when clicking like button
+    }
+    
+    // Check if user is logged in
+    const stored = localStorage.getItem('gatherUser') || localStorage.getItem('user');
+    if (!stored) {
+      alert('Please log in to like recipes');
+      return;
+    }
+
+    const userData = JSON.parse(stored);
+    if (!userData.id) {
+      alert('Please log in to like recipes');
+      return;
+    }
+
+    const isCurrentlyFavorited = favoritedRecipes.has(apiId);
+    
+    try {
+      if (isCurrentlyFavorited) {
+        // Remove from favorites
+        const success = await removeFavoriteAPIRecipe(apiId);
+        if (success) {
+          setFavoritedRecipes(prev => {
+            const newLikes = new Set(prev);
+            newLikes.delete(apiId);
+            localStorage.setItem('favoritedRecipes', JSON.stringify([...newLikes]));
+            return newLikes;
+          });
+        }
+      } else {
+        // Add to favorites
+        const success = await saveFavoriteAPIRecipe(apiId);
+        if (success) {
+          setFavoritedRecipes(prev => {
+            const newLikes = new Set(prev);
+            newLikes.add(apiId);
+            localStorage.setItem('favoritedRecipes', JSON.stringify([...newLikes]));
+            return newLikes;
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Error toggling like:', error);
+    }
+  };
+
   // COMPONENT RENDERING - What gets displayed to the user
   return (
     <section className="px-6 py-8">
@@ -253,15 +386,15 @@ export default function ExploreRecipesPage() {
             >
               <button
                 className="absolute top-4 right-4 z-10 w-10 h-10 rounded-full bg-white/90 backdrop-blur flex items-center justify-center shadow-lg hover:bg-white transition-all duration-200 hover:scale-110"
-                aria-label="Save recipe"
-                onClick={(e) => toggleLike(recipe.idMeal, e)}
+                aria-label="Favorite recipe"
+                onClick={(e) => toggleFavorite(recipe.idMeal, e)}
               >
                 <span className={`text-2xl transition-colors ${
-                  likedRecipes.has(recipe.idMeal) 
+                  favoritedRecipes.has(recipe.idMeal) 
                     ? 'text-red-500' 
                     : 'text-amber-600 hover:text-red-500'
                 }`}>
-                  {likedRecipes.has(recipe.idMeal) ? '♥' : '♡'}
+                  {favoritedRecipes.has(recipe.idMeal) ? '♥' : '♡'}
                 </span>
               </button>
 
@@ -289,39 +422,14 @@ export default function ExploreRecipesPage() {
                   {recipe.strMeal}
                 </h3>
 
-                {/* Recipe Details - Category and Cuisine */}
-                <div className="space-y-2 mb-4">
-                  {/* Category ("Vegetarian", "Seafood") */}
+                {/* AnN edit: Removed cuisine and tags to match user recipes on 10/30 */}
+                <div className="mb-4">
+                  {/* Category only */}
                   <div className="flex items-center gap-2 text-amber-700">
                     <span className="text-lg">🍴</span>
                     <span className="text-sm">{recipe.strCategory}</span>
                   </div>
-                  
-                  {/* Cuisine/Area ("Italian", "Chinese") */}
-                  <div className="flex items-center gap-2 text-amber-700">
-                    <span className="text-lg">🌍</span>
-                    <span className="text-sm">{recipe.strArea} Cuisine</span>
-                  </div>
                 </div>
-
-                {/*
-                 * 1. recipe.strTags.split(',') - Split "Pasta,Curry" into ["Pasta", "Curry"]
-                 * 2. .slice(0, 2) - Take only first 2 tags (avoid overflow)
-                 * 3. .map() - Create a pill for each tag
-                 * 4. tag.trim() - Remove extra spaces
-                 */}
-                {recipe.strTags && (
-                  <div className="flex gap-2 flex-wrap">
-                    {recipe.strTags.split(',').slice(0, 2).map((tag, idx) => (
-                      <span
-                        key={idx}
-                        className="px-3 py-1 text-xs font-medium bg-amber-100 text-amber-800 rounded-full"
-                      >
-                        {tag.trim()}
-                      </span>
-                    ))}
-                  </div>
-                )}
               </div>
             </div>
           ))
@@ -379,35 +487,30 @@ export default function ExploreRecipesPage() {
                   sizes="(max-width: 896px) 100vw, 896px"
                 />
                 
-                {/* Like Button on Image */}
+                {/* Favorite Button on Image */}
                 <button
                   className="absolute top-4 right-4 w-12 h-12 rounded-full bg-white/90 backdrop-blur flex items-center justify-center shadow-lg hover:bg-white transition-all duration-200 hover:scale-110"
-                  onClick={() => toggleLike(selectedRecipe.idMeal)}
-                  aria-label="Like recipe"
+                  onClick={() => toggleFavorite(selectedRecipe.idMeal)}
+                  aria-label="Favorite recipe"
                 >
                   <span className={`text-3xl transition-colors ${
-                    likedRecipes.has(selectedRecipe.idMeal) 
+                    favoritedRecipes.has(selectedRecipe.idMeal) 
                       ? 'text-red-500' 
                       : 'text-amber-600 hover:text-red-500'
                   }`}>
-                    {likedRecipes.has(selectedRecipe.idMeal) ? '♥' : '♡'}
+                    {favoritedRecipes.has(selectedRecipe.idMeal) ? '♥' : '♡'}
                   </span>
                 </button>
               </div>
 
-              {/* Recipe Info Grid */}
+              {/* AnN edit: Removed cuisine and tags, kept category and nutrition on 10/30 */}
               <div className="grid md:grid-cols-2 gap-6 mb-6">
-                {/* Category & Cuisine */}
-                <div className="space-y-3">
+                {/* Category only */}
+                <div>
                   <div className="flex items-center gap-2 text-amber-700">
                     <span className="text-xl">🍴</span>
                     <span className="font-semibold">Category:</span>
                     <span>{selectedRecipe.strCategory}</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-amber-700">
-                    <span className="text-xl">🌍</span>
-                    <span className="font-semibold">Cuisine:</span>
-                    <span>{selectedRecipe.strArea}</span>
                   </div>
                 </div>
 
@@ -423,23 +526,6 @@ export default function ExploreRecipesPage() {
                   <p className="text-xs text-amber-600 mt-2">*Estimates may vary</p>
                 </div>
               </div>
-
-              {/* Tags */}
-              {selectedRecipe.strTags && (
-                <div className="mb-6">
-                  <h3 className="font-bold text-amber-900 mb-2">Tags</h3>
-                  <div className="flex gap-2 flex-wrap">
-                    {selectedRecipe.strTags.split(',').map((tag, idx) => (
-                      <span
-                        key={idx}
-                        className="px-3 py-1 text-sm font-medium bg-amber-100 text-amber-800 rounded-full"
-                      >
-                        {tag.trim()}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
 
               {/* Ingredients */}
               <div className="mb-6">
@@ -464,20 +550,28 @@ export default function ExploreRecipesPage() {
                 </div>
               )}
 
-              {/* YouTube Link */}
-              {selectedRecipe.strYoutube && (
-                <div className="mb-6">
-                  <a
-                    href={selectedRecipe.strYoutube}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
-                  >
-                    <span>▶️</span>
-                    Watch Video Tutorial
-                  </a>
-                </div>
-              )}
+              {/* YouTube Video Player */}
+              {selectedRecipe.strYoutube && (() => {
+                const videoId = getYouTubeVideoId(selectedRecipe.strYoutube);
+                return videoId ? (
+                  <div className="mb-6">
+                    <h3 className="font-bold text-amber-900 mb-3 text-xl flex items-center gap-2">
+                      <span>▶️</span>
+                      Video Tutorial
+                    </h3>
+                    <div className="relative w-full" style={{ paddingBottom: '56.25%' }}>
+                      <iframe
+                        className="absolute top-0 left-0 w-full h-full rounded-xl"
+                        src={`https://www.youtube.com/embed/${videoId}`}
+                        title="YouTube video player"
+                        frameBorder="0"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                        allowFullScreen
+                      />
+                    </div>
+                  </div>
+                ) : null;
+              })()}
             </div>
           </div>
         </div>

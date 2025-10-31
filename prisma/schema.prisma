@@ -1,5 +1,5 @@
 generator client {
-  provider = "prisma-client-js"
+  provider        = "prisma-client-js"
   previewFeatures = ["typedSql", "postgresqlExtensions"] // Not yet update on dev branch
 }
 
@@ -8,34 +8,121 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// model User {
-//   id        Int     @id @default(autoincrement())
-//   firstname String?
-//   lastname  String?
-// }
-
+//
+// ==================== USER ====================
+//
 model User {
-  id         Int       @id @default(autoincrement()) // Primary Key
-  firstname  String
-  lastname   String
-  username   String    @unique
-  email      String    @unique
-  password   String
-  createdAt  DateTime  @default(now())
+  id        Int      @id @default(autoincrement()) // Primary Key
+  firstname String
+  lastname  String
+  username  String   @unique
+  email     String   @unique
+  password  String
+  createdAt DateTime @default(now())
 
   // One-to-Many relationship: One User can have 0 to many Recipes
-  recipes    Recipe[]
+  recipes         Recipe[]
+  favoriteRecipes FavoriteRecipe[] // Many-to-many link with Recipe
+  favoriteAPIRecipes FavoriteAPIRecipe[]
 }
 
+//
+// ==================== RECIPE ====================
+//
 model Recipe {
-  recipeId    Int       @id @default(autoincrement()) // Primary Key
-  userId      Int                                   // Foreign Key referencing User
-  recipeName  String
-  description String?
-  photoUrl    String? // Store recipe photo path 
-  createdAt   DateTime  @default(now())
+  recipeId     Int      @id @default(autoincrement()) // Primary Key
+  userId       Int // Foreign Key referencing User
+  recipeName   String
+  description  String?
+  photoUrl     String? // Store recipe photo path
+  instructions String? // Cooking steps on 10/30
+  videoUrl     String? // YouTube video link on 10/30
+  createdAt    DateTime @default(now())
 
   // Relationship to User (Many Recipes belong to one User)
-  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  recipeIngredients RecipeIngredient[]
+  recipeCategories  RecipeCategory[]
+  FavoriteRecipe    FavoriteRecipe[]
 }
 
+//
+// ==================== FAVORITE RECIPE ====================
+// (Junction table for Many-to-Many between User and Recipe)
+//
+model FavoriteRecipe {
+  userId   Int
+  recipeId Int
+
+  // Relations
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  recipe Recipe @relation(fields: [recipeId], references: [recipeId], onDelete: Cascade)
+
+  // Composite Primary Key
+  @@id([userId, recipeId])
+}
+
+//
+// ==================== INGREDIENT ====================
+//
+model Ingredient {
+  ingredientId   Int    @id @default(autoincrement())
+  ingredientName String @unique
+
+  // Relations
+  recipeIngredients RecipeIngredient[]
+}
+
+//
+// ==================== RECIPE INGREDIENT ====================
+// (Junction table for Many-to-Many between Recipe and Ingredient)
+//
+model RecipeIngredient {
+  recipeId     Int
+  ingredientId Int
+  quantity     String
+
+  // Relations
+  recipe     Recipe     @relation(fields: [recipeId], references: [recipeId], onDelete: Cascade)
+  ingredient Ingredient @relation(fields: [ingredientId], references: [ingredientId], onDelete: Cascade)
+
+  @@id([recipeId, ingredientId])
+}
+
+//
+// ==================== CATEGORY ====================
+//
+model Category {
+  categoryId   Int    @id @default(autoincrement())
+  categoryName String @unique
+
+  // Relations
+  recipeCategories RecipeCategory[]
+}
+
+//
+// ==================== RECIPE CATEGORY ====================
+// (Junction table for Many-to-Many between Recipe and Category)
+//
+model RecipeCategory {
+  recipeId   Int
+  categoryId Int
+
+  // Relations
+  recipe   Recipe   @relation(fields: [recipeId], references: [recipeId], onDelete: Cascade)
+  category Category @relation(fields: [categoryId], references: [categoryId], onDelete: Cascade)
+
+  @@id([recipeId, categoryId])
+}
+
+//
+// ==================== FAVORITE API RECIPE ====================
+// 
+model FavoriteAPIRecipe {
+  userId   Int
+  apiId    String // TheMealDB's idMeal
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@id([userId, apiId])
+}
