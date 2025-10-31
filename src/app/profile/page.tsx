@@ -14,7 +14,7 @@ import AvatarImage from '@/components/AvatarImage'; // AnN add: Use centralized 
 import { TrashIcon } from '@heroicons/react/24/outline'; // AnN add: Heroicons delete icon on 10/23
 
 // AnN edit: Keep all tabs for teammates to implement later on 10/30
-type TabKey = 'my' | 'saved' | 'liked';
+type TabKey = 'my' | 'favorited';
 
 // AnN edit: Removed Meal interface - no longer needed on 10/30
 
@@ -931,8 +931,7 @@ export default function ProfilePage() {
 // AnN edit: Keep all tabs for teammates to implement saved/liked later on 10/30
 const tabConfig: Array<{ id: TabKey; label: string; icon: string }> = [
   { id: 'my', label: 'My Recipes', icon: '🍜' },
-  { id: 'saved', label: 'Saved Recipes', icon: '🍴' },
-  { id: 'liked', label: 'Liked', icon: '❤️' },
+  { id: 'favorited', label: 'Favorite Recipes', icon: '❤️' },
 ];
 
 // AnN edit: Removed RecipeCard component and Meal interface - no longer needed on 10/30
