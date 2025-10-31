@@ -304,39 +304,13 @@ export default function ExploreRecipesPage() {
                   {recipe.strMeal}
                 </h3>
 
-                {/* Recipe Details - Category and Cuisine */}
-                <div className="space-y-2 mb-4">
-                  {/* Category ("Vegetarian", "Seafood") */}
+                {/* AnN edit: Removed cuisine and tags to match user recipes on 10/30 */}
+                <div className="mb-4">
+                  {/* Category only */}
                   <div className="flex items-center gap-2 text-amber-700">
                     <span className="text-lg">🍴</span>
                     <span className="text-sm">{recipe.strCategory}</span>
                   </div>
-                  
-                  {/* Cuisine/Area ("Italian", "Chinese") */}
-                  <div className="flex items-center gap-2 text-amber-700">
-                    <span className="text-lg">🌍</span>
-                    <span className="text-sm">{recipe.strArea} Cuisine</span>
-                  </div>
-                </div>
-
-              
-                <div className="flex gap-2 flex-wrap">
-                  {recipe.strTags && recipe.strTags.split(',').slice(0, 2).map((tag, idx) => (
-                    <span
-                      key={idx}
-                      className="px-3 py-1 text-xs font-medium bg-amber-100 text-amber-800 rounded-full"
-                    >
-                      {tag.trim()}
-                    </span>
-                  ))}
-                  
-                  {/* YouTube Tutorial Tag */}
-                  {recipe.strYoutube && (
-                    <span className="px-3 py-1 text-xs font-medium bg-red-100 text-red-800 rounded-full flex items-center gap-1">
-                      <span>▶️</span>
-                      Video Tutorial
-                    </span>
-                  )}
                 </div>
               </div>
             </div>
@@ -411,19 +385,14 @@ export default function ExploreRecipesPage() {
                 </button>
               </div>
 
-              {/* Recipe Info Grid */}
+              {/* AnN edit: Removed cuisine and tags, kept category and nutrition on 10/30 */}
               <div className="grid md:grid-cols-2 gap-6 mb-6">
-                {/* Category & Cuisine */}
-                <div className="space-y-3">
+                {/* Category only */}
+                <div>
                   <div className="flex items-center gap-2 text-amber-700">
                     <span className="text-xl">🍴</span>
                     <span className="font-semibold">Category:</span>
                     <span>{selectedRecipe.strCategory}</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-amber-700">
-                    <span className="text-xl">🌍</span>
-                    <span className="font-semibold">Cuisine:</span>
-                    <span>{selectedRecipe.strArea}</span>
                   </div>
                 </div>
 
@@ -439,23 +408,6 @@ export default function ExploreRecipesPage() {
                   <p className="text-xs text-amber-600 mt-2">*Estimates may vary</p>
                 </div>
               </div>
-
-              {/* Tags */}
-              {selectedRecipe.strTags && (
-                <div className="mb-6">
-                  <h3 className="font-bold text-amber-900 mb-2">Tags</h3>
-                  <div className="flex gap-2 flex-wrap">
-                    {selectedRecipe.strTags.split(',').map((tag, idx) => (
-                      <span
-                        key={idx}
-                        className="px-3 py-1 text-sm font-medium bg-amber-100 text-amber-800 rounded-full"
-                      >
-                        {tag.trim()}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
 
               {/* Ingredients */}
               <div className="mb-6">

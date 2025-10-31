@@ -29,12 +29,14 @@ model User {
 // ==================== RECIPE ====================
 //
 model Recipe {
-  recipeId    Int      @id @default(autoincrement()) // Primary Key
-  userId      Int // Foreign Key referencing User
-  recipeName  String
-  description String?
-  photoUrl    String? // Store recipe photo path 
-  createdAt   DateTime @default(now())
+  recipeId     Int      @id @default(autoincrement()) // Primary Key
+  userId       Int // Foreign Key referencing User
+  recipeName   String
+  description  String?
+  photoUrl     String? // Store recipe photo path
+  instructions String? // Cooking steps on 10/30
+  videoUrl     String? // YouTube video link on 10/30
+  createdAt    DateTime @default(now())
 
   // Relationship to User (Many Recipes belong to one User)
   user User @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
