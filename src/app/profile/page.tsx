@@ -11,6 +11,7 @@ import {
   resolveAvatarPreset,
 } from '@/lib/avatarPresets';
 import AvatarImage from '@/components/AvatarImage'; // AnN add: Use centralized avatar component on 10/23
+import { TrashIcon } from '@heroicons/react/24/outline'; // AnN add: Heroicons delete icon on 10/23
 
 type TabKey = 'my' | 'saved' | 'liked';
 
@@ -25,20 +26,14 @@ interface Meal {
   strYoutube?: string;      // YouTube URL for video tutorials (optional)
 }
 
-// Helper function to extract YouTube video ID from URL
-const getYouTubeVideoId = (url: string): string | null => {
-  if (!url) return null;
-  
-  // Handle youtube.com/watch?v=VIDEO_ID format
-  const watchMatch = url.match(/(?:youtube\.com\/watch\?v=)([a-zA-Z0-9_-]+)/);
-  if (watchMatch) return watchMatch[1];
-  
-  // Handle youtu.be/VIDEO_ID format
-  const shortMatch = url.match(/(?:youtu\.be\/)([a-zA-Z0-9_-]+)/);
-  if (shortMatch) return shortMatch[1];
-  
-  return null;
-};
+// AnN add: Interface for user's created recipes from database on 10/23
+interface UserRecipe {
+  recipeId: number;
+  recipeName: string;
+  description: string | null;
+  photoUrl: string | null;
+  createdAt: string;
+}
 
 export default function ProfilePage() {
   const [activeTab, setActiveTab] = useState<TabKey>('my');
@@ -50,11 +45,14 @@ export default function ProfilePage() {
   const [showModal, setShowModal] = useState(false);
   const [newRecipeName, setNewRecipeName] = useState('');
   const [newDescription, setNewDescription] = useState('');
-  const [newYoutubeUrl, setNewYoutubeUrl] = useState('');
-  
-  // Recipe detail popup state
-  const [selectedRecipe, setSelectedRecipe] = useState<Meal | null>(null);
-  const [isDetailPopupOpen, setIsDetailPopupOpen] = useState(false);
+  const [userRecipes, setUserRecipes] = useState<UserRecipe[]>([]); // AnN add: Store user's database recipes on 10/23
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false); // AnN add: Show delete confirmation modal on 10/23
+  const [recipeToDelete, setRecipeToDelete] = useState<number | null>(null); // AnN add: Store recipe ID to delete on 10/23
+  const [createRecipeError, setCreateRecipeError] = useState(''); // AnN add: Error message for recipe creation on 10/23
+  const [uploading, setUploading] = useState(false); // AnN add: S3 upload status on 10/29
+  const [uploadError, setUploadError] = useState(''); // AnN add: S3 upload error on 10/29
+  const [selectedFile, setSelectedFile] = useState<File | null>(null); // AnN add: Store selected file before upload on 10/29
+  const [previewUrl, setPreviewUrl] = useState<string>(''); // AnN add: Local preview URL on 10/29
 
   const avatarPresets = useMemo(() => getAvatarPresets(), []);
   const currentPreset: AvatarPreset = useMemo(
@@ -82,6 +80,32 @@ export default function ProfilePage() {
     };
 
     fetchRecipes();
+  }, []);
+
+  // AnN add: Fetch user's created recipes from database on 10/23
+  const fetchUserRecipes = async () => {
+    try {
+      const user = JSON.parse(localStorage.getItem('gatherUser') || '{}');
+      const userId = user?.id;
+
+      if (!userId) return;
+
+      const response = await fetch('/api/recipes', {
+        headers: { 'x-user-id': userId.toString() }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setUserRecipes(data.recipes || []);
+      }
+    } catch (err) {
+      console.error('Error fetching user recipes:', err);
+    }
+  };
+
+  // AnN add: Call fetchUserRecipes on page load on 10/23
+  useEffect(() => {
+    fetchUserRecipes();
   }, []);
 
   // Load user profile from localStorage
@@ -162,23 +186,45 @@ export default function ProfilePage() {
 
   const avatarButtonClasses = `${avatarButtonBase} border-4 border-amber-400 bg-white shadow-[0_24px_48px_rgba(255,183,88,0.28)] hover:border-amber-500`;
 
-  // Open recipe detail popup
-  const openRecipeDetail = (recipe: Meal) => {
-    setSelectedRecipe(recipe);
-    setIsDetailPopupOpen(true);
-    document.body.style.overflow = 'hidden';
-  };
-
-  // Close recipe detail popup
-  const closeRecipeDetail = () => {
-    setIsDetailPopupOpen(false);
-    setSelectedRecipe(null);
-    document.body.style.overflow = 'unset';
-  };
-
   // Viet Add: Submits new recipe to the API and closes the modal on success
   const handleCreateRecipe = async () => {
+    // AnN add: Validate required fields on 10/23
+    if (!newRecipeName.trim()) {
+      setCreateRecipeError('Please enter a recipe name');
+      return;
+    }
+    if (!newDescription.trim()) {
+      setCreateRecipeError('Please enter a description');
+      return;
+    }
+    // AnN add: Require photo upload on 10/29
+    if (!selectedFile) {
+      setCreateRecipeError('Please upload a photo for your recipe');
+      return;
+    }
+
+    setCreateRecipeError(''); // Clear any previous errors
+    setUploading(true); // AnN add: Show uploading state on 10/29
+
     try {
+      // AnN edit: Upload to S3 only when posting on 10/29
+      const formData = new FormData();
+      formData.append('file', selectedFile);
+
+      const uploadResponse = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData,
+      });
+
+      const uploadData = await uploadResponse.json();
+
+      if (!uploadResponse.ok) {
+        throw new Error(uploadData.error || 'Upload failed');
+      }
+
+      const photoUrlToUse = uploadData.imageUrl;
+      console.log('Photo uploaded to S3:', photoUrlToUse);
+
       // Get current user
       const user = JSON.parse(localStorage.getItem('gatherUser') || '{}');
       const userId = user?.id || 1; // Replace with actual auth system later
@@ -193,7 +239,7 @@ export default function ProfilePage() {
         body: JSON.stringify({
           recipeName: newRecipeName,
           description: newDescription,
-          youtubeUrl: newYoutubeUrl || undefined, // Include YouTube URL if provided
+          photoUrl: photoUrlToUse,  // AnN edit: Use uploaded S3 URL on 10/29
         }),
       });
 
@@ -201,18 +247,113 @@ export default function ProfilePage() {
 
       if (!response.ok) {
         console.error(data.error || 'Failed to create recipe');
+        setCreateRecipeError(data.error || 'Failed to create recipe');
       } else {
         console.log('Recipe created:', data.recipe);
 
-        // Close modal after done
-        setShowModal(false);
-        setNewRecipeName('');
-        setNewDescription('');
-        setNewYoutubeUrl('');
+        // AnN add: Refresh recipe list after creating on 10/23
+        await fetchUserRecipes();
+
+        // AnN edit: Use handleCloseModal to reset all form state on 10/29
+        handleCloseModal();
       }
     } catch (error) {
       console.error('Error submitting recipe:', error);
+      setCreateRecipeError('Failed to create recipe. Please try again.');
+    } finally {
+      setUploading(false); // AnN add: Clear uploading state on 10/29
     }
+  };
+
+  // AnN add: Handle modal close and reset form state on 10/29
+  const handleCloseModal = () => {
+    setShowModal(false);
+    setNewRecipeName('');
+    setNewDescription('');
+    setUploadError('');
+    setCreateRecipeError('');
+    setSelectedFile(null);
+    if (previewUrl) {
+      URL.revokeObjectURL(previewUrl); // Clean up memory
+    }
+    setPreviewUrl('');
+  };
+
+  // AnN edit: Store file and show preview (upload only on Post) on 10/29
+  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      setUploadError('Please select an image file');
+      return;
+    }
+
+    // Validate file size (4MB for Vercel compatibility)
+    if (file.size > 4 * 1024 * 1024) {
+      setUploadError('Image must be less than 4MB');
+      return;
+    }
+
+    setUploadError('');
+    setCreateRecipeError(''); // AnN add: Clear recipe error when photo uploaded on 10/29
+
+    // Clean up previous preview URL
+    if (previewUrl) {
+      URL.revokeObjectURL(previewUrl);
+    }
+
+    // Store file and create local preview
+    setSelectedFile(file);
+    const objectUrl = URL.createObjectURL(file);
+    setPreviewUrl(objectUrl);
+    console.log('Photo selected, will upload when you click Post');
+  };
+
+  // AnN add: Handle delete recipe with confirmation on 10/23
+  const handleDeleteClick = (recipeId: number) => {
+    setRecipeToDelete(recipeId);
+    setShowDeleteConfirm(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!recipeToDelete) return;
+
+    try {
+      const user = JSON.parse(localStorage.getItem('gatherUser') || '{}');
+      const userId = user?.id;
+
+      const response = await fetch('/api/recipes', {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-user-id': userId.toString(),
+        },
+        body: JSON.stringify({
+          recipeId: recipeToDelete,
+        }),
+      });
+
+      if (response.ok) {
+        console.log('Recipe deleted successfully');
+        // Refresh recipe list
+        await fetchUserRecipes();
+      } else {
+        const data = await response.json();
+        console.error(data.error || 'Failed to delete recipe');
+      }
+    } catch (error) {
+      console.error('Error deleting recipe:', error);
+    } finally {
+      setShowDeleteConfirm(false);
+      setRecipeToDelete(null);
+    }
+  };
+
+  const handleDeleteCancel = () => {
+    setShowDeleteConfirm(false);
+    setRecipeToDelete(null);
   };
 
   return (
@@ -302,14 +443,14 @@ export default function ProfilePage() {
           </button>
 
           {/* Create Recipe Tab */}
-          <PopupModal isOpen={showModal} onClose={() => setShowModal(false)}>
+          <PopupModal isOpen={showModal} onClose={handleCloseModal}>
 
             <div className='flex flex-col justify-between items-start text-amber-600 gap-5'>
               {/* HEADER */}
               <div className='flex justify-around items-center w-full gap-16'>
                 <button
                   className="text-gray-500 hover:text-red-500 text-2xl"
-                  onClick={() => setShowModal(false)}
+                  onClick={handleCloseModal}
                   aria-label="Close"
                 >
                   &times;
@@ -319,10 +460,18 @@ export default function ProfilePage() {
 
                 <button
                   onClick={handleCreateRecipe}
-                  className='border border-gray-400 shado-md rounded-lg px-2 py-1 hover:opacity-70 hover:-translate-y-1 transition-all'>
-                  Post
-                </button>    
+                  disabled={uploading}
+                  className='border-2 border-amber-400 bg-amber-100 text-amber-900 font-semibold shadow-md rounded-lg px-4 py-2 hover:bg-amber-200 hover:border-amber-500 hover:-translate-y-1 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0'>
+                  {uploading ? 'Posting...' : 'Post'}
+                </button>
               </div>
+
+              {/* AnN add: Error message display on 10/23 */}
+              {createRecipeError && (
+                <div className='w-full px-3 py-2 bg-red-50 border border-red-200 rounded-lg'>
+                  <p className='text-sm text-red-600 text-center'>{createRecipeError}</p>
+                </div>
+              )}
 
               {/* Profile */}
               <div className='flex w-full justify-between gap-10'>
@@ -335,13 +484,79 @@ export default function ProfilePage() {
                 </div>
               </div>
 
+              {/* AnN edit: File upload for recipe photos (S3) on 10/29 */}
+              <div className='flex flex-col w-full gap-2'>
+                <p className='text-sm font-semibold'>Recipe Photo</p>
+
+                {/* Upload error message */}
+                {uploadError && (
+                  <div className='px-3 py-2 bg-red-50 border border-red-200 rounded-lg'>
+                    <p className='text-xs text-red-600'>{uploadError}</p>
+                  </div>
+                )}
+
+                {/* File input */}
+                <div className='flex flex-col gap-3'>
+                  <label
+                    htmlFor="photo-upload"
+                    className={`flex flex-col items-center justify-center w-full h-20 border-2 rounded-lg cursor-pointer transition-all ${
+                      uploading
+                        ? 'border-gray-300 bg-gray-50'
+                        : 'border-amber-300 bg-amber-50 hover:bg-amber-100 hover:border-amber-400'
+                    }`}
+                  >
+                    <div className='flex flex-col items-center justify-center py-2'>
+                      {previewUrl ? (
+                        <>
+                          <svg className="h-6 w-6 text-green-600 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                          </svg>
+                          <p className='text-xs text-amber-700 font-medium'>Photo selected</p>
+                          <p className='text-[10px] text-amber-600'>Click to change</p>
+                        </>
+                      ) : (
+                        <>
+                          <svg className="h-6 w-6 text-amber-600 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                          </svg>
+                          <p className='text-xs text-amber-700 font-medium'>Click to upload photo</p>
+                          <p className='text-[10px] text-amber-600'>PNG, JPG up to 4MB</p>
+                        </>
+                      )}
+                    </div>
+                    <input
+                      id="photo-upload"
+                      type="file"
+                      className="hidden"
+                      accept="image/*"
+                      onChange={handlePhotoUpload}
+                    />
+                  </label>
+
+                  {/* Preview selected image */}
+                  {previewUrl && (
+                    <div className='relative w-full h-36 rounded-lg overflow-hidden border border-amber-300'>
+                      <Image
+                        src={previewUrl}
+                        alt="Recipe preview"
+                        fill
+                        className="object-cover"
+                        sizes="400px"
+                        unoptimized
+                      />
+                    </div>
+                  )}
+                </div>
+              </div>
+
               {/* Recipe Name */}
               <div className='flex flex-col w-full gap-2 justify-center'>
-                <input type="text" 
+                <p className='text-sm font-semibold'>Recipe Name</p>
+                <input type="text"
                 value={newRecipeName}
                 onChange={(e) => setNewRecipeName(e.target.value)}
-                className="text-md py-1 px-3 border rounded-xl w-full hover:opacity-70 hover:border-gray-400"
-                placeholder="Recipe name"
+                className="text-md py-2 px-4 border-2 border-amber-300 rounded-xl w-full focus:border-amber-500 focus:ring-2 focus:ring-amber-200 focus:outline-none transition-all hover:border-amber-400"
+                placeholder="Enter recipe name"
                 />
               </div>
               
@@ -362,61 +577,20 @@ export default function ProfilePage() {
                 </div>
                 <button className='border p-1 rounded-xl w-[50px] text-sm hover:border-gray-400 hover:opacity-70 transition-all'>+Add</button>
               </div>*/}
-              
+
               {/* Instruction */}
               <div className='flex flex-col gap-2 w-full'>
-                <p>Description</p>
-                <textarea 
+                <p className='text-sm font-semibold'>Description</p>
+                <textarea
                   name="instruction"
                   id="instruction"
-                  rows={3}
+                  rows={4}
                   value={newDescription}
                   onChange={(e) => setNewDescription(e.target.value)}
-                  className="border rounded-xl p-2 w-full text-sm hover:opacity-70 hover:border-gray-400"
+                  className="border-2 border-amber-300 rounded-xl p-3 w-full text-sm focus:border-amber-500 focus:ring-2 focus:ring-amber-200 focus:outline-none transition-all hover:border-amber-400 resize-none"
+                  placeholder="Describe your recipe..."
                 />
               </div>
-
-              {/* Media Upload Section - Placeholder for Backend Team */}
-              <div className='flex flex-col gap-3 w-full'>
-                <p className='font-semibold'>Add Media (Optional)</p>
-                
-                {/* Image Upload Placeholder */}
-                <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-gray-300 rounded-xl cursor-pointer 
-                hover:border-amber-400 hover:bg-amber-50 transition-all group">
-                  <div className='flex flex-col items-center gap-2'>
-                    <div className='text-4xl group-hover:scale-110 transition-transform'>📸</div>
-                    <span className="text-sm text-amber-700 font-medium">Upload Recipe Image</span>
-                    <span className="text-xs text-gray-500">Click to browse or drag and drop</span>
-                  </div>
-                  {/* TODO: Backend team - Add file input functionality here with DB connectoin*/}
-                  <input 
-                    type="file" 
-                    accept="image/*"
-                    className="hidden" 
-                    onChange={() => {
-                      // TODO: image upload
-                      console.log('Image upload clicked - Backend team implement here');
-                    }}
-                  />
-                </label>
-
-                {/* YouTube URL Placeholder */}
-                <div className='flex flex-col gap-2'>
-                  <div className='flex items-center gap-2'>
-                    <span className='text-lg'>▶️</span>
-                    <p className='text-sm'>YouTube Video Tutorial</p>
-                  </div>
-                  <input 
-                    type="url"
-                    value={newYoutubeUrl}
-                    onChange={(e) => setNewYoutubeUrl(e.target.value)}
-                    className="text-sm py-2 px-3 border rounded-xl w-full hover:opacity-70 hover:border-gray-400 focus:border-amber-400 focus:outline-none transition-colors"
-                    placeholder="https://www.youtube.com/watch?v=..."
-                  />
-                  <p className='text-xs text-gray-500'>Paste a YouTube link to add a video tutorial</p>
-                </div>
-              </div>
-
               {/* Category 
               <div className='flex w-full gap-10'>
                 <p>Categories</p>
@@ -426,6 +600,35 @@ export default function ProfilePage() {
                 className='border rounded-md px-20 hover:border-gray-400'>
                 </select>
               </div>*/}
+            </div>
+          </PopupModal>
+
+          {/* AnN add: Delete confirmation modal on 10/23 */}
+          <PopupModal isOpen={showDeleteConfirm} onClose={handleDeleteCancel}>
+            <div className='flex flex-col items-center text-amber-800 gap-5 p-6'>
+              {/* Title */}
+              <h3 className='text-xl font-semibold text-amber-900'>Delete Recipe?</h3>
+
+              {/* Message */}
+              <p className='text-center text-amber-700 text-sm'>
+                Are you sure you want to delete this recipe? This action cannot be undone.
+              </p>
+
+              {/* Buttons */}
+              <div className='flex gap-3 w-full mt-2'>
+                <button
+                  onClick={handleDeleteCancel}
+                  className='flex-1 px-4 py-2 rounded-lg border border-amber-300 bg-white text-amber-800 hover:bg-amber-50 transition-colors'
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleDeleteConfirm}
+                  className='flex-1 px-4 py-2 rounded-lg bg-red-500 text-white hover:bg-red-600 transition-colors'
+                >
+                  Delete
+                </button>
+              </div>
             </div>
           </PopupModal>
 
@@ -477,10 +680,15 @@ export default function ProfilePage() {
                   </div>
                 </div>
               ))
-            ) : currentRecipes.length > 0 ? (
-              // AnN fix: Added index to prevent duplicate key errors on 10/23
+            ) : activeTab === 'my' && userRecipes.length > 0 ? (
+              // AnN add: Show user's created recipes on My Recipe tab on 10/23
+              userRecipes.map((recipe) => (
+                <UserRecipeCard key={recipe.recipeId} recipe={recipe} onDelete={handleDeleteClick} />
+              ))
+            ) : activeTab !== 'my' && currentRecipes.length > 0 ? (
+              // AnN fix: Show TheMealDB recipes on Saved/Liked tabs on 10/23
               currentRecipes.map((recipe, index) => (
-                <RecipeCard key={`${recipe.idMeal}-${index}`} recipe={recipe} onClick={() => openRecipeDetail(recipe)} />
+                <RecipeCard key={`${recipe.idMeal}-${index}`} recipe={recipe} />
               ))
             ) : (
               <article className="rounded-3xl border-2 border-dashed border-[#caa977] bg-[#fff9ed] px-6 py-12 text-center text-sm font-medium text-[#8a6134]">
@@ -490,96 +698,6 @@ export default function ProfilePage() {
           </div>
         </section>
       </div>
-
-      {/* RECIPE DETAIL POPUP */}
-      {isDetailPopupOpen && selectedRecipe && (
-        <div 
-          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-          onClick={closeRecipeDetail}
-        >
-          <div 
-            className="popUp-scrollbar bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden shadow-2xl relative flex flex-col"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* PopUp */}
-            <div className="flex-shrink-0 bg-white border-b border-amber-200 px-6 py-4 flex justify-between items-center z-10">
-              <h2 className="text-2xl font-bold text-amber-900">{selectedRecipe.strMeal}</h2>
-              <button
-                onClick={closeRecipeDetail}
-                className="w-10 h-10 rounded-full hover:bg-amber-100 flex items-center justify-center transition-colors text-amber-900"
-                aria-label="Close popup"
-              >
-                <svg 
-                  width="24" 
-                  height="24" 
-                  viewBox="0 0 24 24" 
-                  fill="none" 
-                  stroke="currentColor" 
-                  strokeWidth="2" 
-                  strokeLinecap="round" 
-                  strokeLinejoin="round"
-                >
-                  <line x1="18" y1="6" x2="6" y2="18"></line>
-                  <line x1="6" y1="6" x2="18" y2="18"></line>
-                </svg>
-              </button>
-            </div>
-
-            {/* PopUp Content - Scrollable Area */}
-            <div className="overflow-y-auto flex-1 popUp-scrollbar p-6">
-              {/* Recipe Image */}
-              <div className="relative w-full h-96 rounded-xl overflow-hidden mb-6">
-                <Image
-                  src={selectedRecipe.strMealThumb}
-                  alt={selectedRecipe.strMeal}
-                  fill
-                  className="object-cover"
-                  sizes="(max-width: 896px) 100vw, 896px"
-                />
-              </div>
-
-              {/* Recipe Info Grid */}
-              <div className="grid md:grid-cols-2 gap-6 mb-6">
-                <div className="space-y-3">
-                  <div className="flex items-center gap-2 text-amber-700">
-                    <span className="text-xl">🍴</span>
-                    <span className="font-semibold">Category:</span>
-                    <span>{selectedRecipe.strCategory}</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-amber-700">
-                    <span className="text-xl">🌍</span>
-                    <span className="font-semibold">Cuisine:</span>
-                    <span>{selectedRecipe.strArea}</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* YouTube Video Player */}
-              {selectedRecipe.strYoutube && (() => {
-                const videoId = getYouTubeVideoId(selectedRecipe.strYoutube);
-                return videoId ? (
-                  <div className="mb-6">
-                    <h3 className="font-bold text-amber-900 mb-3 text-xl flex items-center gap-2">
-                      <span>▶️</span>
-                      Video Tutorial
-                    </h3>
-                    <div className="relative w-full" style={{ paddingBottom: '56.25%' }}>
-                      <iframe
-                        className="absolute top-0 left-0 w-full h-full rounded-xl"
-                        src={`https://www.youtube.com/embed/${videoId}`}
-                        title="YouTube video player"
-                        frameBorder="0"
-                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                        allowFullScreen
-                      />
-                    </div>
-                  </div>
-                ) : null;
-              })()}
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
@@ -597,14 +715,10 @@ type RecipeCardProps = {
 
 function RecipeCard({ recipe, onClick }: RecipeCardProps) {
   return (
-    <article 
-      className="glass-card overflow-hidden hover:shadow-xl transition-all duration-300 cursor-pointer group relative"
-      onClick={onClick}
-    >
+    <article className="glass-card overflow-hidden hover:shadow-xl transition-all duration-300 cursor-pointer group relative">
       <button
         className="absolute top-4 right-4 z-10 w-12 h-12 rounded-full bg-white/90 backdrop-blur flex items-center justify-center shadow-lg hover:bg-white transition-all duration-200 hover:scale-110"
         aria-label="Save recipe"
-        onClick={(e) => e.stopPropagation()}
       >
         <span className="text-2xl text-amber-600 hover:text-red-500 transition-colors">
           ♡
@@ -636,15 +750,68 @@ function RecipeCard({ recipe, onClick }: RecipeCardProps) {
               </div>
             </div>
           </div>
-          {/* YouTube Tutorial Tag */}
-          {recipe.strYoutube && (
-            <div className="flex gap-2 mt-2">
-              <span className="px-3 py-1 text-xs font-medium bg-red-100 text-red-800 rounded-full flex items-center gap-1">
-                <span>▶️</span>
-                Video Tutorial
-              </span>
+
+          {recipe.strTags && (
+            <div className="flex flex-wrap gap-2 mt-2">
+              {recipe.strTags.split(',').slice(0, 3).map((tag, idx) => (
+                <span
+                  key={idx}
+                  className="px-3 py-1 text-xs font-medium bg-amber-100 text-amber-800 rounded-full"
+                >
+                  {tag.trim()}
+                </span>
+              ))}
             </div>
           )}
+        </div>
+      </div>
+    </article>
+  );
+}
+
+// AnN add: Card component for user's created recipes on 10/23
+type UserRecipeCardProps = {
+  recipe: UserRecipe;
+  onDelete: (recipeId: number) => void;
+};
+
+function UserRecipeCard({ recipe, onDelete }: UserRecipeCardProps) {
+  return (
+    <article className="glass-card overflow-hidden hover:shadow-xl transition-all duration-300 cursor-pointer group relative">
+      <button
+        className="absolute top-4 right-4 z-10 w-10 h-10 rounded-full bg-white/90 backdrop-blur flex items-center justify-center shadow-lg hover:bg-white transition-all duration-200 hover:scale-110"
+        aria-label="Delete recipe"
+        onClick={() => onDelete(recipe.recipeId)}
+      >
+        <TrashIcon className="w-5 h-5 text-amber-600 hover:text-red-500 transition-colors" />
+      </button>
+
+      <div className="flex gap-6 p-6">
+        <div className="relative h-48 w-48 flex-shrink-0 rounded-lg overflow-hidden">
+          {recipe.photoUrl ? (
+            <Image
+              src={recipe.photoUrl}
+              alt={recipe.recipeName}
+              fill
+              className="object-cover group-hover:scale-110 transition-transform duration-300"
+              sizes="192px"
+            />
+          ) : (
+            <div className="h-full w-full bg-gradient-to-br from-amber-100 to-amber-200 flex items-center justify-center">
+              <span className="text-6xl">🍽️</span>
+            </div>
+          )}
+        </div>
+        <div className="flex flex-1 flex-col gap-3">
+          <div>
+            <h3 className="text-2xl font-bold text-amber-900 mb-2">{recipe.recipeName}</h3>
+            {recipe.description && (
+              <p className="text-sm text-amber-700 line-clamp-3">{recipe.description}</p>
+            )}
+            <p className="text-xs text-amber-600 mt-2">
+              Created: {new Date(recipe.createdAt).toLocaleDateString()}
+            </p>
+          </div>
         </div>
       </div>
     </article>
