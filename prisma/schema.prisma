@@ -18,6 +18,7 @@ model User {
   username  String   @unique
   email     String   @unique
   password  String
+  avatarId  String?  @default("melon") // User avatar preset ID (matches DEFAULT_AVATAR_ID)
   createdAt DateTime @default(now())
 
   // One-to-Many relationship: One User can have 0 to many Recipes

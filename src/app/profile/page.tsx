@@ -175,17 +175,11 @@ export default function ProfilePage() {
     }
   };
 
-  // AnN add: Call fetchUserRecipes on page load on 10/23
+  // AnN add: Fetch all recipes on page load on 10/23
   useEffect(() => {
     fetchUserRecipes();
+    fetchFavoritedRecipes(); // AnN add: Fetch favorited recipes on page load too (so tab switching is instant) on 10/31
   }, []);
-
-  // AnN add: Fetch favorited recipes when tab changes on 10/31
-  useEffect(() => {
-    if (activeTab === 'favorited') {
-      fetchFavoritedRecipes();
-    }
-  }, [activeTab]);
 
   // Load user profile from localStorage
   useEffect(() => {
@@ -224,7 +218,8 @@ export default function ProfilePage() {
   }, []);
 
   // AnN add: Persist selected avatar preset id on 10/22
-  const handleAvatarChange = (newAvatarId: string) => {
+  // AnN edit: Updated to save to database on 11/1
+  const handleAvatarChange = async (newAvatarId: string) => {
     const nextPreset = resolveAvatarPreset(newAvatarId);
     setAvatarId(nextPreset.id);
     setShowAvatarPicker(false);
@@ -233,11 +228,23 @@ export default function ProfilePage() {
       const stored = localStorage.getItem('user') || localStorage.getItem('gatherUser');
       if (stored) {
         const userData = JSON.parse(stored);
+        const userId = userData.id;
+
+        // Update localStorage (instant UI update)
         userData.avatarId = nextPreset.id;
         userData.avatar = nextPreset.value;
         localStorage.setItem('gatherUser', JSON.stringify(userData));
         localStorage.setItem('user', JSON.stringify(userData));
         window.dispatchEvent(new Event('gather:user-updated'));
+
+        // Save to database (persist across devices)
+        if (userId) {
+          await fetch('/api/user/avatar', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ userId, avatarId: nextPreset.id }),
+          });
+        }
       }
     } catch (error) {
       console.error('Failed to save avatar:', error);
