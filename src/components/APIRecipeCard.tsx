@@ -1,6 +1,6 @@
 // AnN add: API Recipe Card component on 10/31
 import Image from 'next/image';
-import { TrashIcon } from '@heroicons/react/24/outline';
+import { HeartIcon } from '@heroicons/react/24/solid';
 
 export interface APIRecipe {
   idMeal: string;
@@ -34,7 +34,7 @@ export default function APIRecipeCard({ recipe, onClick, onDelete }: APIRecipeCa
           onDelete(recipe.idMeal);
         }}
       >
-        <TrashIcon className="w-5 h-5 text-amber-600 hover:text-red-500 transition-colors" />
+        <HeartIcon className="w-6 h-6 text-red-500 hover:text-red-600 transition-colors" />
       </button>
 
       <div className="flex gap-6 p-6">

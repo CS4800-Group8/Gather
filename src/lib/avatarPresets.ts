@@ -65,7 +65,7 @@ export const AVATAR_PRESETS: AvatarPreset[] = [
 },
   {
     id: "ramen_bobo",                    // Unique ID 
-    label: "Ramen Bobo",                 // Display name in picker
+    label: "Ramen",                      // Display name in picker
     variant: "image",                    // "image" type avatar
     value: "/avatars/ramen_bobo.png",    // Path
     bgClass: "bg-green-500",             // Background color class

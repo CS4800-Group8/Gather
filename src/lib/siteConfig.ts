@@ -11,7 +11,7 @@ export const siteConfig = {
     "Bright, simple recipe finder by NVMA Tech. The main content is intentionally minimal so you can plug in your API results.",
   nav: [
     { href: "/explore-recipes", label: "Explore Recipes" },
-    // You can add more nav items later here…
+    { href: "/community", label: "Community" },  // AnN add: Community page on 11/4
   ],
   // Placeholder route (not yet implemented) to show where Sign In would go and put outside of nav because not sure if use it...
   signinHref: "/signin",
