@@ -44,4 +44,5 @@ next-env.d.ts
 # documentation
 CS4800_SRS.md
 PROJECT.md
+PATTERNS.md
 test-migration.js

@@ -72,6 +72,8 @@ export default function ProfilePage() {
   const [loadingFavorites, setLoadingFavorites] = useState(false); // AnN add: Loading state for favorited recipes on 10/31
   const [selectedAPIRecipe, setSelectedAPIRecipe] = useState<APIRecipe | null>(null); // AnN add: Selected API recipe for detail popup on 10/31
   const [showAPIRecipePopup, setShowAPIRecipePopup] = useState(false); // AnN add: Show API recipe detail popup on 10/31
+  const [showUnfavoriteConfirm, setShowUnfavoriteConfirm] = useState(false); // AnN add: Show unfavorite confirmation on 11/4
+  const [recipeToUnfavorite, setRecipeToUnfavorite] = useState<string | null>(null); // AnN add: Store API recipe ID to unfavorite on 11/4
 
   const avatarPresets = useMemo(() => getAvatarPresets(), []);
   const currentPreset: AvatarPreset = useMemo(
@@ -253,11 +255,11 @@ export default function ProfilePage() {
 
   // AnN edit: Removed getRecipesForTab and currentRecipes - no longer needed on 10/30
 
-  // TODO: Backend team will connect these stats to real data
+  // AnN edit: Made stats dynamic - posts shows real count, others TODO on 11/4
   const statsButtons = [
-    { id: 'posts', label: '# posts', value: 5 },
-    { id: 'friends', label: '# friends', value: 18 },
-    { id: 'likes', label: '# likes', value: 48 },
+    { id: 'posts', label: '# posts', value: userRecipes.length },  // Real count of user's recipes
+    { id: 'friends', label: '# friends', value: 0 },  // TODO: After friend system implementation
+    { id: 'likes', label: '# likes', value: 0 },  // TODO: Count favorites received
   ];
 
   const avatarButtonBase =
@@ -508,8 +510,22 @@ export default function ProfilePage() {
     document.body.style.overflow = 'unset';
   };
 
-  // AnN add: Unfavorite API recipe on 10/31
-  const handleUnfavoriteAPIRecipe = async (apiId: string) => {
+  // AnN add: Show unfavorite confirmation on 11/4
+  const handleUnfavoriteAPIRecipe = (apiId: string) => {
+    setRecipeToUnfavorite(apiId);
+    setShowUnfavoriteConfirm(true);
+  };
+
+  // AnN add: Cancel unfavorite on 11/4
+  const handleUnfavoriteCancel = () => {
+    setShowUnfavoriteConfirm(false);
+    setRecipeToUnfavorite(null);
+  };
+
+  // AnN add: Confirm unfavorite API recipe on 11/4
+  const confirmUnfavoriteAPIRecipe = async () => {
+    if (!recipeToUnfavorite) return;
+
     try {
       const user = JSON.parse(localStorage.getItem('gatherUser') || '{}');
       const userId = user?.id;
@@ -519,20 +535,24 @@ export default function ProfilePage() {
       const response = await fetch('/api/favorite-api-recipes', {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId, apiId }),
+        body: JSON.stringify({ userId, apiId: recipeToUnfavorite }),
       });
 
       if (response.ok) {
         // Remove from state
-        setFavoritedRecipes((prev) => prev.filter((recipe) => recipe.idMeal !== apiId));
+        setFavoritedRecipes((prev) => prev.filter((recipe) => recipe.idMeal !== recipeToUnfavorite));
 
         // Also update localStorage if used by explore page
         const storedLikes = localStorage.getItem('favoritedRecipes');
         if (storedLikes) {
           const likes = JSON.parse(storedLikes);
-          const updatedLikes = likes.filter((id: string) => id !== apiId);
+          const updatedLikes = likes.filter((id: string) => id !== recipeToUnfavorite);
           localStorage.setItem('favoritedRecipes', JSON.stringify(updatedLikes));
         }
+
+        // Close confirmation modal
+        setShowUnfavoriteConfirm(false);
+        setRecipeToUnfavorite(null);
       }
     } catch (err) {
       console.error('Error unfavoriting recipe:', err);
@@ -707,21 +727,21 @@ export default function ProfilePage() {
 
             <div className='flex flex-col justify-between items-start text-amber-600 gap-5'>
               {/* HEADER */}
-              <div className='flex justify-around items-center w-full gap-16'>
+              <div className='flex justify-between items-center w-full gap-4'>
                 <button
-                  className="text-gray-500 hover:text-red-500 text-2xl"
+                  className="border-2 border-gray-300 bg-white text-gray-600 hover:text-red-500 hover:border-red-400 hover:bg-red-50 rounded-lg px-3 py-1.5 text-2xl font-bold leading-none shadow-sm hover:shadow-md transition-all"
                   onClick={handleCloseModal}
                   aria-label="Close"
                 >
                   &times;
                 </button>
 
-                <p className='text-xl font-bold'>Create Recipe</p>  
+                <p className='text-xl font-bold'>Create Recipe</p>
 
                 <button
                   onClick={handleCreateRecipe}
                   disabled={uploading}
-                  className='border-2 border-amber-400 bg-amber-100 text-amber-900 font-semibold shadow-md rounded-lg px-4 py-2 hover:bg-amber-200 hover:border-amber-500 hover:-translate-y-1 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0'>
+                  className='border-2 border-amber-400 bg-amber-100 text-amber-900 font-semibold shadow-md rounded-lg px-6 py-2 hover:bg-amber-200 hover:border-amber-500 hover:-translate-y-1 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0'>
                   {uploading ? 'Posting...' : 'Post'}
                 </button>
               </div>
@@ -883,7 +903,7 @@ export default function ProfilePage() {
 
               {/* AnN add: Instructions textarea on 10/30 */}
               <div className='flex flex-col gap-2 w-full'>
-                <p className='text-sm font-semibold'>Instructions <span className='text-xs text-amber-600'>(Optional)</span></p>
+                <p className='text-sm font-semibold'>Instructions</p>
                 <textarea
                   name="instructions"
                   id="instructions"
@@ -897,7 +917,7 @@ export default function ProfilePage() {
 
               {/* AnN add: YouTube video URL input on 10/30 */}
               <div className='flex flex-col gap-2 w-full'>
-                <p className='text-sm font-semibold'>YouTube Video <span className='text-xs text-amber-600'>(Optional)</span></p>
+                <p className='text-sm font-semibold'>YouTube Video</p>
                 <input
                   type='text'
                   value={newVideoUrl}
@@ -972,6 +992,35 @@ export default function ProfilePage() {
                   className='flex-1 px-4 py-2 rounded-lg bg-red-500 text-white hover:bg-red-600 transition-colors'
                 >
                   Delete
+                </button>
+              </div>
+            </div>
+          </PopupModal>
+
+          {/* Unfavorite confirmation modal */}
+          <PopupModal isOpen={showUnfavoriteConfirm} onClose={handleUnfavoriteCancel}>
+            <div className='flex flex-col items-center text-amber-800 gap-5 p-6'>
+              {/* Title */}
+              <h3 className='text-xl font-semibold text-amber-900'>Remove from Favorites?</h3>
+
+              {/* Message */}
+              <p className='text-center text-amber-700 text-sm'>
+                Are you sure you want to remove this recipe from your favorites?
+              </p>
+
+              {/* Buttons */}
+              <div className='flex gap-3 w-full mt-2'>
+                <button
+                  onClick={handleUnfavoriteCancel}
+                  className='flex-1 px-4 py-2 rounded-lg border border-amber-300 bg-white text-amber-800 hover:bg-amber-50 transition-colors'
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={confirmUnfavoriteAPIRecipe}
+                  className='flex-1 px-4 py-2 rounded-lg bg-red-500 text-white hover:bg-red-600 transition-colors'
+                >
+                  Remove
                 </button>
               </div>
             </div>
