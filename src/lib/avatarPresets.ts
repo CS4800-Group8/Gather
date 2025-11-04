@@ -54,6 +54,24 @@ export const AVATAR_PRESETS: AvatarPreset[] = [
     imageScale: 1.25, // AnN fix: Aggressive scale to hide export halo on 10/23
     imageOffsetY: -0.04,
   },
+  {
+    id: "3-layers-tea",                  // Unique ID 
+    label: "Bubble Tea",                 // Display name in picker
+    variant: "image",                    // "image" type avatar
+    value: "/avatars/tea2.jpg",          // Path
+    bgClass: "bg-pink-500",              // Background color class
+    imageScale: 1.25,                    // How zoomed in (start with 1.25 like flan)
+    imageOffsetY: -0.01,                 // Vertical adjustment (up/down)
+},
+  {
+    id: "ramen_bobo",                    // Unique ID 
+    label: "Ramen Bobo",                 // Display name in picker
+    variant: "image",                    // "image" type avatar
+    value: "/avatars/ramen_bobo.png",    // Path
+    bgClass: "bg-green-500",             // Background color class
+    imageScale: 1.1,                     // How zoomed in (start with 1.25 like flan)
+    imageOffsetY: -0.01,                 // Vertical adjustment (up/down)
+},
 ];
 
 export const DEFAULT_AVATAR_ID = "melon";
