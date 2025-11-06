@@ -31,26 +31,44 @@ export interface UserRecipe {
 
 type UserRecipeCardProps = {
   recipe: UserRecipe;
+  isOwner: boolean; // Viet add: determine who is the owner of the recipe
   onDelete?: (recipeId: number) => void;
   onClick?: (recipe: UserRecipe) => void;
 };
 
-export default function UserRecipeCard({ recipe, onDelete, onClick }: UserRecipeCardProps) {
+export default function UserRecipeCard({ recipe, isOwner, onDelete, onClick }: UserRecipeCardProps) {
   return (
     <article
       className="glass-card overflow-hidden hover:shadow-xl transition-all duration-300 cursor-pointer group relative"
       onClick={() => onClick?.(recipe)}
     >
-      <button
-        className="absolute top-4 right-4 z-10 w-10 h-10 rounded-full bg-white/90 backdrop-blur flex items-center justify-center shadow-lg hover:bg-white transition-all duration-200 hover:scale-110"
-        aria-label="Delete recipe"
-        onClick={(e) => {
-          e.stopPropagation();
-          onDelete?.(recipe.recipeId);
-        }}
-      >
-        <TrashIcon className="w-5 h-5 text-amber-600 hover:text-red-500 transition-colors" />
-      </button>
+      {/* Viet add: can't delete recipe if not owner */}
+      {isOwner && (
+        <button
+          className="absolute top-4 right-4 z-10 w-10 h-10 rounded-full bg-white/90 backdrop-blur flex items-center justify-center shadow-lg hover:bg-white transition-all duration-200 hover:scale-110"
+          aria-label="Delete recipe"
+          onClick={(e) => {
+            e.stopPropagation();
+            onDelete?.(recipe.recipeId);
+          }}
+        >
+          <TrashIcon className="w-5 h-5 text-amber-600 hover:text-red-500 transition-colors" />
+        </button>
+      )}
+
+      {/* Viet add: If not owner add favorite button */}
+      {!isOwner && (
+        <button
+          className="absolute top-4 right-4 z-10 w-10 h-10 rounded-full bg-white/90 backdrop-blur flex items-center justify-center shadow-lg hover:bg-white transition-all duration-200 hover:scale-110"
+          aria-label="Add to favorites"
+          onClick={(e) => {
+            e.stopPropagation();
+            console.log(`Favorited recipe ${recipe.recipeId}`);
+          }}
+        >
+          <span className="text-amber-600 text-xl">♡</span>
+        </button>
+      )}
 
       <div className="flex gap-6 p-6">
         <div className="relative h-48 w-48 flex-shrink-0 rounded-lg overflow-hidden">
@@ -93,8 +111,8 @@ export default function UserRecipeCard({ recipe, onDelete, onClick }: UserRecipe
                 <div>
                   {recipe.categories.map((rc) => (
                     <span
-                    key={rc.id}
-                    className='bg-amber-100 border border-amber-300 px-3 py-2 rounded-xl text-xs mr-2'>
+                      key={rc.id}
+                      className='bg-amber-100 border border-amber-300 px-3 py-2 rounded-xl text-xs mr-2'>
                       {rc.name}
                     </span>
                   ))}
