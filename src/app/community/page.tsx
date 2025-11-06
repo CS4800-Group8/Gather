@@ -5,8 +5,17 @@
 import { useEffect, useState } from 'react';
 import UserCard, { CommunityUser } from '@/components/UserCard';
 
+// Add a local extended type: // Thu added
+interface CommunityUserWithButton extends CommunityUser {
+  buttonText?: string;
+  buttonDisabled?: boolean;
+  status?: 'none' | 'pending' | 'accepted' | 'rejected';  
+  isRequester?: boolean; 
+}
+
 export default function CommunityPage() {
-  const [users, setUsers] = useState<CommunityUser[]>([]);
+  // const [users, setUsers] = useState<CommunityUser[]>([]);
+  const [users, setUsers] = useState<CommunityUserWithButton[]>([]); // Thu added
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -14,34 +23,181 @@ export default function CommunityPage() {
     fetchUsers();
   }, []);
 
-  // AnN add: Fetch all users from API on 11/4
+  // Accept version
   const fetchUsers = async () => {
     try {
       setLoading(true);
-      setError(null);
-
       const stored = localStorage.getItem('gatherUser');
-      const userData = stored ? JSON.parse(stored) : null;
+      const currentUser = stored ? JSON.parse(stored) : null;
 
+      if (!currentUser?.id) return;
+
+      // Fetch all users
       const response = await fetch('/api/users/all', {
-        headers: {
-          'x-user-id': userData?.id?.toString() || ''
-        }
+        headers: { 'x-user-id': currentUser.id.toString() }
       });
 
-      if (response.ok) {
-        const data = await response.json();
-        setUsers(data.users || []);
-      } else {
-        setError('Failed to load users');
-      }
-    } catch (err) {
-      console.error('Error fetching users:', err);
-      setError('Failed to load users');
+      if (!response.ok) throw new Error('Failed to load users');
+      const data = await response.json();
+
+      // Fetch friendship statuses
+      const statusResponse = await fetch(`/api/friends/status?userId=${currentUser.id}`);
+      const { friendships } = await statusResponse.json();
+
+      const userList = (data.users || [])
+        .filter((u: any) => u.id !== currentUser.id)
+        .map((u: any) => {
+          const match = friendships.find(
+            (f: any) =>
+              (f.requesterId === currentUser.id && f.addresseeId === u.id) ||
+              (f.addresseeId === currentUser.id && f.requesterId === u.id)
+          );
+
+          if (!match) {
+            return { ...u, status: "none" };
+          }
+
+          const isRequester = match.requesterId === currentUser.id;
+
+          return {
+            ...u,
+            status: match.status,
+            isRequester,
+          };
+        });
+
+      setUsers(userList);
+    } catch (error) {
+      console.error("Error fetching users:", error);
+      setError("Failed to load users");
     } finally {
       setLoading(false);
     }
   };
+
+
+  // Thu added -----------------------------------------------------------------
+  const handleAddFriend = async (userId: number) => {
+    try {
+      const stored = localStorage.getItem('gatherUser');
+      const currentUser = stored ? JSON.parse(stored) : null;
+
+      if (!currentUser?.id) {
+        alert('You must be logged in to add friends.');
+        return;
+      }
+
+      const response = await fetch('/api/friends/request', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          requesterId: currentUser.id,
+          addresseeId: userId,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        // ✅ Update the UI immediately
+        setUsers((prev) =>
+          prev.map((u) =>
+            u.id === userId
+              ? {
+                  ...u,
+                  status: "pending",
+                  isRequester: true,
+                  buttonText: "Pending",
+                  buttonDisabled: true,
+                }
+              : u
+          )
+        );
+      } else {
+        alert(data.error || data.message || "Failed to send request");
+      }
+    } catch (error) {
+      console.error("Error adding friend:", error);
+      alert("Something went wrong while sending friend request.");
+    }
+  };
+
+  const fetchFriendStatuses = async (userId: number) => {
+    try {
+      const response = await fetch(`/api/friends/status?userId=${userId}`);
+      if (!response.ok) return {};
+
+      const data = await response.json();
+      const map: Record<number, string> = {};
+
+      // Build lookup: userId -> status
+      for (const f of data.friendships) {
+        const otherUser =
+          f.requesterId === userId ? f.addresseeId : f.requesterId;
+        map[otherUser] = f.status;
+      }
+
+      return map;
+    } catch (error) {
+      console.error("Error fetching friend statuses:", error);
+      return {};
+    }
+  };
+
+  // Thu added: Accept and reject friend request handler on 11/6
+  const handleAcceptFriend = async (userId: number) => {
+  const stored = localStorage.getItem('gatherUser');
+  const currentUser = stored ? JSON.parse(stored) : null;
+
+  if (!currentUser?.id) return;
+
+  const response = await fetch('/api/friends/respond', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      requesterId: userId,
+      addresseeId: currentUser.id,
+      action: 'accept',
+    }),
+  });
+
+  if (response.ok) {
+    setUsers((prev) =>
+      prev.map((u) =>
+        u.id === userId ? { ...u, status: 'accepted' } : u
+      )
+    );
+  }
+};
+
+const handleRejectFriend = async (userId: number) => {
+  const stored = localStorage.getItem('gatherUser');
+  const currentUser = stored ? JSON.parse(stored) : null;
+
+  if (!currentUser?.id) return;
+
+  const response = await fetch('/api/friends/respond', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      requesterId: userId,
+      addresseeId: currentUser.id,
+      action: 'reject',
+    }),
+  });
+
+  if (response.ok) {
+    setUsers((prev) =>
+      prev.map((u) =>
+        u.id === userId ? { ...u, status: 'none' } : u
+      )
+    );
+  }
+};
+
+
+  // ---------------------------------------------------------------------------
+
 
   return (
     <section className="py-8">
@@ -90,22 +246,78 @@ export default function CommunityPage() {
             </div>
           ) : (
             // AnN add: User cards with centered layout on 11/4
-            users.map((user) => (
+          //   users.map((user) => (
+              
+          //     <UserCard
+          //       key={user.id}
+          //       user={user}
+
+          //       // Viet part
+          //       onAvatarClick={(userId) => {
+          //         // TODO: Navigate to user profile page
+          //         console.log('Avatar clicked - profile view coming soon!');
+          //       }}
+                
+
+          //       // Thu modified
+          //       // onButtonClick={(userId) => {
+          //       //   alert('Friend system coming soon!');
+          //       //   // TODO: Thu will implement friend request logic here
+          //       // }}
+          //       onButtonClick={handleAddFriend}
+          //       buttonText={user.buttonText || "Add Friend"}
+          //       buttonDisabled={user.buttonDisabled || false}
+          //     />
+          //   ))
+          // )}
+
+          // Thu modified: Show different buttons based on friendship status on 11/6
+          users.map((user) => {
+            if (user.status === "accepted") {
+              return (
+                <UserCard
+                  key={user.id}
+                  user={user}
+                  buttonText="Friends ✓"
+                  buttonDisabled={true}
+                />
+              );
+            }
+
+            if (user.status === "pending" && user.isRequester) {
+              return (
+                <UserCard
+                  key={user.id}
+                  user={user}
+                  buttonText="Pending"
+                  buttonDisabled={true}
+                />
+              );
+            }
+
+            if (user.status === "pending" && !user.isRequester) {
+              // This user sent ME a request → show Accept/Reject
+              return (
+                <UserCard
+                  key={user.id}
+                  user={user}
+                  onAccept={() => handleAcceptFriend(user.id)}
+                  onReject={() => handleRejectFriend(user.id)}
+                />
+              );
+            }
+
+            // Default: no friendship yet
+            return (
               <UserCard
                 key={user.id}
                 user={user}
-                onAvatarClick={(userId) => {
-                  // TODO: Navigate to user profile page
-                  console.log('Avatar clicked - profile view coming soon!');
-                }}
-                onButtonClick={(userId) => {
-                  alert('Friend system coming soon!');
-                  // TODO: Thu will implement friend request logic here
-                }}
+                onButtonClick={handleAddFriend}
                 buttonText="Add Friend"
               />
-            ))
-          )}
+            );
+          })
+        )}
       </div>
     </section>
   );

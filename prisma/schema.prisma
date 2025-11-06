@@ -1,3 +1,16 @@
+// Thu added: Prisma Schema 
+// File description: Database schema for Gather application including these models:
+//    User, 
+//    Recipe, 
+//    FavoriteRecipe, 
+//    Ingredient, 
+//    Category, 
+//    Notification,
+//    Friendship,
+
+
+// ==================== PRISMA SCHEMA ====================
+
 generator client {
   provider        = "prisma-client-js"
   previewFeatures = ["typedSql", "postgresqlExtensions"] // Not yet update on dev branch
@@ -27,7 +40,7 @@ model User {
   favoriteAPIRecipes FavoriteAPIRecipe[]
   notifications   Notification[]
 
-  // self-relations for friendships
+  // Self-relations for friendships
   sentRequests     Friendship[] @relation("Requester")
   receivedRequests Friendship[] @relation("Addressee")
 }
@@ -40,9 +53,9 @@ model Recipe {
   userId       Int // Foreign Key referencing User
   recipeName   String
   description  String?
-  photoUrl     String? // Store recipe photo path
-  instructions String? // Cooking steps on 10/30
-  videoUrl     String? // YouTube video link on 10/30
+  photoUrl     String? // Store recipe photo path // AnN added
+  instructions String? // Cooking steps on 10/30 // AnN added
+  videoUrl     String? // YouTube video link on 10/30 // AnN added
   createdAt    DateTime @default(now())
 
   // Relationship to User (Many Recipes belong to one User)

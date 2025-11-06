@@ -14,12 +14,22 @@ export interface CommunityUser {
   };
 }
 
+// type UserCardProps = {
+//   user: CommunityUser;
+//   onAvatarClick?: (userId: number) => void;
+//   onButtonClick?: (userId: number) => void;
+//   buttonText?: string;  // Thu can customize: "Add Friend", "Pending", "Friends ✓"
+//   buttonDisabled?: boolean;
+// };
+
 type UserCardProps = {
   user: CommunityUser;
   onAvatarClick?: (userId: number) => void;
   onButtonClick?: (userId: number) => void;
-  buttonText?: string;  // Thu can customize: "Add Friend", "Pending", "Friends ✓"
+  buttonText?: string;
   buttonDisabled?: boolean;
+  onAccept?: () => void;
+  onReject?: () => void;
 };
 
 export default function UserCard({
@@ -27,8 +37,13 @@ export default function UserCard({
   onAvatarClick,
   onButtonClick,
   buttonText = "Add Friend",
-  buttonDisabled = false
+  buttonDisabled = false,
+  onAccept, // Thu added
+  onReject, // Thu added
 }: UserCardProps) {
+
+  const isAcceptRejectMode = !!onAccept && !!onReject; // Thu added
+  
   return (
     <div className="glass-card p-6 hover:shadow-xl transition-all duration-300 flex flex-col items-center text-center">
       {/* Large centered avatar */}
@@ -58,13 +73,37 @@ export default function UserCard({
       </p>
 
       {/* Action button */}
-      <button
-        className="px-8 py-2 bg-amber-500 text-white rounded-lg hover:bg-amber-600 transition-colors text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-        onClick={() => onButtonClick?.(user.id)}
-        disabled={buttonDisabled}
-      >
-        {buttonText}
-      </button>
+      {/* Render either single or two buttons */}
+      {isAcceptRejectMode ? (
+        <div className="flex gap-3">
+          <button
+            onClick={onAccept}
+            className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 text-sm font-medium transition-all"
+          >
+            Accept
+          </button>
+          <button
+            onClick={onReject}
+            className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 text-sm font-medium transition-all"
+          >
+            Reject
+          </button>
+        </div>
+      ) : (
+        <button
+          className={`px-8 py-2 rounded-lg text-sm font-medium transition-colors ${
+            buttonText === 'Friends ✓'
+              ? 'bg-green-500 text-white'
+              : buttonText === 'Pending'
+              ? 'bg-gray-300 text-gray-700'
+              : 'bg-amber-500 text-white hover:bg-amber-600'
+          }`}
+          onClick={() => onButtonClick?.(user.id)}
+          disabled={buttonDisabled}
+        >
+          {buttonText}
+        </button>
+      )}
     </div>
   );
 }

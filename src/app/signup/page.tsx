@@ -1,3 +1,5 @@
+// Signup page with form validations and error handling.
+
 'use client';
 
 import { useState } from "react";

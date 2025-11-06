@@ -12,6 +12,7 @@ export const siteConfig = {
   nav: [
     { href: "/explore-recipes", label: "Explore Recipes" },
     { href: "/community", label: "Community" },  // AnN add: Community page on 11/4
+    { href: "/notifications", label: "Notifications" }, // Thu added: Notifications page on 11/4
   ],
   // Placeholder route (not yet implemented) to show where Sign In would go and put outside of nav because not sure if use it...
   signinHref: "/signin",

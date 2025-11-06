@@ -1,3 +1,5 @@
+// Manage user's favorite API recipes: add, remove, and list favorites.
+
 import { NextResponse } from "next/server";
 import prisma from '@/lib/prisma';
 
