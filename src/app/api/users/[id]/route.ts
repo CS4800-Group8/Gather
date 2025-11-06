@@ -7,7 +7,7 @@ export async function GET(
   context: { params: Promise<{ id: string }> }
 ) {
   try {
-    // Extract 'id' from the URL parameters
+    // Extract id from the URL parameters
     const { id } = await context.params;
     const userId = parseInt(id, 10); // convert to integer
 
