@@ -1,6 +1,7 @@
 // AnN add: Card component for user's created recipes on 10/23
 // AnN edit: Extracted to separate file on 10/31
 import Image from 'next/image';
+import { useState } from "react";
 import { TrashIcon } from '@heroicons/react/24/outline';
 
 // Viet add: Interface for ingredients and categories
@@ -37,6 +38,14 @@ type UserRecipeCardProps = {
 };
 
 export default function UserRecipeCard({ recipe, isOwner, onDelete, onClick }: UserRecipeCardProps) {
+  const [isFavorited, setIsFavorited] = useState(false);
+
+  // Toggle favorite button
+  const handleFavoriteClick = (e: React.MouseEvent) => {
+    e.stopPropagation(); 
+    setIsFavorited((prev) => !prev); 
+  };
+
   return (
     <article
       className="glass-card overflow-hidden hover:shadow-xl transition-all duration-300 cursor-pointer group relative"
@@ -61,12 +70,14 @@ export default function UserRecipeCard({ recipe, isOwner, onDelete, onClick }: U
         <button
           className="absolute top-4 right-4 z-10 w-10 h-10 rounded-full bg-white/90 backdrop-blur flex items-center justify-center shadow-lg hover:bg-white transition-all duration-200 hover:scale-110"
           aria-label="Add to favorites"
-          onClick={(e) => {
-            e.stopPropagation();
-            console.log(`Favorited recipe ${recipe.recipeId}`);
-          }}
+          onClick={handleFavoriteClick}
         >
-          <span className="text-amber-600 text-xl">♡</span>
+          <span 
+            className={`text-xl transition-colors ${
+              isFavorited ? 'text-red-500' : 'text-amber-600 hover:text-red-500'
+            }`}>
+              {isFavorited ? '♥' : '♡'}
+            </span>
         </button>
       )}
 
