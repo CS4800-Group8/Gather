@@ -31,22 +31,22 @@ export interface UserRecipe {
 
 type UserRecipeCardProps = {
   recipe: UserRecipe;
-  onDelete: (recipeId: number) => void;
-  onClick: (recipe: UserRecipe) => void;
+  onDelete?: (recipeId: number) => void;
+  onClick?: (recipe: UserRecipe) => void;
 };
 
 export default function UserRecipeCard({ recipe, onDelete, onClick }: UserRecipeCardProps) {
   return (
     <article
       className="glass-card overflow-hidden hover:shadow-xl transition-all duration-300 cursor-pointer group relative"
-      onClick={() => onClick(recipe)}
+      onClick={() => onClick?.(recipe)}
     >
       <button
         className="absolute top-4 right-4 z-10 w-10 h-10 rounded-full bg-white/90 backdrop-blur flex items-center justify-center shadow-lg hover:bg-white transition-all duration-200 hover:scale-110"
         aria-label="Delete recipe"
         onClick={(e) => {
           e.stopPropagation();
-          onDelete(recipe.recipeId);
+          onDelete?.(recipe.recipeId);
         }}
       >
         <TrashIcon className="w-5 h-5 text-amber-600 hover:text-red-500 transition-colors" />
