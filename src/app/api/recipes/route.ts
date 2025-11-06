@@ -75,7 +75,7 @@ export async function POST(req: Request) {
 
 export async function GET(req: Request) {
   try {
-    // Get userId from request header (replace with real auth later)
+    // Get userId from request header
     const userIdHeader = req.headers.get('x-user-id');
     const userId = userIdHeader ? Number(userIdHeader) : NaN;
 

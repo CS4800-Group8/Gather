@@ -308,7 +308,7 @@ export default function ProfilePage() {
 
       // Get current user
       const user = JSON.parse(localStorage.getItem('gatherUser') || '{}');
-      const userId = user?.id || 1; // Replace with actual auth system later
+      const userId = user?.id; 
 
       // Send POST request to API with recipe data
       const response = await fetch('/api/recipes', {
