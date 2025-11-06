@@ -75,9 +75,15 @@ export async function POST(req: Request) {
 
 export async function GET(req: Request) {
   try {
-    // Get userId from request header
+    // Get user ID from request header (for logged-in user)
     const userIdHeader = req.headers.get('x-user-id');
-    const userId = userIdHeader ? Number(userIdHeader) : NaN;
+
+    // Viet add: get user ID from query param (for viewing other profiles)
+    const { searchParams } = new URL(req.url);
+    const userIdQuery = searchParams.get("userId");
+
+    const userIdRaw = userIdQuery || userIdHeader; // Prefer other user's profile over current user
+    const userId = Number(userIdRaw); // Convert to number for prisma
 
     // Validate user
     if (!userId || Number.isNaN(userId)) {
