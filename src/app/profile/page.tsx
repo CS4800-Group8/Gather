@@ -1058,6 +1058,7 @@ export default function ProfilePage() {
                   <UserRecipeCard
                     key={recipe.recipeId}
                     recipe={recipe}
+                    isOwner={true}
                     onDelete={handleDeleteClick}
                     onClick={handleOpenUserRecipePopup}
                   />
