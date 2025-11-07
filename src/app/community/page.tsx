@@ -39,29 +39,9 @@ export default function CommunityPage() {
 
   const router = useRouter(); // Viet add: define router to navigate to other page
 
-  // AnN add: Fetch users on mount and when returning to tab on 11/6
+  // AnN fix: Only fetch users on mount, no auto-refresh on 11/6
   useEffect(() => {
     fetchUsers();
-
-    // AnN add: Refresh when window regains focus on 11/6
-    const handleFocus = () => {
-      fetchUsers();
-    };
-
-    // AnN add: Refresh when tab becomes visible on 11/6
-    const handleVisibilityChange = () => {
-      if (!document.hidden) {
-        fetchUsers();
-      }
-    };
-
-    window.addEventListener("focus", handleFocus);
-    document.addEventListener("visibilitychange", handleVisibilityChange);
-
-    return () => {
-      window.removeEventListener("focus", handleFocus);
-      document.removeEventListener("visibilitychange", handleVisibilityChange);
-    };
   }, []);
 
   const fetchUsers = async () => {
