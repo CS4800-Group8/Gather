@@ -65,16 +65,6 @@ export default function Header() {
     setShowProfile(false);
   }, [pathname]);
 
-  // An fix: safe fallbacks keep avatar and name from breaking when fields are missing
-  {/*}
-  const nameParts = [user?.firstname, user?.lastname].filter(
-   (part): part is string => Boolean(part && part.trim())
-  );
-  const primaryName = nameParts.join(" ");
-  const initialSource = primaryName || user?.username || "A";
-  const displayName = primaryName || user?.username || "Gather member";
-  */}
-
   // An add: Resolve avatar preset mappings with new config on 10/22
   const normalizedAvatarId = user
     ? normalizeAvatarId(user.avatarId ?? user.avatar ?? DEFAULT_AVATAR_ID)
@@ -123,15 +113,21 @@ export default function Header() {
             >
               Home
             </Link>
-            {navLinks.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={isActive(item.href) ? activeNavClasses : baseNavClasses}
-              >
-                {item.label}
-              </Link>
-            ))}
+            {navLinks.map((item) => {
+              // Hide Community tab if user is not logged in
+              if (item.href === "/community" && !user) {
+                return null;
+              }
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={isActive(item.href) ? activeNavClasses : baseNavClasses}
+                >
+                  {item.label}
+                </Link>
+              );
+            })}
           </nav>
 
           <div className="flex items-center gap-2">

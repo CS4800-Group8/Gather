@@ -5,6 +5,24 @@
 import { useEffect, useState } from 'react';
 import UserCard, { CommunityUser } from '@/components/UserCard';
 
+// Define proper types for API responses
+interface ApiUser {
+  id: number;
+  username: string;
+  firstname: string | null;
+  lastname: string | null;
+  avatarId: string | null;
+  _count?: {
+    recipes: number;
+  };
+}
+
+interface Friendship {
+  requesterId: number;
+  addresseeId: number;
+  status: 'pending' | 'accepted' | 'rejected';
+}
+
 // Add a local extended type: // Thu added
 interface CommunityUserWithButton extends CommunityUser {
   buttonText?: string;
@@ -14,8 +32,7 @@ interface CommunityUserWithButton extends CommunityUser {
 }
 
 export default function CommunityPage() {
-  // const [users, setUsers] = useState<CommunityUser[]>([]);
-  const [users, setUsers] = useState<CommunityUserWithButton[]>([]); // Thu added
+  const [users, setUsers] = useState<CommunityUserWithButton[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -23,7 +40,6 @@ export default function CommunityPage() {
     fetchUsers();
   }, []);
 
-  // Accept version
   const fetchUsers = async () => {
     try {
       setLoading(true);
@@ -42,25 +58,33 @@ export default function CommunityPage() {
 
       // Fetch friendship statuses
       const statusResponse = await fetch(`/api/friends/status?userId=${currentUser.id}`);
-      const { friendships } = await statusResponse.json();
+      const { friendships }: { friendships: Friendship[] } = await statusResponse.json();
 
       const userList = (data.users || [])
-        .filter((u: any) => u.id !== currentUser.id)
-        .map((u: any) => {
+        .filter((u: ApiUser) => u.id !== currentUser.id)
+        .map((u: ApiUser) => {
           const match = friendships.find(
-            (f: any) =>
+            (f: Friendship) =>
               (f.requesterId === currentUser.id && f.addresseeId === u.id) ||
               (f.addresseeId === currentUser.id && f.requesterId === u.id)
           );
 
+          // Convert null values to empty strings to match CommunityUser interface
+          const processedUser = {
+            ...u,
+            firstname: u.firstname || '',
+            lastname: u.lastname || '',
+            recipeCount: u._count?.recipes || 0
+          };
+
           if (!match) {
-            return { ...u, status: "none" };
+            return { ...processedUser, status: "none" as const };
           }
 
           const isRequester = match.requesterId === currentUser.id;
 
           return {
-            ...u,
+            ...processedUser,
             status: match.status,
             isRequester,
           };
@@ -75,8 +99,6 @@ export default function CommunityPage() {
     }
   };
 
-
-  // Thu added -----------------------------------------------------------------
   const handleAddFriend = async (userId: number) => {
     try {
       const stored = localStorage.getItem('gatherUser');
@@ -99,7 +121,7 @@ export default function CommunityPage() {
       const data = await response.json();
 
       if (response.ok) {
-        // ✅ Update the UI immediately
+        // Update the UI immediately
         setUsers((prev) =>
           prev.map((u) =>
             u.id === userId
@@ -122,82 +144,56 @@ export default function CommunityPage() {
     }
   };
 
-  const fetchFriendStatuses = async (userId: number) => {
-    try {
-      const response = await fetch(`/api/friends/status?userId=${userId}`);
-      if (!response.ok) return {};
+  // Thu added: Accept and reject friend request handler on 11/6
+  const handleAcceptFriend = async (userId: number) => {
+    const stored = localStorage.getItem('gatherUser');
+    const currentUser = stored ? JSON.parse(stored) : null;
 
-      const data = await response.json();
-      const map: Record<number, string> = {};
+    if (!currentUser?.id) return;
 
-      // Build lookup: userId -> status
-      for (const f of data.friendships) {
-        const otherUser =
-          f.requesterId === userId ? f.addresseeId : f.requesterId;
-        map[otherUser] = f.status;
-      }
+    const response = await fetch('/api/friends/respond', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        requesterId: userId,
+        addresseeId: currentUser.id,
+        action: 'accept',
+      }),
+    });
 
-      return map;
-    } catch (error) {
-      console.error("Error fetching friend statuses:", error);
-      return {};
+    if (response.ok) {
+      setUsers((prev) =>
+        prev.map((u) =>
+          u.id === userId ? { ...u, status: 'accepted' } : u
+        )
+      );
     }
   };
 
-  // Thu added: Accept and reject friend request handler on 11/6
-  const handleAcceptFriend = async (userId: number) => {
-  const stored = localStorage.getItem('gatherUser');
-  const currentUser = stored ? JSON.parse(stored) : null;
+  const handleRejectFriend = async (userId: number) => {
+    const stored = localStorage.getItem('gatherUser');
+    const currentUser = stored ? JSON.parse(stored) : null;
 
-  if (!currentUser?.id) return;
+    if (!currentUser?.id) return;
 
-  const response = await fetch('/api/friends/respond', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      requesterId: userId,
-      addresseeId: currentUser.id,
-      action: 'accept',
-    }),
-  });
+    const response = await fetch('/api/friends/respond', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        requesterId: userId,
+        addresseeId: currentUser.id,
+        action: 'reject',
+      }),
+    });
 
-  if (response.ok) {
-    setUsers((prev) =>
-      prev.map((u) =>
-        u.id === userId ? { ...u, status: 'accepted' } : u
-      )
-    );
-  }
-};
-
-const handleRejectFriend = async (userId: number) => {
-  const stored = localStorage.getItem('gatherUser');
-  const currentUser = stored ? JSON.parse(stored) : null;
-
-  if (!currentUser?.id) return;
-
-  const response = await fetch('/api/friends/respond', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      requesterId: userId,
-      addresseeId: currentUser.id,
-      action: 'reject',
-    }),
-  });
-
-  if (response.ok) {
-    setUsers((prev) =>
-      prev.map((u) =>
-        u.id === userId ? { ...u, status: 'none' } : u
-      )
-    );
-  }
-};
-
-
-  // ---------------------------------------------------------------------------
-
+    if (response.ok) {
+      setUsers((prev) =>
+        prev.map((u) =>
+          u.id === userId ? { ...u, status: 'none' } : u
+        )
+      );
+    }
+  };
 
   return (
     <section className="py-8">
@@ -245,79 +241,53 @@ const handleRejectFriend = async (userId: number) => {
               <p className="text-amber-700 text-lg">No other users yet. Invite your friends!</p>
             </div>
           ) : (
-            // AnN add: User cards with centered layout on 11/4
-          //   users.map((user) => (
-              
-          //     <UserCard
-          //       key={user.id}
-          //       user={user}
+            // Thu modified: Show different buttons based on friendship status on 11/6
+            users.map((user) => {
+              if (user.status === "accepted") {
+                return (
+                  <UserCard
+                    key={user.id}
+                    user={user}
+                    buttonText="Friends ✓"
+                    buttonDisabled={true}
+                  />
+                );
+              }
 
-          //       // Viet part
-          //       onAvatarClick={(userId) => {
-          //         // TODO: Navigate to user profile page
-          //         console.log('Avatar clicked - profile view coming soon!');
-          //       }}
-                
+              if (user.status === "pending" && user.isRequester) {
+                return (
+                  <UserCard
+                    key={user.id}
+                    user={user}
+                    buttonText="Pending"
+                    buttonDisabled={true}
+                  />
+                );
+              }
 
-          //       // Thu modified
-          //       // onButtonClick={(userId) => {
-          //       //   alert('Friend system coming soon!');
-          //       //   // TODO: Thu will implement friend request logic here
-          //       // }}
-          //       onButtonClick={handleAddFriend}
-          //       buttonText={user.buttonText || "Add Friend"}
-          //       buttonDisabled={user.buttonDisabled || false}
-          //     />
-          //   ))
-          // )}
+              if (user.status === "pending" && !user.isRequester) {
+                // This user sent ME a request → show Accept/Reject
+                return (
+                  <UserCard
+                    key={user.id}
+                    user={user}
+                    onAccept={() => handleAcceptFriend(user.id)}
+                    onReject={() => handleRejectFriend(user.id)}
+                  />
+                );
+              }
 
-          // Thu modified: Show different buttons based on friendship status on 11/6
-          users.map((user) => {
-            if (user.status === "accepted") {
+              // Default: no friendship yet
               return (
                 <UserCard
                   key={user.id}
                   user={user}
-                  buttonText="Friends ✓"
-                  buttonDisabled={true}
+                  onButtonClick={handleAddFriend}
+                  buttonText="Add Friend"
                 />
               );
-            }
-
-            if (user.status === "pending" && user.isRequester) {
-              return (
-                <UserCard
-                  key={user.id}
-                  user={user}
-                  buttonText="Pending"
-                  buttonDisabled={true}
-                />
-              );
-            }
-
-            if (user.status === "pending" && !user.isRequester) {
-              // This user sent ME a request → show Accept/Reject
-              return (
-                <UserCard
-                  key={user.id}
-                  user={user}
-                  onAccept={() => handleAcceptFriend(user.id)}
-                  onReject={() => handleRejectFriend(user.id)}
-                />
-              );
-            }
-
-            // Default: no friendship yet
-            return (
-              <UserCard
-                key={user.id}
-                user={user}
-                onButtonClick={handleAddFriend}
-                buttonText="Add Friend"
-              />
-            );
-          })
-        )}
+            })
+          )}
       </div>
     </section>
   );
