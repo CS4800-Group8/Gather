@@ -7,7 +7,6 @@ import { useState } from "react"
 interface NotiCardProps {
   id: number
   message: string
-  type: string
   createdAt: string
   isRead: boolean
   onMarkRead: (id: number) => void
@@ -16,7 +15,6 @@ interface NotiCardProps {
 export default function NotiCard({
   id,
   message,
-  type,
   createdAt,
   isRead,
   onMarkRead,

@@ -107,12 +107,6 @@ export default function Header() {
 
         <div className="flex flex-wrap items-center justify-end gap-2 sm:gap-3">
           <nav className="flex flex-wrap items-center gap-2">
-            <Link
-              href="/"
-              className={isActive("/") ? activeNavClasses : baseNavClasses}
-            >
-              Home
-            </Link>
             {navLinks.map((item) => {
               // Hide Community tab if user is not logged in
               if (item.href === "/community" && !user) {
