@@ -76,6 +76,24 @@ export default function ProfilePage() {
   const [showUnfavoriteConfirm, setShowUnfavoriteConfirm] = useState(false); // AnN add: Show unfavorite confirmation on 11/4
   const [recipeToUnfavorite, setRecipeToUnfavorite] = useState<string | null>(null); // AnN add: Store API recipe ID to unfavorite on 11/4
 
+  // Thu add: Friend count for profile stats on 11/6
+  const [friendCount, setFriendCount] = useState(0);
+
+  useEffect(() => {
+    const fetchFriends = async () => {
+      const user = JSON.parse(localStorage.getItem('gatherUser') || '{}');
+      const res = await fetch(`/api/friends/count?userId=${user.id}`);
+      if (res.ok) {
+        const data = await res.json();
+        setFriendCount(data.count);
+      }
+    };
+    fetchFriends();
+  }, []);
+
+  // -------------------------------------------------
+
+
   const avatarPresets = useMemo(() => getAvatarPresets(), []);
   const currentPreset: AvatarPreset = useMemo(
     () => resolveAvatarPreset(avatarId),
@@ -259,7 +277,11 @@ export default function ProfilePage() {
   // AnN edit: Made stats dynamic - posts shows real count, others TODO on 11/4
   const statsButtons = [
     { id: 'posts', label: '# posts', value: userRecipes.length },  // Real count of user's recipes
-    { id: 'friends', label: '# friends', value: 0 },  // TODO: After friend system implementation
+    // { id: 'friends', label: '# friends', value: 0 },  // TODO: After friend system implementation
+    
+    // Thu modified: Fetch real friend count on 11/6
+    { id: 'friends', label: '# friends', value: friendCount },
+
     { id: 'likes', label: '# likes', value: 0 },  // TODO: Count favorites received
   ];
 
