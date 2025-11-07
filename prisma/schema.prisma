@@ -1,3 +1,16 @@
+// Thu added: Prisma Schema 
+// File description: Database schema for Gather application including these models:
+//    User, 
+//    Recipe, 
+//    FavoriteRecipe, 
+//    Ingredient, 
+//    Category, 
+//    Notification,
+//    Friendship,
+
+
+// ==================== PRISMA SCHEMA ====================
+
 generator client {
   provider        = "prisma-client-js"
   previewFeatures = ["typedSql", "postgresqlExtensions"] // Not yet update on dev branch
@@ -18,12 +31,18 @@ model User {
   username  String   @unique
   email     String   @unique
   password  String
+  avatarId  String?  @default("melon") // User avatar preset ID (matches DEFAULT_AVATAR_ID)
   createdAt DateTime @default(now())
 
   // One-to-Many relationship: One User can have 0 to many Recipes
   recipes         Recipe[]
   favoriteRecipes FavoriteRecipe[] // Many-to-many link with Recipe
   favoriteAPIRecipes FavoriteAPIRecipe[]
+  notifications   Notification[]
+
+  // Self-relations for friendships
+  sentRequests     Friendship[] @relation("Requester")
+  receivedRequests Friendship[] @relation("Addressee")
 }
 
 //
@@ -34,9 +53,9 @@ model Recipe {
   userId       Int // Foreign Key referencing User
   recipeName   String
   description  String?
-  photoUrl     String? // Store recipe photo path
-  instructions String? // Cooking steps on 10/30
-  videoUrl     String? // YouTube video link on 10/30
+  photoUrl     String? // Store recipe photo path // AnN added
+  instructions String? // Cooking steps on 10/30 // AnN added
+  videoUrl     String? // YouTube video link on 10/30 // AnN added
   createdAt    DateTime @default(now())
 
   // Relationship to User (Many Recipes belong to one User)
@@ -125,4 +144,34 @@ model FavoriteAPIRecipe {
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
   @@id([userId, apiId])
+}
+
+//
+// ==================== NOTIFICATION ====================
+// 
+model Notification {
+  id         Int      @id @default(autoincrement())
+  userId     Int
+  type       String   // e.g., 'friend_request', 'friend_accept'
+  message    String
+  isRead     Boolean  @default(false)
+  createdAt  DateTime @default(now())
+
+  user       User     @relation(fields: [userId], references: [id])
+}
+
+//
+// ==================== FRIENDSHIP ====================
+// 
+model Friendship {
+  id           Int      @id @default(autoincrement())
+  requesterId  Int
+  addresseeId  Int
+  status       String   @default("none") // none | pending | accepted | rejected
+  createdAt    DateTime @default(now())
+
+  requester    User     @relation("Requester", fields: [requesterId], references: [id])
+  addressee    User     @relation("Addressee", fields: [addresseeId], references: [id])
+
+  @@unique([requesterId, addresseeId])
 }

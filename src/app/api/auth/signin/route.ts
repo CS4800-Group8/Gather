@@ -55,6 +55,7 @@ export async function POST(req: Request) {
           email: user.email,
           firstname: user.firstname,
           lastname: user.lastname,
+          avatarId: user.avatarId, // AnN add: Include avatarId from database on 11/1
         },
       },
       { status: 200 }

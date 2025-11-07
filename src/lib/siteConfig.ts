@@ -9,9 +9,12 @@ export const siteConfig = {
   company: "NVMA Tech",
   description:
     "Bright, simple recipe finder by NVMA Tech. The main content is intentionally minimal so you can plug in your API results.",
+  // AnN fix: Moved all nav links to siteConfig for consistency on 11/6
   nav: [
+    { href: "/", label: "Home" },
     { href: "/explore-recipes", label: "Explore Recipes" },
-    // You can add more nav items later here…
+    { href: "/community", label: "Community" },  // AnN add: Community page on 11/4
+    // AnN removed: Notifications nav link on 11/6 - using bell icon popup instead (Facebook-style)
   ],
   // Placeholder route (not yet implemented) to show where Sign In would go and put outside of nav because not sure if use it...
   signinHref: "/signin",

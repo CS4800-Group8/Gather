@@ -1,3 +1,5 @@
+// Manage user's favorite API recipes: add, remove, and list favorites.
+
 import { NextResponse } from "next/server";
 import prisma from '@/lib/prisma';
 
@@ -19,7 +21,7 @@ export async function POST(req: Request) {
     const existingFavoriteAPI = await prisma.favoriteAPIRecipe.findUnique({
       where: {
         userId_apiId: {
-          userId: userId,
+          userId: parseInt(userId),
           apiId: apiId
         }
       }
@@ -35,7 +37,7 @@ export async function POST(req: Request) {
     // Add to favorites
     const favoriteRecipeAPI = await prisma.favoriteAPIRecipe.create({
       data: {
-        userId: userId,
+        userId: parseInt(userId),
         apiId: apiId
       }
     });
@@ -75,7 +77,7 @@ export async function DELETE(req: Request) {
     const existingFavoriteAPI = await prisma.favoriteAPIRecipe.findUnique({
       where: {
         userId_apiId: {
-          userId: userId,
+          userId: parseInt(userId),
           apiId: apiId
         }
       }
@@ -92,7 +94,7 @@ export async function DELETE(req: Request) {
     await prisma.favoriteAPIRecipe.delete({
       where: {
         userId_apiId: {
-          userId: userId,
+          userId: parseInt(userId),
           apiId: apiId
         }
       }

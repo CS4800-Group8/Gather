@@ -11,7 +11,9 @@ import {
   resolveAvatarPreset,
 } from '@/lib/avatarPresets';
 import AvatarImage from '@/components/AvatarImage'; // AnN add: Use centralized avatar component on 10/23
-import { TrashIcon } from '@heroicons/react/24/outline'; // AnN add: Heroicons delete icon on 10/23
+import UserRecipeCard, { UserRecipe } from '@/components/UserRecipeCard'; // AnN add: Extracted component on 10/31
+import APIRecipeCard, { APIRecipe } from '@/components/APIRecipeCard'; // AnN add: Extracted component on 10/31
+import UserRecipePopup from "@/components/UserRecipePopup"; // Viet add: get User Recipe Popup from component
 
 // AnN edit: Keep all tabs for teammates to implement later on 10/30
 type TabKey = 'my' | 'favorited';
@@ -28,21 +30,7 @@ const getYouTubeVideoId = (url: string): string | null => {
   return null;
 };
 
-// AnN add: Interface for user's created recipes from database on 10/23
-interface UserRecipe {
-  recipeId: number;
-  recipeName: string;
-  description: string | null;
-  photoUrl: string | null;
-  instructions?: string | null; // AnN add: Cooking instructions on 10/30
-  videoUrl?: string | null; // AnN add: YouTube video link on 10/30
-  createdAt: string;
-  // Viet add: ingredients and categories to interface
-  ingredients?: Ingredient[];
-  categories?: Category[];
-}
-
-// Viet add: Interface for ingredients and categories
+// Viet add: Interface for ingredients and categories (kept in profile page for form state)
 interface Ingredient {
   id: number;
   name: string;
@@ -62,11 +50,11 @@ export default function ProfilePage() {
   const [newRecipeName, setNewRecipeName] = useState(''); // Viet add: store recipe name to database
   const [newDescription, setNewDescription] = useState(''); // Viet add: store description to database
   // Ingredients
-  const [ingredient, setIngredient] = useState(''); // Viet add: store current input ingredient to database
+  const [ingredient, setIngredient] = useState(''); // Viet add: store current input ingredient to local state
   const [ingredients, setIngredients] = useState<Ingredient[]>([]); // Viet add: store every ingredients to database
   const [quantity, setQuantity] = useState(''); // Viet add: store quantity to database
   // Categories
-  const [category, setCategory] = useState(''); // Viet add: store current input category to database
+  const [category, setCategory] = useState(''); // Viet add: store current input category to local state
   const [categories, setCategories] = useState<Category[]>([]); // Viet add: store every category to database
 
   const [userRecipes, setUserRecipes] = useState<UserRecipe[]>([]); // AnN add: Store user's database recipes on 10/23
@@ -81,6 +69,30 @@ export default function ProfilePage() {
   const [newVideoUrl, setNewVideoUrl] = useState(''); // AnN add: Store YouTube video URL on 10/30
   const [selectedUserRecipe, setSelectedUserRecipe] = useState<UserRecipe | null>(null); // AnN add: Selected recipe for detail popup on 10/30
   const [showUserRecipePopup, setShowUserRecipePopup] = useState(false); // AnN add: Show user recipe detail popup on 10/30
+  const [favoritedRecipes, setFavoritedRecipes] = useState<APIRecipe[]>([]); // AnN add: Store favorited API recipes on 10/31
+  const [loadingFavorites, setLoadingFavorites] = useState(false); // AnN add: Loading state for favorited recipes on 10/31
+  const [selectedAPIRecipe, setSelectedAPIRecipe] = useState<APIRecipe | null>(null); // AnN add: Selected API recipe for detail popup on 10/31
+  const [showAPIRecipePopup, setShowAPIRecipePopup] = useState(false); // AnN add: Show API recipe detail popup on 10/31
+  const [showUnfavoriteConfirm, setShowUnfavoriteConfirm] = useState(false); // AnN add: Show unfavorite confirmation on 11/4
+  const [recipeToUnfavorite, setRecipeToUnfavorite] = useState<string | null>(null); // AnN add: Store API recipe ID to unfavorite on 11/4
+
+  // Thu add: Friend count for profile stats on 11/6
+  const [friendCount, setFriendCount] = useState(0);
+
+  useEffect(() => {
+    const fetchFriends = async () => {
+      const user = JSON.parse(localStorage.getItem('gatherUser') || '{}');
+      const res = await fetch(`/api/friends/count?userId=${user.id}`);
+      if (res.ok) {
+        const data = await res.json();
+        setFriendCount(data.count);
+      }
+    };
+    fetchFriends();
+  }, []);
+
+  // -------------------------------------------------
+
 
   const avatarPresets = useMemo(() => getAvatarPresets(), []);
   const currentPreset: AvatarPreset = useMemo(
@@ -109,9 +121,85 @@ export default function ProfilePage() {
     }
   };
 
-  // AnN add: Call fetchUserRecipes on page load on 10/23
+  // AnN add: Fetch favorited API recipes on 10/31
+  const fetchFavoritedRecipes = async () => {
+    try {
+      setLoadingFavorites(true);
+      const user = JSON.parse(localStorage.getItem('gatherUser') || '{}');
+      const userId = user?.id;
+
+      if (!userId) {
+        setLoadingFavorites(false);
+        return;
+      }
+
+      // Get favorite apiIds from database
+      const response = await fetch(`/api/favorite-api-recipes?userId=${userId}`);
+
+      if (!response.ok) {
+        setLoadingFavorites(false);
+        return;
+      }
+
+      const data = await response.json();
+      const favoriteApiIds = data.favoriteRecipes?.map((fav: { apiId: string }) => fav.apiId) || [];
+
+      if (favoriteApiIds.length === 0) {
+        setFavoritedRecipes([]);
+        setLoadingFavorites(false);
+        return;
+      }
+
+      // Fetch full recipe details from TheMealDB for each apiId
+      const recipePromises = favoriteApiIds.map(async (apiId: string) => {
+        try {
+          const res = await fetch(`https://www.themealdb.com/api/json/v1/1/lookup.php?i=${apiId}`);
+          const recipeData = await res.json();
+          return recipeData.meals?.[0] || null;
+        } catch {
+          return null;
+        }
+      });
+
+      const recipes = await Promise.all(recipePromises);
+      const validRecipes = recipes.filter((r): r is NonNullable<typeof r> => r !== null);
+
+      // Parse ingredients for each recipe
+      const parsedRecipes: APIRecipe[] = validRecipes.map((meal) => {
+        const ingredients: { name: string; measure: string }[] = [];
+        for (let i = 1; i <= 20; i++) {
+          const ingredient = meal[`strIngredient${i}`];
+          const measure = meal[`strMeasure${i}`];
+          if (ingredient && ingredient.trim()) {
+            ingredients.push({ name: ingredient.trim(), measure: measure?.trim() || '' });
+          }
+        }
+
+        return {
+          idMeal: meal.idMeal,
+          strMeal: meal.strMeal,
+          strCategory: meal.strCategory || '',
+          strArea: meal.strArea || '',
+          strInstructions: meal.strInstructions || '',
+          strMealThumb: meal.strMealThumb || '',
+          strYoutube: meal.strYoutube || '',
+          strTags: meal.strTags || null,
+          ingredients,
+        };
+      });
+
+      setFavoritedRecipes(parsedRecipes);
+      setLoadingFavorites(false);
+    } catch (err) {
+      console.error('Error fetching favorited recipes:', err);
+      setLoadingFavorites(false);
+    }
+  };
+
+  // AnN add: Fetch all recipes on page load on 10/23
   useEffect(() => {
     fetchUserRecipes();
+    fetchFavoritedRecipes(); // AnN add: Fetch favorited recipes on page load too (so tab switching is instant) on 10/31
   }, []);
 
   // Load user profile from localStorage
@@ -151,7 +239,8 @@ export default function ProfilePage() {
   }, []);
 
   // AnN add: Persist selected avatar preset id on 10/22
-  const handleAvatarChange = (newAvatarId: string) => {
+  // AnN edit: Updated to save to database on 11/1
+  const handleAvatarChange = async (newAvatarId: string) => {
     const nextPreset = resolveAvatarPreset(newAvatarId);
     setAvatarId(nextPreset.id);
     setShowAvatarPicker(false);
@@ -160,11 +249,23 @@ export default function ProfilePage() {
       const stored = localStorage.getItem('user') || localStorage.getItem('gatherUser');
       if (stored) {
         const userData = JSON.parse(stored);
+        const userId = userData.id;
+
+        // Update localStorage (instant UI update)
         userData.avatarId = nextPreset.id;
         userData.avatar = nextPreset.value;
         localStorage.setItem('gatherUser', JSON.stringify(userData));
         localStorage.setItem('user', JSON.stringify(userData));
         window.dispatchEvent(new Event('gather:user-updated'));
+
+        // Save to database (persist across devices)
+        if (userId) {
+          await fetch('/api/user/avatar', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ userId, avatarId: nextPreset.id }),
+          });
+        }
       }
     } catch (error) {
       console.error('Failed to save avatar:', error);
@@ -173,11 +274,15 @@ export default function ProfilePage() {
 
   // AnN edit: Removed getRecipesForTab and currentRecipes - no longer needed on 10/30
 
-  // TODO: Backend team will connect these stats to real data
+  // AnN edit: Made stats dynamic - posts shows real count, others TODO on 11/4
   const statsButtons = [
-    { id: 'posts', label: '# posts', value: 5 },
-    { id: 'friends', label: '# friends', value: 18 },
-    { id: 'likes', label: '# likes', value: 48 },
+    { id: 'posts', label: '# posts', value: userRecipes.length },  // Real count of user's recipes
+    // { id: 'friends', label: '# friends', value: 0 },  // TODO: After friend system implementation
+    
+    // Thu modified: Fetch real friend count on 11/6
+    { id: 'friends', label: '# friends', value: friendCount },
+
+    { id: 'likes', label: '# likes', value: 0 },  // TODO: Count favorites received
   ];
 
   const avatarButtonBase =
@@ -226,7 +331,43 @@ export default function ProfilePage() {
 
       // Get current user
       const user = JSON.parse(localStorage.getItem('gatherUser') || '{}');
-      const userId = user?.id || 1; // Replace with actual auth system later
+      const userId = user?.id; 
+
+      // Viet fix: Store ingredients to db when post
+      const ingredientResults = await Promise.all(
+        ingredients.map(async (i) => {
+          const res = await fetch('/api/ingredients', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name: i.name, quantity: i.quantity }),
+          });
+          const data = await res.json();
+          if (res.ok || (res.status === 409 && data.id)) {
+            return { id: data.id, quantity: i.quantity };
+          }
+          return null;
+        })
+      );
+
+      const validIngredients = ingredientResults.filter(Boolean); // Filter out nulls for ingredients
+
+      // Viet fix: Store categories to db when post
+      const categoryResults = await Promise.all(
+        categories.map(async (c) => {
+          const res = await fetch('/api/categories', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name: c.name }),
+          });
+          const data = await res.json();
+          if (res.ok || (res.status === 409 && data.id)) {
+            return data.id;
+          }
+          return null;
+        })
+      );
+
+      const validCategoryIds = categoryResults.filter(Boolean); // Filter out nulls for categories
 
       // Send POST request to API with recipe data
       const response = await fetch('/api/recipes', {
@@ -242,8 +383,8 @@ export default function ProfilePage() {
           instructions: newInstructions || null, // AnN add: Send instructions on 10/30
           videoUrl: newVideoUrl || null, // AnN add: Send video URL on 10/30
           // Viet add: ingredients and categories
-          ingredients: ingredients.map(i => ({ id: i.id, quantity: i.quantity })),
-          categoryIds: categories.map(c => c.id),
+          ingredients: validIngredients,
+          categoryIds: validCategoryIds,
         }),
       });
 
@@ -269,7 +410,7 @@ export default function ProfilePage() {
     }
   };
 
-  // Viet add: Handle add ingredient
+  // Viet fix: add ingredient to local state
   const handleAddIngredient = async () => {
     const name = ingredient.trim();
     const qty = quantity.trim();
@@ -279,48 +420,20 @@ export default function ProfilePage() {
       return;
     }
 
-    try {
-      const res = await fetch('/api/ingredients', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, quantity: qty }),
-      });
+    // Store ingredient to temporary local state
+    const tempId = Date.now(); // fake ID just for UI
+    setIngredients((prev) => [
+      ...prev,
+      { id: tempId, name, quantity: qty },
+    ]);
 
-      const data = await res.json();
-
-      // Handle ingredient exists already
-      if (res.status === 409 && data.id) {
-        setIngredients((prev) => [
-          ...prev,
-          { id: data.id, name, quantity: qty },
-        ]);
-      }
-
-      // Handle new ingredient
-      else if (res.ok) {
-        setIngredients((prev) => [
-          ...prev,
-          { id: data.id, name: data.name, quantity: qty },
-        ]);
-      }
-
-      // Handle other errors
-      else {
-        setCreateRecipeError(data.error || 'Failed to add ingredient');
-        return;
-      }
-
-      // Clear input fields & error message
-      setIngredient('');
-      setQuantity('');
-      setCreateRecipeError('');
-    } catch (err) {
-      console.error(err);
-      setCreateRecipeError('Network error while adding ingredient');
-    }
+    // Clear input fields
+    setIngredient('');
+    setQuantity('');
+    setCreateRecipeError('');
   };
 
-  // Viet add: Handle add category
+  // Viet fix: add category to local state
   const handleAddCategory = async () => {
     const name = category.trim();
 
@@ -329,44 +442,16 @@ export default function ProfilePage() {
       return;
     }
 
-    try {
-      const res = await fetch('/api/categories', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name }),
-      });
+    // Store category to temporary local state
+    const tempId = Date.now(); // fake ID just for UI
+    setCategories((prev) => [
+      ...prev,
+      { id: tempId, name },
+    ]);
 
-      const data = await res.json();
-
-      // Category already exists
-      if (res.status === 409 && data.id) {
-        setCategories((prev) => [
-          ...prev,
-          { id: data.id, name }, 
-        ]);
-      }
-
-      // Category successfully created
-      else if (res.ok) {
-        setCategories((prev) => [
-          ...prev,
-          { id: data.id, name: data.name },
-        ]);
-      }
-
-      // Other errors
-      else {
-        setCreateRecipeError(data.error || 'Failed to add category');
-        return;
-      }
-
-      // Clear input and error message
-      setCategory('');
-      setCreateRecipeError('');
-    } catch (err) {
-      console.error(err);
-      setCreateRecipeError('Network error while adding category');
-    }
+    // Clear input fields
+    setCategory('');
+    setCreateRecipeError('');
   };
 
   // Viet add: Handle removing an ingredient
@@ -412,6 +497,69 @@ export default function ProfilePage() {
     setShowUserRecipePopup(false);
     setSelectedUserRecipe(null);
     document.body.style.overflow = 'unset';
+  };
+
+  // AnN add: Open API recipe detail popup on 10/31
+  const handleOpenAPIRecipePopup = (recipe: APIRecipe) => {
+    setSelectedAPIRecipe(recipe);
+    setShowAPIRecipePopup(true);
+    document.body.style.overflow = 'hidden';
+  };
+
+  // AnN add: Close API recipe detail popup on 10/31
+  const handleCloseAPIRecipePopup = () => {
+    setShowAPIRecipePopup(false);
+    setSelectedAPIRecipe(null);
+    document.body.style.overflow = 'unset';
+  };
+
+  // AnN add: Show unfavorite confirmation on 11/4
+  const handleUnfavoriteAPIRecipe = (apiId: string) => {
+    setRecipeToUnfavorite(apiId);
+    setShowUnfavoriteConfirm(true);
+  };
+
+  // AnN add: Cancel unfavorite on 11/4
+  const handleUnfavoriteCancel = () => {
+    setShowUnfavoriteConfirm(false);
+    setRecipeToUnfavorite(null);
+  };
+
+  // AnN add: Confirm unfavorite API recipe on 11/4
+  const confirmUnfavoriteAPIRecipe = async () => {
+    if (!recipeToUnfavorite) return;
+
+    try {
+      const user = JSON.parse(localStorage.getItem('gatherUser') || '{}');
+      const userId = user?.id;
+
+      if (!userId) return;
+
+      const response = await fetch('/api/favorite-api-recipes', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId, apiId: recipeToUnfavorite }),
+      });
+
+      if (response.ok) {
+        // Remove from state
+        setFavoritedRecipes((prev) => prev.filter((recipe) => recipe.idMeal !== recipeToUnfavorite));
+
+        // Also update localStorage if used by explore page
+        const storedLikes = localStorage.getItem('favoritedRecipes');
+        if (storedLikes) {
+          const likes = JSON.parse(storedLikes);
+          const updatedLikes = likes.filter((id: string) => id !== recipeToUnfavorite);
+          localStorage.setItem('favoritedRecipes', JSON.stringify(updatedLikes));
+        }
+
+        // Close confirmation modal
+        setShowUnfavoriteConfirm(false);
+        setRecipeToUnfavorite(null);
+      }
+    } catch (err) {
+      console.error('Error unfavoriting recipe:', err);
+    }
   };
 
   // AnN edit: Store file and show preview (upload only on Post) on 10/29
@@ -582,21 +730,21 @@ export default function ProfilePage() {
 
             <div className='flex flex-col justify-between items-start text-amber-600 gap-5'>
               {/* HEADER */}
-              <div className='flex justify-around items-center w-full gap-16'>
+              <div className='flex justify-between items-center w-full gap-4'>
                 <button
-                  className="text-gray-500 hover:text-red-500 text-2xl"
+                  className="border-2 border-gray-300 bg-white text-gray-600 hover:text-red-500 hover:border-red-400 hover:bg-red-50 rounded-lg px-3 py-1.5 text-2xl font-bold leading-none shadow-sm hover:shadow-md transition-all"
                   onClick={handleCloseModal}
                   aria-label="Close"
                 >
                   &times;
                 </button>
 
-                <p className='text-xl font-bold'>Create Recipe</p>  
+                <p className='text-xl font-bold'>Create Recipe</p>
 
                 <button
                   onClick={handleCreateRecipe}
                   disabled={uploading}
-                  className='border-2 border-amber-400 bg-amber-100 text-amber-900 font-semibold shadow-md rounded-lg px-4 py-2 hover:bg-amber-200 hover:border-amber-500 hover:-translate-y-1 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0'>
+                  className='border-2 border-amber-400 bg-amber-100 text-amber-900 font-semibold shadow-md rounded-lg px-6 py-2 hover:bg-amber-200 hover:border-amber-500 hover:-translate-y-1 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0'>
                   {uploading ? 'Posting...' : 'Post'}
                 </button>
               </div>
@@ -758,7 +906,7 @@ export default function ProfilePage() {
 
               {/* AnN add: Instructions textarea on 10/30 */}
               <div className='flex flex-col gap-2 w-full'>
-                <p className='text-sm font-semibold'>Instructions <span className='text-xs text-amber-600'>(Optional)</span></p>
+                <p className='text-sm font-semibold'>Instructions</p>
                 <textarea
                   name="instructions"
                   id="instructions"
@@ -772,7 +920,7 @@ export default function ProfilePage() {
 
               {/* AnN add: YouTube video URL input on 10/30 */}
               <div className='flex flex-col gap-2 w-full'>
-                <p className='text-sm font-semibold'>YouTube Video <span className='text-xs text-amber-600'>(Optional)</span></p>
+                <p className='text-sm font-semibold'>YouTube Video</p>
                 <input
                   type='text'
                   value={newVideoUrl}
@@ -852,6 +1000,35 @@ export default function ProfilePage() {
             </div>
           </PopupModal>
 
+          {/* Unfavorite confirmation modal */}
+          <PopupModal isOpen={showUnfavoriteConfirm} onClose={handleUnfavoriteCancel}>
+            <div className='flex flex-col items-center text-amber-800 gap-5 p-6'>
+              {/* Title */}
+              <h3 className='text-xl font-semibold text-amber-900'>Remove from Favorites?</h3>
+
+              {/* Message */}
+              <p className='text-center text-amber-700 text-sm'>
+                Are you sure you want to remove this recipe from your favorites?
+              </p>
+
+              {/* Buttons */}
+              <div className='flex gap-3 w-full mt-2'>
+                <button
+                  onClick={handleUnfavoriteCancel}
+                  className='flex-1 px-4 py-2 rounded-lg border border-amber-300 bg-white text-amber-800 hover:bg-amber-50 transition-colors'
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={confirmUnfavoriteAPIRecipe}
+                  className='flex-1 px-4 py-2 rounded-lg bg-red-500 text-white hover:bg-red-600 transition-colors'
+                >
+                  Remove
+                </button>
+              </div>
+            </div>
+          </PopupModal>
+
           {/* Recipe tabs */}
           <nav className="flex flex-wrap gap-4">
             {tabConfig.map((tab) => {
@@ -883,6 +1060,7 @@ export default function ProfilePage() {
                   <UserRecipeCard
                     key={recipe.recipeId}
                     recipe={recipe}
+                    isOwner={true}
                     onDelete={handleDeleteClick}
                     onClick={handleOpenUserRecipePopup}
                   />
@@ -892,8 +1070,27 @@ export default function ProfilePage() {
                   No recipes here yet—start cooking up something delicious!
                 </article>
               )
+            ) : activeTab === 'favorited' ? (
+              // AnN add: Favorited API recipes tab on 10/31
+              loadingFavorites ? (
+                <article className="rounded-3xl border-2 border-dashed border-[#caa977] bg-[#fff9ed] px-6 py-12 text-center text-sm font-medium text-[#8a6134]">
+                  Loading your favorite recipes...
+                </article>
+              ) : favoritedRecipes.length > 0 ? (
+                favoritedRecipes.map((recipe) => (
+                  <APIRecipeCard
+                    key={recipe.idMeal}
+                    recipe={recipe}
+                    onClick={handleOpenAPIRecipePopup}
+                    onDelete={handleUnfavoriteAPIRecipe}
+                  />
+                ))
+              ) : (
+                <article className="rounded-3xl border-2 border-dashed border-[#caa977] bg-[#fff9ed] px-6 py-12 text-center text-sm font-medium text-[#8a6134]">
+                  No favorite recipes yet. Like recipes from the Explore page to see them here!
+                </article>
+              )
             ) : (
-              // Saved/Liked tabs - placeholder for teammates to implement
               <article className="rounded-3xl border-2 border-dashed border-[#caa977] bg-[#fff9ed] px-6 py-12 text-center text-sm font-medium text-[#8a6134]">
                 Placeholder
               </article>
@@ -901,24 +1098,30 @@ export default function ProfilePage() {
           </div>
         </section>
 
-        {/* AnN add: User Recipe Detail Popup on 10/30 */}
+        {/* Viet move: User Recipe Detail Popup to components/ AnN add: Recipe Detail Popup */}
         {showUserRecipePopup && selectedUserRecipe && (
-          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={handleCloseUserRecipePopup}>
+          <UserRecipePopup
+            recipe={selectedUserRecipe}
+            onClose={handleCloseUserRecipePopup}
+          />
+        )}
+
+        {/* AnN add: API Recipe Detail Popup on 10/31 */}
+        {showAPIRecipePopup && selectedAPIRecipe && (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={handleCloseAPIRecipePopup}>
             <div className="popUp-scrollbar bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden shadow-2xl relative flex flex-col" onClick={(e) => e.stopPropagation()}>
               <div className="flex-shrink-0 bg-white border-b border-amber-200 px-6 py-4 flex justify-between items-center z-10">
-                <h2 className="text-2xl font-bold text-amber-900">{selectedUserRecipe.recipeName}</h2>
-                <button onClick={handleCloseUserRecipePopup} className="w-10 h-10 rounded-full hover:bg-amber-100 flex items-center justify-center transition-colors text-amber-900" aria-label="Close popup">
+                <h2 className="text-2xl font-bold text-amber-900">{selectedAPIRecipe.strMeal}</h2>
+                <button onClick={handleCloseAPIRecipePopup} className="w-10 h-10 rounded-full hover:bg-amber-100 flex items-center justify-center transition-colors text-amber-900" aria-label="Close popup">
                   <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
                 </button>
               </div>
               <div className="overflow-y-auto flex-1 popUp-scrollbar p-6">
-                {selectedUserRecipe.photoUrl && (<div className="relative w-full h-96 rounded-xl overflow-hidden mb-6"><Image src={selectedUserRecipe.photoUrl} alt={selectedUserRecipe.recipeName} fill className="object-cover" sizes="(max-width: 896px) 100vw, 896px" /></div>)}
-                {selectedUserRecipe.description && (<div className="mb-6"><h3 className="font-bold text-amber-900 mb-2 text-xl">Description</h3><p className="text-amber-800">{selectedUserRecipe.description}</p></div>)}
-                {selectedUserRecipe.categories && selectedUserRecipe.categories.length > 0 && (<div className="mb-6"><h3 className="font-bold text-amber-900 mb-2 text-xl">Category</h3><div className="flex gap-2 flex-wrap">{selectedUserRecipe.categories.map((cat) => (<span key={cat.id} className="px-3 py-1 text-sm font-medium bg-amber-100 text-amber-800 rounded-full">{cat.name}</span>))}</div></div>)}
-                {selectedUserRecipe.ingredients && selectedUserRecipe.ingredients.length > 0 && (<div className="mb-6"><h3 className="font-bold text-amber-900 mb-3 text-xl">Ingredients</h3><ul className="grid md:grid-cols-2 gap-2">{selectedUserRecipe.ingredients.map((ing) => (<li key={ing.id} className="flex items-center gap-2 text-amber-800"><span className="text-amber-600">•</span>{ing.quantity} {ing.name}</li>))}</ul></div>)}
-                {selectedUserRecipe.instructions && (<div className="mb-6"><h3 className="font-bold text-amber-900 mb-3 text-xl">Instructions</h3><div className="prose max-w-none text-amber-800 whitespace-pre-line">{selectedUserRecipe.instructions}</div></div>)}
-                {selectedUserRecipe.videoUrl && (() => {const videoId = getYouTubeVideoId(selectedUserRecipe.videoUrl); return videoId ? (<div className="mb-6"><h3 className="font-bold text-amber-900 mb-3 text-xl flex items-center gap-2"><span>▶️</span>Video Tutorial</h3><div className="relative w-full" style={{paddingBottom: '56.25%'}}><iframe className="absolute top-0 left-0 w-full h-full rounded-xl" src={`https://www.youtube.com/embed/${videoId}`} title="YouTube video player" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowFullScreen /></div></div>) : null;})()}
-                <p className="text-sm text-amber-600 mt-6">Created: {new Date(selectedUserRecipe.createdAt).toLocaleDateString()}</p>
+                {selectedAPIRecipe.strMealThumb && (<div className="relative w-full h-96 rounded-xl overflow-hidden mb-6"><Image src={selectedAPIRecipe.strMealThumb} alt={selectedAPIRecipe.strMeal} fill className="object-cover" sizes="(max-width: 896px) 100vw, 896px" /></div>)}
+                <div className="mb-6"><h3 className="font-bold text-amber-900 mb-2 text-xl">Category</h3><div className="flex gap-2 flex-wrap"><span className="px-3 py-1 text-sm font-medium bg-amber-100 text-amber-800 rounded-full">{selectedAPIRecipe.strCategory}</span>{selectedAPIRecipe.strArea && <span className="px-3 py-1 text-sm font-medium bg-amber-100 text-amber-800 rounded-full">{selectedAPIRecipe.strArea}</span>}</div></div>
+                {selectedAPIRecipe.ingredients && selectedAPIRecipe.ingredients.length > 0 && (<div className="mb-6"><h3 className="font-bold text-amber-900 mb-3 text-xl">Ingredients</h3><ul className="grid md:grid-cols-2 gap-2">{selectedAPIRecipe.ingredients.map((ing, idx) => (<li key={idx} className="flex items-center gap-2 text-amber-800"><span className="text-amber-600">•</span>{ing.measure} {ing.name}</li>))}</ul></div>)}
+                {selectedAPIRecipe.strInstructions && (<div className="mb-6"><h3 className="font-bold text-amber-900 mb-3 text-xl">Instructions</h3><div className="prose max-w-none text-amber-800 whitespace-pre-line">{selectedAPIRecipe.strInstructions}</div></div>)}
+                {selectedAPIRecipe.strYoutube && (() => {const videoId = getYouTubeVideoId(selectedAPIRecipe.strYoutube); return videoId ? (<div className="mb-6"><h3 className="font-bold text-amber-900 mb-3 text-xl flex items-center gap-2"><span>▶️</span>Video Tutorial</h3><div className="relative w-full" style={{paddingBottom: '56.25%'}}><iframe className="absolute top-0 left-0 w-full h-full rounded-xl" src={`https://www.youtube.com/embed/${videoId}`} title="YouTube video player" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowFullScreen /></div></div>) : null;})()}
               </div>
             </div>
           </div>
@@ -935,87 +1138,4 @@ const tabConfig: Array<{ id: TabKey; label: string; icon: string }> = [
 ];
 
 // AnN edit: Removed RecipeCard component and Meal interface - no longer needed on 10/30
-
-// AnN add: Card component for user's created recipes on 10/23
-type UserRecipeCardProps = {
-  recipe: UserRecipe;
-  onDelete: (recipeId: number) => void;
-  onClick: (recipe: UserRecipe) => void; // AnN add: Click handler on 10/30
-};
-
-function UserRecipeCard({ recipe, onDelete, onClick }: UserRecipeCardProps) {
-  return (
-    <article
-      className="glass-card overflow-hidden hover:shadow-xl transition-all duration-300 cursor-pointer group relative"
-      onClick={() => onClick(recipe)} // AnN add: Make card clickable on 10/30
-    >
-      <button
-        className="absolute top-4 right-4 z-10 w-10 h-10 rounded-full bg-white/90 backdrop-blur flex items-center justify-center shadow-lg hover:bg-white transition-all duration-200 hover:scale-110"
-        aria-label="Delete recipe"
-        onClick={(e) => {
-          e.stopPropagation(); // AnN add: Prevent card click when deleting on 10/30
-          onDelete(recipe.recipeId);
-        }}
-      >
-        <TrashIcon className="w-5 h-5 text-amber-600 hover:text-red-500 transition-colors" />
-      </button>
-
-      <div className="flex gap-6 p-6">
-        <div className="relative h-48 w-48 flex-shrink-0 rounded-lg overflow-hidden">
-          {recipe.photoUrl ? (
-            <Image
-              src={recipe.photoUrl}
-              alt={recipe.recipeName}
-              fill
-              className="object-cover group-hover:scale-110 transition-transform duration-300"
-              sizes="192px"
-            />
-          ) : (
-            <div className="h-full w-full bg-gradient-to-br from-amber-100 to-amber-200 flex items-center justify-center">
-              <span className="text-6xl">🍽️</span>
-            </div>
-          )}
-        </div>
-        <div className="flex flex-1 flex-col gap-3">
-          <div>
-            <h3 className="text-2xl font-bold text-amber-900 mb-2">{recipe.recipeName}</h3>
-            {recipe.description && (
-              <p className="text-sm text-amber-700 line-clamp-3">{recipe.description}</p>
-            )}
-            {/* Viet add: ingredients and categories display */}
-            {recipe.ingredients && recipe.ingredients.length > 0 && (
-              <div>
-                <p className="text-sm font-semibold text-amber-900">Ingredients:</p>
-                <ul className="text-sm text-amber-800 list-disc list-inside">
-                  {recipe.ingredients.map((ri) => (
-                    <li key={ri.id}>
-                      {ri.name} — {ri.quantity}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-            {recipe.categories && recipe.categories.length > 0 && (
-              <div className='flex flex-col gap-1'>
-                <p className="text-sm font-semibold text-amber-900">Categories:</p>
-                <div>
-                  {recipe.categories.map((rc) => (
-                    <span 
-                    key={rc.id} 
-                    className='bg-amber-100 border border-amber-300 px-3 py-2 rounded-xl text-xs mr-2'>
-                      {rc.name}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            )}
-            
-            <p className="text-xs text-amber-600 mt-3">
-              Created: {new Date(recipe.createdAt).toLocaleDateString()}
-            </p>
-          </div>
-        </div>
-      </div>
-    </article>
-  );
-}
+// AnN edit: Extracted UserRecipeCard and APIRecipeCard to separate components on 10/31
