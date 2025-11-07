@@ -224,6 +224,34 @@ export default function CommunityPage() {
     }
   };
 
+  // AnN add: Unfriend handler on 11/7
+  const handleUnfriend = async (userId: number) => {
+    const stored = localStorage.getItem('gatherUser');
+    const currentUser = stored ? JSON.parse(stored) : null;
+
+    if (!currentUser?.id) return;
+
+    // AnN add: Delete the friendship record (same as cancel/reject) on 11/7
+    const response = await fetch('/api/friends/respond', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        requesterId: currentUser.id,
+        addresseeId: userId,
+        action: 'reject', // Deletes the friendship record
+      }),
+    });
+
+    if (response.ok) {
+      // AnN add: Return to "Add Friend" state on 11/7
+      setUsers((prev) =>
+        prev.map((u) =>
+          u.id === userId ? { ...u, status: 'none', isRequester: false } : u
+        )
+      );
+    }
+  };
+
   return (
     <section className="py-8">
       {/* Page header */}
@@ -273,6 +301,7 @@ export default function CommunityPage() {
             // Thu modified: Show different buttons based on friendship status on 11/6
             users.map((user) => {
               if (user.status === "accepted") {
+                // AnN add: Allow unfriending with confirmation popup on 11/7
                 return (
                   <UserCard
                     key={user.id}
@@ -281,8 +310,9 @@ export default function CommunityPage() {
                       // Viet add: Navigate to other's profile
                       router.push(`/other-profile?userId=${userId}`);
                     }}
+                    onButtonClick={handleUnfriend}
                     buttonText="Friends ✓"
-                    buttonDisabled={true}
+                    buttonDisabled={false}
                   />
                 );
               }
