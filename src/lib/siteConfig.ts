@@ -14,7 +14,7 @@ export const siteConfig = {
     { href: "/", label: "Home" },
     { href: "/explore-recipes", label: "Explore Recipes" },
     { href: "/community", label: "Community" },  // AnN add: Community page on 11/4
-    { href: "/notifications", label: "Notifications" }, // Thu added: Notifications page on 11/4
+    // AnN removed: Notifications nav link on 11/6 - using bell icon popup instead (Facebook-style)
   ],
   // Placeholder route (not yet implemented) to show where Sign In would go and put outside of nav because not sure if use it...
   signinHref: "/signin",

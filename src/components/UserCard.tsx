@@ -73,18 +73,18 @@ export default function UserCard({
       </p>
 
       {/* Action button */}
-      {/* Render either single or two buttons */}
+      {/* AnN fix: Updated to match amber theme on 11/6 */}
       {isAcceptRejectMode ? (
         <div className="flex gap-3">
           <button
             onClick={onAccept}
-            className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 text-sm font-medium transition-all"
+            className="px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 text-sm font-medium transition-all"
           >
             Accept
           </button>
           <button
             onClick={onReject}
-            className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 text-sm font-medium transition-all"
+            className="px-4 py-2 bg-amber-100 text-amber-700 rounded-lg hover:bg-amber-200 text-sm font-medium transition-all"
           >
             Reject
           </button>
@@ -93,9 +93,9 @@ export default function UserCard({
         <button
           className={`px-8 py-2 rounded-lg text-sm font-medium transition-colors ${
             buttonText === 'Friends ✓'
-              ? 'bg-green-500 text-white'
+              ? 'bg-amber-600 text-white'
               : buttonText === 'Pending'
-              ? 'bg-gray-300 text-gray-700'
+              ? 'bg-amber-200 text-amber-700'
               : 'bg-amber-500 text-white hover:bg-amber-600'
           }`}
           onClick={() => onButtonClick?.(user.id)}
