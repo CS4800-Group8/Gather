@@ -50,11 +50,11 @@ export default function ProfilePage() {
   const [newRecipeName, setNewRecipeName] = useState(''); // Viet add: store recipe name to database
   const [newDescription, setNewDescription] = useState(''); // Viet add: store description to database
   // Ingredients
-  const [ingredient, setIngredient] = useState(''); // Viet add: store current input ingredient to database
+  const [ingredient, setIngredient] = useState(''); // Viet add: store current input ingredient to local state
   const [ingredients, setIngredients] = useState<Ingredient[]>([]); // Viet add: store every ingredients to database
   const [quantity, setQuantity] = useState(''); // Viet add: store quantity to database
   // Categories
-  const [category, setCategory] = useState(''); // Viet add: store current input category to database
+  const [category, setCategory] = useState(''); // Viet add: store current input category to local state
   const [categories, setCategories] = useState<Category[]>([]); // Viet add: store every category to database
 
   const [userRecipes, setUserRecipes] = useState<UserRecipe[]>([]); // AnN add: Store user's database recipes on 10/23
@@ -333,6 +333,42 @@ export default function ProfilePage() {
       const user = JSON.parse(localStorage.getItem('gatherUser') || '{}');
       const userId = user?.id; 
 
+      // Viet fix: Store ingredients to db when post
+      const ingredientResults = await Promise.all(
+        ingredients.map(async (i) => {
+          const res = await fetch('/api/ingredients', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name: i.name, quantity: i.quantity }),
+          });
+          const data = await res.json();
+          if (res.ok || (res.status === 409 && data.id)) {
+            return { id: data.id, quantity: i.quantity };
+          }
+          return null;
+        })
+      );
+
+      const validIngredients = ingredientResults.filter(Boolean); // Filter out nulls for ingredients
+
+      // Viet fix: Store categories to db when post
+      const categoryResults = await Promise.all(
+        categories.map(async (c) => {
+          const res = await fetch('/api/categories', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name: c.name }),
+          });
+          const data = await res.json();
+          if (res.ok || (res.status === 409 && data.id)) {
+            return data.id;
+          }
+          return null;
+        })
+      );
+
+      const validCategoryIds = categoryResults.filter(Boolean); // Filter out nulls for categories
+
       // Send POST request to API with recipe data
       const response = await fetch('/api/recipes', {
         method: 'POST',
@@ -347,8 +383,8 @@ export default function ProfilePage() {
           instructions: newInstructions || null, // AnN add: Send instructions on 10/30
           videoUrl: newVideoUrl || null, // AnN add: Send video URL on 10/30
           // Viet add: ingredients and categories
-          ingredients: ingredients.map(i => ({ id: i.id, quantity: i.quantity })),
-          categoryIds: categories.map(c => c.id),
+          ingredients: validIngredients,
+          categoryIds: validCategoryIds,
         }),
       });
 
@@ -374,7 +410,7 @@ export default function ProfilePage() {
     }
   };
 
-  // Viet add: Handle add ingredient
+  // Viet fix: add ingredient to local state
   const handleAddIngredient = async () => {
     const name = ingredient.trim();
     const qty = quantity.trim();
@@ -384,48 +420,20 @@ export default function ProfilePage() {
       return;
     }
 
-    try {
-      const res = await fetch('/api/ingredients', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, quantity: qty }),
-      });
+    // Store ingredient to temporary local state
+    const tempId = Date.now(); // fake ID just for UI
+    setIngredients((prev) => [
+      ...prev,
+      { id: tempId, name, quantity: qty },
+    ]);
 
-      const data = await res.json();
-
-      // Handle ingredient exists already
-      if (res.status === 409 && data.id) {
-        setIngredients((prev) => [
-          ...prev,
-          { id: data.id, name, quantity: qty },
-        ]);
-      }
-
-      // Handle new ingredient
-      else if (res.ok) {
-        setIngredients((prev) => [
-          ...prev,
-          { id: data.id, name: data.name, quantity: qty },
-        ]);
-      }
-
-      // Handle other errors
-      else {
-        setCreateRecipeError(data.error || 'Failed to add ingredient');
-        return;
-      }
-
-      // Clear input fields & error message
-      setIngredient('');
-      setQuantity('');
-      setCreateRecipeError('');
-    } catch (err) {
-      console.error(err);
-      setCreateRecipeError('Network error while adding ingredient');
-    }
+    // Clear input fields
+    setIngredient('');
+    setQuantity('');
+    setCreateRecipeError('');
   };
 
-  // Viet add: Handle add category
+  // Viet fix: add category to local state
   const handleAddCategory = async () => {
     const name = category.trim();
 
@@ -434,44 +442,16 @@ export default function ProfilePage() {
       return;
     }
 
-    try {
-      const res = await fetch('/api/categories', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name }),
-      });
+    // Store category to temporary local state
+    const tempId = Date.now(); // fake ID just for UI
+    setCategories((prev) => [
+      ...prev,
+      { id: tempId, name },
+    ]);
 
-      const data = await res.json();
-
-      // Category already exists
-      if (res.status === 409 && data.id) {
-        setCategories((prev) => [
-          ...prev,
-          { id: data.id, name }, 
-        ]);
-      }
-
-      // Category successfully created
-      else if (res.ok) {
-        setCategories((prev) => [
-          ...prev,
-          { id: data.id, name: data.name },
-        ]);
-      }
-
-      // Other errors
-      else {
-        setCreateRecipeError(data.error || 'Failed to add category');
-        return;
-      }
-
-      // Clear input and error message
-      setCategory('');
-      setCreateRecipeError('');
-    } catch (err) {
-      console.error(err);
-      setCreateRecipeError('Network error while adding category');
-    }
+    // Clear input fields
+    setCategory('');
+    setCreateRecipeError('');
   };
 
   // Viet add: Handle removing an ingredient
