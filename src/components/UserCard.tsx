@@ -1,4 +1,7 @@
 // AnN add: User card component for Community page on 11/4
+'use client';
+
+import { useState } from 'react';
 import AvatarImage from '@/components/AvatarImage';
 import { resolveAvatarPreset } from '@/lib/avatarPresets';
 
@@ -43,7 +46,26 @@ export default function UserCard({
 }: UserCardProps) {
 
   const isAcceptRejectMode = !!onAccept && !!onReject; // Thu added
-  
+  // AnN add: Unfriend confirmation popup state on 11/7
+  const [showUnfriendConfirm, setShowUnfriendConfirm] = useState(false);
+
+  // AnN add: Handle unfriend button click on 11/7
+  const handleButtonClick = () => {
+    // If it's a "Friends ✓" button, show confirmation popup
+    if (buttonText === 'Friends ✓') {
+      setShowUnfriendConfirm(true);
+    } else {
+      // Otherwise, trigger normal button action (Add Friend, Pending)
+      onButtonClick?.(user.id);
+    }
+  };
+
+  // AnN add: Confirm unfriend action on 11/7
+  const handleConfirmUnfriend = () => {
+    setShowUnfriendConfirm(false);
+    onButtonClick?.(user.id);
+  };
+
   return (
     <div className="glass-card p-6 hover:shadow-xl transition-all duration-300 flex flex-col items-center text-center">
       {/* Large centered avatar */}
@@ -93,16 +115,45 @@ export default function UserCard({
         <button
           className={`px-8 py-2 rounded-lg text-sm font-medium transition-colors ${
             buttonText === 'Friends ✓'
-              ? 'bg-amber-600 text-white'
+              ? 'bg-amber-600 text-white hover:bg-amber-700'
               : buttonText === 'Pending'
               ? 'bg-amber-200 text-amber-700'
               : 'bg-amber-500 text-white hover:bg-amber-600'
           }`}
-          onClick={() => onButtonClick?.(user.id)}
+          onClick={handleButtonClick}
           disabled={buttonDisabled}
         >
           {buttonText}
         </button>
+      )}
+
+      {/* AnN add: Unfriend confirmation popup on 11/7 */}
+      {showUnfriendConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+          <div className="glass-card p-8 max-w-md w-full mx-4 text-center">
+            <h3 className="text-xl font-bold text-amber-900 mb-3">
+              Unfriend {user.firstname} {user.lastname}?
+            </h3>
+            <p className="text-sm text-amber-700 mb-6">
+              You can send them a friend request again later.
+            </p>
+
+            <div className="flex gap-3 justify-center">
+              <button
+                onClick={() => setShowUnfriendConfirm(false)}
+                className="px-6 py-2 bg-amber-100 text-amber-700 rounded-lg hover:bg-amber-200 text-sm font-medium transition-all"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleConfirmUnfriend}
+                className="px-6 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 text-sm font-medium transition-all"
+              >
+                Unfriend
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

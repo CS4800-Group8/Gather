@@ -72,6 +72,15 @@ export const AVATAR_PRESETS: AvatarPreset[] = [
     imageScale: 1.1,                     // How zoomed in (start with 1.25 like flan)
     imageOffsetY: -0.01,                 // Vertical adjustment (up/down)
 },
+  {
+    id: "root_beer1",                    // Unique ID 
+    label: "RootBeer",                   // Display name in picker
+    variant: "image",                    // "image" type avatar
+    value: "/avatars/root_beer1.jpg",    // Path
+    bgClass: "bg-green-500",             // Background color class
+    imageScale: 1.1,                     // How zoomed in (start with 1.25 like flan)
+    imageOffsetY: -0.01,                 // Vertical adjustment (up/down)
+},
 ];
 
 export const DEFAULT_AVATAR_ID = "melon";
