@@ -7,7 +7,7 @@ interface PopupModalProps {
   children: React.ReactNode;
 }
 
-const PopupModal: React.FC<PopupModalProps> = ({ isOpen, onClose, children }) => {
+const PopupModal: React.FC<PopupModalProps> = ({ isOpen, children }) => {
   if (!isOpen) return null;
 
   return (
