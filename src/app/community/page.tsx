@@ -3,6 +3,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useRouter } from "next/navigation"; // Viet add: import router to navigate to other's profile
 import UserCard, { CommunityUser } from '@/components/UserCard';
 
 // Define proper types for API responses
@@ -35,6 +36,8 @@ export default function CommunityPage() {
   const [users, setUsers] = useState<CommunityUserWithButton[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const router = useRouter(); // Viet add: define router to navigate to other page
 
   useEffect(() => {
     fetchUsers();
@@ -248,6 +251,10 @@ export default function CommunityPage() {
                   <UserCard
                     key={user.id}
                     user={user}
+                    onAvatarClick={(userId) => {
+                      // Viet add: Navigate to other's profile
+                      router.push(`/other-profile?userId=${userId}`);
+                    }}
                     buttonText="Friends ✓"
                     buttonDisabled={true}
                   />
@@ -259,6 +266,10 @@ export default function CommunityPage() {
                   <UserCard
                     key={user.id}
                     user={user}
+                    onAvatarClick={(userId) => {
+                      // Viet add: Navigate to other's profile
+                      router.push(`/other-profile?userId=${userId}`);
+                    }}
                     buttonText="Pending"
                     buttonDisabled={true}
                   />
@@ -271,6 +282,10 @@ export default function CommunityPage() {
                   <UserCard
                     key={user.id}
                     user={user}
+                    onAvatarClick={(userId) => {
+                      // Viet add: Navigate to other's profile
+                      router.push(`/other-profile?userId=${userId}`);
+                    }}
                     onAccept={() => handleAcceptFriend(user.id)}
                     onReject={() => handleRejectFriend(user.id)}
                   />
@@ -282,6 +297,10 @@ export default function CommunityPage() {
                 <UserCard
                   key={user.id}
                   user={user}
+                  onAvatarClick={(userId) => {
+                    // Viet add: Navigate to other's profile
+                    router.push(`/other-profile?userId=${userId}`);
+                  }}
                   onButtonClick={handleAddFriend}
                   buttonText="Add Friend"
                 />

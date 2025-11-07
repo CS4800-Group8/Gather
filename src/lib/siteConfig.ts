@@ -9,7 +9,9 @@ export const siteConfig = {
   company: "NVMA Tech",
   description:
     "Bright, simple recipe finder by NVMA Tech. The main content is intentionally minimal so you can plug in your API results.",
+  // AnN fix: Moved all nav links to siteConfig for consistency on 11/6
   nav: [
+    { href: "/", label: "Home" },
     { href: "/explore-recipes", label: "Explore Recipes" },
     { href: "/community", label: "Community" },  // AnN add: Community page on 11/4
     { href: "/notifications", label: "Notifications" }, // Thu added: Notifications page on 11/4
