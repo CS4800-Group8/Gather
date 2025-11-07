@@ -1,16 +1,29 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { resolveAvatarPreset } from "@/lib/avatarPresets";
 import AvatarImage from '@/components/AvatarImage';
 import UserRecipeCard, { UserRecipe } from '@/components/UserRecipeCard';
 import UserRecipePopup from "@/components/UserRecipePopup";
 
-export default function OtherProfilePage() {
+// AnN fix: Type for user profile data to replace 'any' on 11/6
+interface OtherUserProfile {
+	id: number;
+	username: string;
+	firstname: string;
+	lastname: string;
+	avatarId: string;
+	_count: {
+		recipes: number;
+	};
+}
+
+// AnN fix: Separate component to use searchParams for Next.js 15 compatibility on 11/6
+function OtherProfileContent() {
 	const searchParams = useSearchParams();
 	const userId = searchParams.get("userId"); // read the ID from URL
-	const [user, setUser] = useState<any>(null);
+	const [user, setUser] = useState<OtherUserProfile | null>(null);
 	const [userRecipes, setUserRecipes] = useState<UserRecipe[]>([]);
 	const [selectedUserRecipe, setSelectedUserRecipe] = useState<UserRecipe | null>(null);
 	const [showUserRecipePopup, setShowUserRecipePopup] = useState(false);
@@ -119,7 +132,7 @@ export default function OtherProfilePage() {
 						<h2 className="flex justify-center text-2xl font-bold text-amber-900 mb-6 border-b-4 border-amber-300 pb-2">🍜 {user.firstname}&apos;s Recipes</h2>
 						{userRecipes.length === 0 ? (
 							<article className="rounded-3xl border-2 border-dashed border-[#caa977] bg-[#fff9ed] px-6 py-12 text-center text-sm font-medium text-[#8a6134]">
-                  This user doesn't have any recipes uploaded yet.
+                  This user doesn&apos;t have any recipes uploaded yet.
               </article>
 						) : (
 							<div className="flex flex-col gap-6">
@@ -145,5 +158,14 @@ export default function OtherProfilePage() {
 				/>
 			)}
 		</>
+	);
+}
+
+// AnN fix: Wrap with Suspense for Next.js 15 compatibility on 11/6
+export default function OtherProfilePage() {
+	return (
+		<Suspense fallback={<div className="min-h-screen flex items-center justify-center"><p className="text-amber-700">Loading profile...</p></div>}>
+			<OtherProfileContent />
+		</Suspense>
 	);
 }
