@@ -39,8 +39,29 @@ export default function CommunityPage() {
 
   const router = useRouter(); // Viet add: define router to navigate to other page
 
+  // AnN add: Fetch users on mount and when returning to tab on 11/6
   useEffect(() => {
     fetchUsers();
+
+    // AnN add: Refresh when window regains focus on 11/6
+    const handleFocus = () => {
+      fetchUsers();
+    };
+
+    // AnN add: Refresh when tab becomes visible on 11/6
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        fetchUsers();
+      }
+    };
+
+    window.addEventListener("focus", handleFocus);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      window.removeEventListener("focus", handleFocus);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
   }, []);
 
   const fetchUsers = async () => {
@@ -132,8 +153,6 @@ export default function CommunityPage() {
                   ...u,
                   status: "pending",
                   isRequester: true,
-                  buttonText: "Pending",
-                  buttonDisabled: true,
                 }
               : u
           )
@@ -144,6 +163,33 @@ export default function CommunityPage() {
     } catch (error) {
       console.error("Error adding friend:", error);
       alert("Something went wrong while sending friend request.");
+    }
+  };
+
+  // AnN add: Cancel friend request (undo) on 11/6
+  const handleCancelRequest = async (userId: number) => {
+    const stored = localStorage.getItem('gatherUser');
+    const currentUser = stored ? JSON.parse(stored) : null;
+
+    if (!currentUser?.id) return;
+
+    const response = await fetch('/api/friends/respond', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        requesterId: currentUser.id,
+        addresseeId: userId,
+        action: 'reject', // Deletes the friendship record
+      }),
+    });
+
+    if (response.ok) {
+      // Return to "Add Friend" state
+      setUsers((prev) =>
+        prev.map((u) =>
+          u.id === userId ? { ...u, status: 'none', isRequester: false } : u
+        )
+      );
     }
   };
 
@@ -262,6 +308,7 @@ export default function CommunityPage() {
               }
 
               if (user.status === "pending" && user.isRequester) {
+                // AnN add: Allow canceling friend request on 11/6
                 return (
                   <UserCard
                     key={user.id}
@@ -270,8 +317,9 @@ export default function CommunityPage() {
                       // Viet add: Navigate to other's profile
                       router.push(`/other-profile?userId=${userId}`);
                     }}
+                    onButtonClick={handleCancelRequest}
                     buttonText="Pending"
-                    buttonDisabled={true}
+                    buttonDisabled={false}
                   />
                 );
               }

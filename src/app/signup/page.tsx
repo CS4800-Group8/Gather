@@ -195,14 +195,14 @@ export default function SignupPage() {
       // An add: Auto-login after successful signup
       console.log("Created user:", data);
 
-      // Collect the signup payload once for storage helpers
-      // AnN add: Seed new profiles with default preset id on 10/22
-      const defaultAvatarPreset = resolveAvatarPreset(DEFAULT_AVATAR_ID);
+      // AnN fix: Use API response with user id instead of form data on 11/6
+      const defaultAvatarPreset = resolveAvatarPreset(data.user.avatarId || DEFAULT_AVATAR_ID);
       const hydratedUser = {
-        firstname: formData.firstname,
-        lastname: formData.lastname,
-        username: formData.username,
-        email: formData.email,
+        id: data.user.id, // AnN fix: Include user id from API on 11/6
+        firstname: data.user.firstname,
+        lastname: data.user.lastname,
+        username: data.user.username,
+        email: data.user.email,
         avatarId: defaultAvatarPreset.id,
         avatar: defaultAvatarPreset.value,
       };
