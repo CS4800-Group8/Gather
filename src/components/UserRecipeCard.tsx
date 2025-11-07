@@ -1,6 +1,7 @@
 // AnN add: Card component for user's created recipes on 10/23
 // AnN edit: Extracted to separate file on 10/31
 import Image from 'next/image';
+import { useState } from "react";
 import { TrashIcon } from '@heroicons/react/24/outline';
 
 // Viet add: Interface for ingredients and categories
@@ -31,26 +32,54 @@ export interface UserRecipe {
 
 type UserRecipeCardProps = {
   recipe: UserRecipe;
-  onDelete: (recipeId: number) => void;
-  onClick: (recipe: UserRecipe) => void;
+  isOwner: boolean; // Viet add: determine who is the owner of the recipe
+  onDelete?: (recipeId: number) => void;
+  onClick?: (recipe: UserRecipe) => void;
 };
 
-export default function UserRecipeCard({ recipe, onDelete, onClick }: UserRecipeCardProps) {
+export default function UserRecipeCard({ recipe, isOwner, onDelete, onClick }: UserRecipeCardProps) {
+  const [isFavorited, setIsFavorited] = useState(false);
+
+  // Toggle favorite button
+  const handleFavoriteClick = (e: React.MouseEvent) => {
+    e.stopPropagation(); 
+    setIsFavorited((prev) => !prev); 
+  };
+
   return (
     <article
       className="glass-card overflow-hidden hover:shadow-xl transition-all duration-300 cursor-pointer group relative"
-      onClick={() => onClick(recipe)}
+      onClick={() => onClick?.(recipe)}
     >
-      <button
-        className="absolute top-4 right-4 z-10 w-10 h-10 rounded-full bg-white/90 backdrop-blur flex items-center justify-center shadow-lg hover:bg-white transition-all duration-200 hover:scale-110"
-        aria-label="Delete recipe"
-        onClick={(e) => {
-          e.stopPropagation();
-          onDelete(recipe.recipeId);
-        }}
-      >
-        <TrashIcon className="w-5 h-5 text-amber-600 hover:text-red-500 transition-colors" />
-      </button>
+      {/* Viet add: can't delete recipe if not owner */}
+      {isOwner && (
+        <button
+          className="absolute top-4 right-4 z-10 w-10 h-10 rounded-full bg-white/90 backdrop-blur flex items-center justify-center shadow-lg hover:bg-white transition-all duration-200 hover:scale-110"
+          aria-label="Delete recipe"
+          onClick={(e) => {
+            e.stopPropagation();
+            onDelete?.(recipe.recipeId);
+          }}
+        >
+          <TrashIcon className="w-5 h-5 text-amber-600 hover:text-red-500 transition-colors" />
+        </button>
+      )}
+
+      {/* Viet add: If not owner add favorite button */}
+      {!isOwner && (
+        <button
+          className="absolute top-4 right-4 z-10 w-10 h-10 rounded-full bg-white/90 backdrop-blur flex items-center justify-center shadow-lg hover:bg-white transition-all duration-200 hover:scale-110"
+          aria-label="Add to favorites"
+          onClick={handleFavoriteClick}
+        >
+          <span 
+            className={`text-xl transition-colors ${
+              isFavorited ? 'text-red-500' : 'text-amber-600 hover:text-red-500'
+            }`}>
+              {isFavorited ? '♥' : '♡'}
+            </span>
+        </button>
+      )}
 
       <div className="flex gap-6 p-6">
         <div className="relative h-48 w-48 flex-shrink-0 rounded-lg overflow-hidden">
@@ -93,8 +122,8 @@ export default function UserRecipeCard({ recipe, onDelete, onClick }: UserRecipe
                 <div>
                   {recipe.categories.map((rc) => (
                     <span
-                    key={rc.id}
-                    className='bg-amber-100 border border-amber-300 px-3 py-2 rounded-xl text-xs mr-2'>
+                      key={rc.id}
+                      className='bg-amber-100 border border-amber-300 px-3 py-2 rounded-xl text-xs mr-2'>
                       {rc.name}
                     </span>
                   ))}

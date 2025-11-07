@@ -117,12 +117,6 @@ export default function Header() {
 
         <div className="flex flex-wrap items-center justify-end gap-2 sm:gap-3">
           <nav className="flex flex-wrap items-center gap-2">
-            <Link
-              href="/"
-              className={isActive("/") ? activeNavClasses : baseNavClasses}
-            >
-              Home
-            </Link>
             {navLinks.map((item) => (
               <Link
                 key={item.href}

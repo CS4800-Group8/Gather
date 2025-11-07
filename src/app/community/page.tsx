@@ -3,12 +3,15 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useRouter } from "next/navigation"; // Viet add: import router to navigate to other's profile
 import UserCard, { CommunityUser } from '@/components/UserCard';
 
 export default function CommunityPage() {
   const [users, setUsers] = useState<CommunityUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const router = useRouter(); // Viet add: define router to navigate to other page
 
   useEffect(() => {
     fetchUsers();
@@ -95,8 +98,8 @@ export default function CommunityPage() {
                 key={user.id}
                 user={user}
                 onAvatarClick={(userId) => {
-                  // TODO: Navigate to user profile page
-                  console.log('Avatar clicked - profile view coming soon!');
+                  // Viet add: Navigate to other's profile
+                  router.push(`/other-profile?userId=${userId}`);
                 }}
                 onButtonClick={(userId) => {
                   alert('Friend system coming soon!');
