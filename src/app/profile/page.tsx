@@ -278,11 +278,9 @@ export default function ProfilePage() {
   const statsButtons = [
     { id: 'posts', label: '# posts', value: userRecipes.length },  // Real count of user's recipes
     // { id: 'friends', label: '# friends', value: 0 },  // TODO: After friend system implementation
-    
+
     // Thu modified: Fetch real friend count on 11/6
     { id: 'friends', label: '# friends', value: friendCount },
-
-    { id: 'likes', label: '# likes', value: 0 },  // TODO: Count favorites received
   ];
 
   const avatarButtonBase =
