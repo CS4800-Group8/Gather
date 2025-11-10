@@ -69,6 +69,10 @@ export default function ExploreRecipesPage() {
   
   // Likes state (stored in localStorage)
   const [favoritedRecipes, setFavoritedRecipes] = useState<Set<string>>(new Set());
+  
+  // Comments state
+  const [comments, setComments] = useState<{[key: string]: Array<{id: number, username: string, text: string, timestamp: string}>}>({});
+  const [newComment, setNewComment] = useState('');
 
   // Load likes from localStorage
   useEffect(() => {
@@ -138,34 +142,33 @@ export default function ExploreRecipesPage() {
         // Step 1: Set loading to true (show skeleton cards) which acts as a loading bar 
         setLoading(true);
         
-        /* Step 2: Create array of 15 fetch calls
-         * Each item is a fetch promise that:
-         *   1. Calls the API: fetch('...')
-         *   2. Converts response to JSON: .then(res => res.json())
-         *   3. Extracts first meal: .then(data => data.meals[0])
-         * 
-         * We extract data.meals[0] to get just the meal object itself
+        /* Step 2: Fetch recipes until we have 15 valid ones with images
+         * Keep fetching until we collect 15 unique meals that have valid images
          */
-        const promises = Array.from({ length: 15 }, () =>
-          fetch('https://www.themealdb.com/api/json/v1/1/random.php')
-            .then(res => res.json())
-            .then(data => data.meals[0])
-        );
+        const validMeals: Meal[] = [];
+        const seenIds = new Set<string>();
         
-        /* Step 3: Wait for ALL promises to complete
-         * 
-         * Promise.all(promises) waits for all 15 fetches to finish
-         * Returns: [meal1, meal2, meal3, ..., meal15]
-         * If ANY promise fails, the whole thing fails (caught by catch block)
+        /* Step 3: Loop through random API calls until we have 15 unique meals with images
+         * For each iteration:
+         *   1. Fetch a random meal from the API
+         *   2. Check if the meal exists, has a valid image (strMealThumb), and isn't a duplicate
+         *   3. If valid, add it to our collection and track its ID
+         *   4. Continue until we have exactly 15 meals
          */
-        const meals = await Promise.all(promises);
+        while (validMeals.length < 15) {
+          const response = await fetch('https://www.themealdb.com/api/json/v1/1/random.php');
+          const data = await response.json();
+          const meal = data.meals[0];
+          
+          // Check if meal has a valid image and hasn't been added yet
+          if (meal && meal.strMealThumb && !seenIds.has(meal.idMeal)) {
+            validMeals.push(meal);
+            seenIds.add(meal.idMeal);
+          }
+        }
         
-        // Step 4: filter already loaded recipes --> true random can give duplicate meals
-        const uniqueMeals = meals.filter((meal, index, self) =>
-          index === self.findIndex((m) => m.idMeal === meal.idMeal)
-        );
-        
-        setRecipes(uniqueMeals);
+        // Step 4: Now we have found enough unique meals with pictures --> set those meals as the recipes to display
+        setRecipes(validMeals);
         
       } catch (err) {
         /* Step 5: Error handling
@@ -296,8 +299,8 @@ export default function ExploreRecipesPage() {
       return;
     }
 
+    // Handle favorite functionality
     const isCurrentlyFavorited = favoritedRecipes.has(apiId);
-    
     try {
       if (isCurrentlyFavorited) {
         // Remove from favorites
@@ -325,6 +328,46 @@ export default function ExploreRecipesPage() {
     } catch (error) {
       console.error('Error toggling like:', error);
     }
+  };
+
+  // Handle posting a new comment
+  const handlePostComment = (recipeId: string) => {
+    if (!newComment.trim()) return;
+    
+    // Check if user is logged in
+    const stored = localStorage.getItem('gatherUser') || localStorage.getItem('user');
+    if (!stored) {
+      alert('Please log in to comment');
+      return;
+    }
+
+    const userData = JSON.parse(stored);
+    const username = userData.username || 'Anonymous';
+
+    // Create new comment object
+    const comment = {
+      id: Date.now(),
+      username: username,
+      text: newComment,
+      timestamp: new Date().toLocaleString()
+    };
+
+    // Add comment to state
+    setComments(prev => ({
+      ...prev,
+      [recipeId]: [...(prev[recipeId] || []), comment]
+    }));
+
+    // Clear input
+    setNewComment('');
+  };
+
+  // Handle deleting a comment (only if its your comment)
+  const handleDeleteComment = (recipeId: string, commentId: number) => {
+    setComments(prev => ({
+      ...prev,
+      [recipeId]: prev[recipeId].filter(c => c.id !== commentId)
+    }));
   };
 
   // COMPONENT RENDERING - What gets displayed to the user
@@ -572,6 +615,80 @@ export default function ExploreRecipesPage() {
                   </div>
                 ) : null;
               })()}
+
+              {/* Comments/Discussion Section */}
+              <div className="border-t border-amber-200 pt-6">
+                <h3 className="font-bold text-amber-900 mb-4 text-xl flex items-center gap-2">
+                  <span>💬</span>
+                  Discussion ({(comments[selectedRecipe.idMeal] || []).length})
+                </h3>
+
+                {/* Comment Input */}
+                <div className="mb-6">
+                  <textarea
+                    value={newComment}
+                    onChange={(e) => setNewComment(e.target.value)}
+                    placeholder="Share your thoughts about this recipe..."
+                    className="w-full px-4 py-3 bg-amber-50 border-2 border-amber-300 rounded-lg focus:outline-none focus:border-amber-600 focus:bg-amber-100 resize-none text-amber-900 placeholder-amber-500"
+                    rows={3}
+                  />
+                  <div className="flex justify-end items-center mt-2">
+                    <button
+                      onClick={() => handlePostComment(selectedRecipe.idMeal)}
+                      disabled={!newComment.trim()}
+                      className="px-6 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 disabled:bg-amber-300 disabled:cursor-not-allowed transition-colors font-semibold"
+                    >
+                      Post Comment
+                    </button>
+                  </div>
+                </div>
+
+                {/* Comments List */}
+                <div className="space-y-4">
+                  {(comments[selectedRecipe.idMeal] || []).length === 0 ? (
+                    <div className="text-center py-8 text-amber-600">
+                      <p className="text-lg">No comments yet</p>
+                      <p className="text-sm mt-2">Be the first to share your thoughts!</p>
+                    </div>
+                  ) : (
+                    (comments[selectedRecipe.idMeal] || []).map((comment) => {
+                      // Check if current user is the comment author
+                      const stored = localStorage.getItem('gatherUser') || localStorage.getItem('user');
+                      const currentUsername = stored ? JSON.parse(stored).username : null;
+                      const isOwnComment = currentUsername === comment.username;
+
+                      return (
+                        <div 
+                          key={comment.id}
+                          className="bg-amber-50 rounded-lg p-4 hover:bg-amber-100 transition-colors"
+                        >
+                          <div className="flex justify-between items-start mb-2">
+                            <div className="flex items-center gap-2">
+                              <div className="w-8 h-8 bg-amber-600 rounded-full flex items-center justify-center text-white font-bold">
+                                {comment.username.charAt(0).toUpperCase()}
+                              </div>
+                              <div>
+                                <p className="font-semibold text-amber-900">{comment.username}</p>
+                                <p className="text-xs text-amber-600">{comment.timestamp}</p>
+                              </div>
+                            </div>
+                            {isOwnComment && (
+                              <button
+                                onClick={() => handleDeleteComment(selectedRecipe.idMeal, comment.id)}
+                                className="text-red-500 hover:text-red-700 transition-colors px-2"
+                                aria-label="Delete comment"
+                              >
+                                🗑️
+                              </button>
+                            )}
+                          </div>
+                          <p className="text-amber-800 whitespace-pre-wrap">{comment.text}</p>
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+              </div>
             </div>
           </div>
         </div>
