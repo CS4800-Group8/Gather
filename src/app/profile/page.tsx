@@ -1131,9 +1131,13 @@ export default function ProfilePage() {
   );
 }
 
-// AnN edit: Keep all tabs for teammates to implement saved/liked later on 10/30
+// AnN edit: Changed My Recipes icon from emoji to custom PNG icon on 11/12
 const tabConfig: Array<{ id: TabKey; label: string; icon: string | JSX.Element }> = [
-  { id: 'my', label: 'My Recipes', icon: '🍜' },
+  {
+    id: 'my',
+    label: 'My Recipes',
+    icon: <Image src="/icons/recipe-book-icon.png" alt="Recipe Book" width={24} height={24} className="inline-block" />
+  },
   { id: 'favorited', label: 'Favorite Recipes', icon: <HeartIcon className="w-6 h-6 text-red-500" /> },
 ];
 
