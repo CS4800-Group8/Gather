@@ -1,8 +1,10 @@
 'use client';
 
 import Image from 'next/image';
-import { useEffect, useMemo, useState } from 'react';
+import { JSX, useEffect, useMemo, useState } from 'react';
 import PopupModal from '@/components/PopupModal'; // Viet add: Use popup modal to display create recipe
+import { HeartIcon } from '@heroicons/react/24/solid'; // AnN add: Heart icon for favorited tab on 11/8
+
 import {
   DEFAULT_AVATAR_ID,
   AvatarPreset,
@@ -278,11 +280,9 @@ export default function ProfilePage() {
   const statsButtons = [
     { id: 'posts', label: '# posts', value: userRecipes.length },  // Real count of user's recipes
     // { id: 'friends', label: '# friends', value: 0 },  // TODO: After friend system implementation
-    
+
     // Thu modified: Fetch real friend count on 11/6
     { id: 'friends', label: '# friends', value: friendCount },
-
-    { id: 'likes', label: '# likes', value: 0 },  // TODO: Count favorites received
   ];
 
   const avatarButtonBase =
@@ -1044,7 +1044,7 @@ export default function ProfilePage() {
                       : 'border-amber-300 bg-white text-amber-700 hover:bg-amber-50'
                   }`}
                 >
-                  <span aria-hidden="true" className="text-xl">{tab.icon}</span>
+                  <span aria-hidden="true" className="text-xl flex items-center justify-center">{tab.icon}</span>
                   {tab.label}
                 </button>
               );
@@ -1131,10 +1131,14 @@ export default function ProfilePage() {
   );
 }
 
-// AnN edit: Keep all tabs for teammates to implement saved/liked later on 10/30
-const tabConfig: Array<{ id: TabKey; label: string; icon: string }> = [
-  { id: 'my', label: 'My Recipes', icon: '🍜' },
-  { id: 'favorited', label: 'Favorite Recipes', icon: '❤️' },
+// AnN edit: Changed My Recipes icon from emoji to custom PNG icon on 11/12
+const tabConfig: Array<{ id: TabKey; label: string; icon: string | JSX.Element }> = [
+  {
+    id: 'my',
+    label: 'My Recipes',
+    icon: <Image src="/icons/recipe-book-icon.png" alt="Recipe Book" width={24} height={24} className="inline-block" />
+  },
+  { id: 'favorited', label: 'Favorite Recipes', icon: <HeartIcon className="w-6 h-6 text-red-500" /> },
 ];
 
 // AnN edit: Removed RecipeCard component and Meal interface - no longer needed on 10/30

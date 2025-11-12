@@ -81,6 +81,15 @@ export const AVATAR_PRESETS: AvatarPreset[] = [
     imageScale: 1.1,                     // How zoomed in (start with 1.25 like flan)
     imageOffsetY: -0.01,                 // Vertical adjustment (up/down)
 },
+  {
+    id: "strawberry_cake",               // Unique ID 
+    label: "Strawberry Cake",            // Display name in picker
+    variant: "image",                    // "image" type avatar
+    value: "/avatars/strawberry_cake.jpg",// Path
+    bgClass: "bg-pink-500",              // Background color class
+    imageScale: 1.3,                     // How zoomed in (start with 1.25 like flan)
+    imageOffsetY: -0.01,                 // Vertical adjustment (up/down)
+},
 ];
 
 export const DEFAULT_AVATAR_ID = "melon";
