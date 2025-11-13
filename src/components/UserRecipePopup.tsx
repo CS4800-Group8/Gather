@@ -3,6 +3,7 @@
 import Image from "next/image";
 import React from "react";
 import { UserRecipe } from "@/components/UserRecipeCard";
+import CommentSection from "./CommentSection"; // AnN add: Database-backed comment component on 11/12
 
 interface UserRecipePopupProps {
   recipe: UserRecipe;
@@ -23,8 +24,9 @@ export default function UserRecipePopup({ recipe, onClose }: UserRecipePopupProp
       className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
       onClick={onClose}
     >
+      {/* AnN edit: Changed max-w-4xl to max-w-6xl for wider layout matching APIRecipePopup on 11/12 */}
       <div
-        className="popUp-scrollbar bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden shadow-2xl relative flex flex-col"
+        className="popUp-scrollbar bg-white rounded-2xl max-w-6xl w-full max-h-[90vh] overflow-hidden shadow-2xl relative flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
@@ -53,93 +55,106 @@ export default function UserRecipePopup({ recipe, onClose }: UserRecipePopupProp
           </button>
         </div>
 
-        {/* Content */}
-        <div className="overflow-y-auto flex-1 popUp-scrollbar p-6">
-          {recipe.photoUrl && (
-            <div className="relative w-full h-96 rounded-xl overflow-hidden mb-6">
-              <Image
-                src={recipe.photoUrl}
-                alt={recipe.recipeName}
-                fill
-                className="object-cover"
-                sizes="(max-width: 896px) 100vw, 896px"
-              />
-            </div>
-          )}
+        {/* AnN edit: Two-column layout - recipe details left, comments right on 11/12 */}
+        <div className="overflow-y-auto flex-1 popUp-scrollbar">
+          <div className="grid lg:grid-cols-[1fr,400px] gap-6 p-6">
+            {/* Left column: Recipe details */}
+            <div>
+              {recipe.photoUrl && (
+                <div className="relative w-full h-96 rounded-xl overflow-hidden mb-6">
+                  <Image
+                    src={recipe.photoUrl}
+                    alt={recipe.recipeName}
+                    fill
+                    className="object-cover"
+                    sizes="(max-width: 896px) 100vw, 896px"
+                  />
+                </div>
+              )}
 
-          {recipe.description && (
-            <div className="mb-6">
-              <h3 className="font-bold text-amber-900 mb-2 text-xl">Description</h3>
-              <p className="text-amber-800">{recipe.description}</p>
-            </div>
-          )}
-
-          {recipe.categories && recipe.categories.length > 0 && (
-            <div className="mb-6">
-              <h3 className="font-bold text-amber-900 mb-2 text-xl">Category</h3>
-              <div className="flex gap-2 flex-wrap">
-                {recipe.categories.map((cat) => (
-                  <span
-                    key={cat.id}
-                    className="px-3 py-1 text-sm font-medium bg-amber-100 text-amber-800 rounded-full"
-                  >
-                    {cat.name}
-                  </span>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {recipe.ingredients && recipe.ingredients.length > 0 && (
-            <div className="mb-6">
-              <h3 className="font-bold text-amber-900 mb-3 text-xl">Ingredients</h3>
-              <ul className="grid md:grid-cols-2 gap-2">
-                {recipe.ingredients.map((ing) => (
-                  <li key={ing.id} className="flex items-center gap-2 text-amber-800">
-                    <span className="text-amber-600">•</span>
-                    {ing.quantity} {ing.name}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-
-          {recipe.instructions && (
-            <div className="mb-6">
-              <h3 className="font-bold text-amber-900 mb-3 text-xl">Instructions</h3>
-              <div className="prose max-w-none text-amber-800 whitespace-pre-line">
-                {recipe.instructions}
-              </div>
-            </div>
-          )}
-
-          {recipe.videoUrl &&
-            (() => {
-              const videoId = getYouTubeVideoId(recipe.videoUrl);
-              return videoId ? (
+              {recipe.description && (
                 <div className="mb-6">
-                  <h3 className="font-bold text-amber-900 mb-3 text-xl flex items-center gap-2">
-                    <span>▶️</span>Video Tutorial
-                  </h3>
-                  <div
-                    className="relative w-full"
-                    style={{ paddingBottom: "56.25%" }}
-                  >
-                    <iframe
-                      className="absolute top-0 left-0 w-full h-full rounded-xl"
-                      src={`https://www.youtube.com/embed/${videoId}`}
-                      title="YouTube video player"
-                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                      allowFullScreen
-                    />
+                  <h3 className="font-bold text-amber-900 mb-2 text-xl">Description</h3>
+                  <p className="text-amber-800">{recipe.description}</p>
+                </div>
+              )}
+
+              {recipe.categories && recipe.categories.length > 0 && (
+                <div className="mb-6">
+                  <h3 className="font-bold text-amber-900 mb-2 text-xl">Category</h3>
+                  <div className="flex gap-2 flex-wrap">
+                    {recipe.categories.map((cat) => (
+                      <span
+                        key={cat.id}
+                        className="px-3 py-1 text-sm font-medium bg-amber-100 text-amber-800 rounded-full"
+                      >
+                        {cat.name}
+                      </span>
+                    ))}
                   </div>
                 </div>
-              ) : null;
-            })()}
+              )}
 
-          <p className="text-sm text-amber-600 mt-6">
-            Created: {new Date(recipe.createdAt).toLocaleDateString()}
-          </p>
+              {recipe.ingredients && recipe.ingredients.length > 0 && (
+                <div className="mb-6">
+                  <h3 className="font-bold text-amber-900 mb-3 text-xl">Ingredients</h3>
+                  <ul className="grid md:grid-cols-2 gap-2">
+                    {recipe.ingredients.map((ing) => (
+                      <li key={ing.id} className="flex items-center gap-2 text-amber-800">
+                        <span className="text-amber-600">•</span>
+                        {ing.quantity} {ing.name}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {recipe.instructions && (
+                <div className="mb-6">
+                  <h3 className="font-bold text-amber-900 mb-3 text-xl">Instructions</h3>
+                  <div className="prose max-w-none text-amber-800 whitespace-pre-line">
+                    {recipe.instructions}
+                  </div>
+                </div>
+              )}
+
+              {recipe.videoUrl &&
+                (() => {
+                  const videoId = getYouTubeVideoId(recipe.videoUrl);
+                  return videoId ? (
+                    <div className="mb-6">
+                      <h3 className="font-bold text-amber-900 mb-3 text-xl flex items-center gap-2">
+                        <span>▶️</span>Video Tutorial
+                      </h3>
+                      <div
+                        className="relative w-full"
+                        style={{ paddingBottom: "56.25%" }}
+                      >
+                        <iframe
+                          className="absolute top-0 left-0 w-full h-full rounded-xl"
+                          src={`https://www.youtube.com/embed/${videoId}`}
+                          title="YouTube video player"
+                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                          allowFullScreen
+                        />
+                      </div>
+                    </div>
+                  ) : null;
+                })()}
+
+              <p className="text-sm text-amber-600 mt-6">
+                Created: {new Date(recipe.createdAt).toLocaleDateString()}
+              </p>
+            </div>
+
+            {/* Right column: Comments section */}
+            <div className="lg:sticky lg:top-0 lg:self-start lg:max-h-[calc(90vh-120px)] lg:overflow-y-auto popUp-scrollbar">
+              <CommentSection
+                recipeId={recipe.recipeId.toString()}
+                recipeType="user"
+              />
+            </div>
+          </div>
         </div>
       </div>
     </div>

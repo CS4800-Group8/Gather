@@ -4,6 +4,7 @@ import Image from 'next/image';
 import { JSX, useEffect, useMemo, useState } from 'react';
 import PopupModal from '@/components/PopupModal'; // Viet add: Use popup modal to display create recipe
 import { HeartIcon } from '@heroicons/react/24/solid'; // AnN add: Heart icon for favorited tab on 11/8
+import APIRecipePopup from '@/components/APIRecipePopup'; // AnN add: Reusable API recipe popup component on 11/12
 
 import {
   DEFAULT_AVATAR_ID,
@@ -20,17 +21,8 @@ import UserRecipePopup from "@/components/UserRecipePopup"; // Viet add: get Use
 // AnN edit: Keep all tabs for teammates to implement later on 10/30
 type TabKey = 'my' | 'favorited';
 
-// AnN edit: Removed Meal interface - no longer needed on 10/30
-
-// AnN add: Helper function to extract YouTube video ID from URL on 10/30
-const getYouTubeVideoId = (url: string): string | null => {
-  if (!url) return null;
-  const watchMatch = url.match(/(?:youtube\.com\/watch\?v=)([a-zA-Z0-9_-]+)/);
-  if (watchMatch) return watchMatch[1];
-  const shortMatch = url.match(/(?:youtu\.be\/)([a-zA-Z0-9_-]+)/);
-  if (shortMatch) return shortMatch[1];
-  return null;
-};
+// AnN edit: Removed Meal interface and getYouTubeVideoId helper on 11/12
+// Now using APIRecipePopup component which includes these utilities
 
 // Viet add: Interface for ingredients and categories (kept in profile page for form state)
 interface Ingredient {
@@ -1106,25 +1098,16 @@ export default function ProfilePage() {
           />
         )}
 
-        {/* AnN add: API Recipe Detail Popup on 10/31 */}
+        {/* AnN edit: Moved API recipe popup to APIRecipePopup component for easier management on 11/12 */}
+        {/* Original hardcoded popup (lines 1103-1135) extracted to /components/APIRecipePopup.tsx */}
+        {/* Benefits: Same popup logic as explore-recipes page, easier to maintain and update */}
         {showAPIRecipePopup && selectedAPIRecipe && (
-          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={handleCloseAPIRecipePopup}>
-            <div className="popUp-scrollbar bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden shadow-2xl relative flex flex-col" onClick={(e) => e.stopPropagation()}>
-              <div className="flex-shrink-0 bg-white border-b border-amber-200 px-6 py-4 flex justify-between items-center z-10">
-                <h2 className="text-2xl font-bold text-amber-900">{selectedAPIRecipe.strMeal}</h2>
-                <button onClick={handleCloseAPIRecipePopup} className="w-10 h-10 rounded-full hover:bg-amber-100 flex items-center justify-center transition-colors text-amber-900" aria-label="Close popup">
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-                </button>
-              </div>
-              <div className="overflow-y-auto flex-1 popUp-scrollbar p-6">
-                {selectedAPIRecipe.strMealThumb && (<div className="relative w-full h-96 rounded-xl overflow-hidden mb-6"><Image src={selectedAPIRecipe.strMealThumb} alt={selectedAPIRecipe.strMeal} fill className="object-cover" sizes="(max-width: 896px) 100vw, 896px" /></div>)}
-                <div className="mb-6"><h3 className="font-bold text-amber-900 mb-2 text-xl">Category</h3><div className="flex gap-2 flex-wrap"><span className="px-3 py-1 text-sm font-medium bg-amber-100 text-amber-800 rounded-full">{selectedAPIRecipe.strCategory}</span>{selectedAPIRecipe.strArea && <span className="px-3 py-1 text-sm font-medium bg-amber-100 text-amber-800 rounded-full">{selectedAPIRecipe.strArea}</span>}</div></div>
-                {selectedAPIRecipe.ingredients && selectedAPIRecipe.ingredients.length > 0 && (<div className="mb-6"><h3 className="font-bold text-amber-900 mb-3 text-xl">Ingredients</h3><ul className="grid md:grid-cols-2 gap-2">{selectedAPIRecipe.ingredients.map((ing, idx) => (<li key={idx} className="flex items-center gap-2 text-amber-800"><span className="text-amber-600">•</span>{ing.measure} {ing.name}</li>))}</ul></div>)}
-                {selectedAPIRecipe.strInstructions && (<div className="mb-6"><h3 className="font-bold text-amber-900 mb-3 text-xl">Instructions</h3><div className="prose max-w-none text-amber-800 whitespace-pre-line">{selectedAPIRecipe.strInstructions}</div></div>)}
-                {selectedAPIRecipe.strYoutube && (() => {const videoId = getYouTubeVideoId(selectedAPIRecipe.strYoutube); return videoId ? (<div className="mb-6"><h3 className="font-bold text-amber-900 mb-3 text-xl flex items-center gap-2"><span>▶️</span>Video Tutorial</h3><div className="relative w-full" style={{paddingBottom: '56.25%'}}><iframe className="absolute top-0 left-0 w-full h-full rounded-xl" src={`https://www.youtube.com/embed/${videoId}`} title="YouTube video player" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowFullScreen /></div></div>) : null;})()}
-              </div>
-            </div>
-          </div>
+          <APIRecipePopup
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            recipe={selectedAPIRecipe as any} // AnN: Type cast needed for TheMealDB API compatibility
+            onClose={handleCloseAPIRecipePopup}
+            showFavoriteButton={false}
+          />
         )}
       </div>
     </div>

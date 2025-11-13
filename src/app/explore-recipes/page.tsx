@@ -4,6 +4,7 @@
 
 import { useEffect, useState } from 'react';
 import Image from 'next/image';
+import APIRecipePopup from '@/components/APIRecipePopup'; // AnN add: Reusable API recipe popup component on 11/12
 
 /* DATABASE INFO
  * 
@@ -20,28 +21,15 @@ interface Meal {
   strMealThumb: string;     // Image URL ("https://www.themealdb.com/images/media/meals/...")
   strCategory: string;      // Category ("Vegetarian", "Seafood", "Dessert")
   strArea: string;          // Cuisine type ("Italian", "Chinese", "Mexican")
-  strTags: string | null;   // Comma-separated tags ("Pasta,Curry") or null if none
+  strTags?: string | null;  // Comma-separated tags ("Pasta,Curry") or null if none
   strInstructions?: string; // Cooking instructions has ? because it might not actually exist
   strYoutube?: string;      // Youtube link has ? because it might not actually exist
-  // Dynamic ingredient/measure(1-20)
-  [key: `strIngredient${number}`]: string | undefined;
-  [key: `strMeasure${number}`]: string | undefined;
+  // AnN add: Dynamic fields for compatibility with APIRecipePopup on 11/12
+  [key: string]: string | null | undefined;
 }
 
-// Helper function to extract YouTube video ID from URL
-const getYouTubeVideoId = (url: string): string | null => {
-  if (!url) return null;
-  
-  // Handle youtube.com/watch?v=VIDEO_ID format
-  const watchMatch = url.match(/(?:youtube\.com\/watch\?v=)([a-zA-Z0-9_-]+)/);
-  if (watchMatch) return watchMatch[1];
-  
-  // Handle youtu.be/VIDEO_ID format
-  const shortMatch = url.match(/(?:youtu\.be\/)([a-zA-Z0-9_-]+)/);
-  if (shortMatch) return shortMatch[1];
-  
-  return null;
-};
+// AnN edit: Removed getYouTubeVideoId helper function on 11/12
+// Now included in APIRecipePopup component to avoid duplication
 
 export default function ExploreRecipesPage() {
   /* 
@@ -69,10 +57,9 @@ export default function ExploreRecipesPage() {
   
   // Likes state (stored in localStorage)
   const [favoritedRecipes, setFavoritedRecipes] = useState<Set<string>>(new Set());
-  
-  // Comments state
-  const [comments, setComments] = useState<{[key: string]: Array<{id: number, username: string, text: string, timestamp: string}>}>({});
-  const [newComment, setNewComment] = useState('');
+
+  // AnN edit: Removed Nick's temporary localStorage comment state on 11/12
+  // Now using database-backed CommentSection component instead
 
   // Load likes from localStorage
   useEffect(() => {
@@ -112,18 +99,8 @@ export default function ExploreRecipesPage() {
     document.body.style.overflow = 'unset';
   };
 
-  // Get ingredients list
-  const getIngredients = (meal: Meal) => {
-    const ingredients = [];
-    for (let i = 1; i <= 20; i++) {
-      const ingredient = meal[`strIngredient${i}` as keyof Meal];
-      const measure = meal[`strMeasure${i}` as keyof Meal];
-      if (ingredient && ingredient.trim()) {
-        ingredients.push(`${measure} ${ingredient}`.trim());
-      }
-    }
-    return ingredients;
-  };
+  // AnN edit: Removed getIngredients and getYouTubeVideoId helpers on 11/12
+  // These functions are now in APIRecipePopup component to avoid duplication
 
    /* API FETCHING LOGIC - useEffect runs once when component mounts
    * 
@@ -330,45 +307,8 @@ export default function ExploreRecipesPage() {
     }
   };
 
-  // Handle posting a new comment
-  const handlePostComment = (recipeId: string) => {
-    if (!newComment.trim()) return;
-    
-    // Check if user is logged in
-    const stored = localStorage.getItem('gatherUser') || localStorage.getItem('user');
-    if (!stored) {
-      alert('Please log in to comment');
-      return;
-    }
-
-    const userData = JSON.parse(stored);
-    const username = userData.username || 'Anonymous';
-
-    // Create new comment object
-    const comment = {
-      id: Date.now(),
-      username: username,
-      text: newComment,
-      timestamp: new Date().toLocaleString()
-    };
-
-    // Add comment to state
-    setComments(prev => ({
-      ...prev,
-      [recipeId]: [...(prev[recipeId] || []), comment]
-    }));
-
-    // Clear input
-    setNewComment('');
-  };
-
-  // Handle deleting a comment (only if its your comment)
-  const handleDeleteComment = (recipeId: string, commentId: number) => {
-    setComments(prev => ({
-      ...prev,
-      [recipeId]: prev[recipeId].filter(c => c.id !== commentId)
-    }));
-  };
+  // AnN edit: Removed Nick's temporary localStorage comment handlers on 11/12
+  // Comment functionality now handled by CommentSection component with database persistence
 
   // COMPONENT RENDERING - What gets displayed to the user
   return (
@@ -479,219 +419,18 @@ export default function ExploreRecipesPage() {
         )}
       </div>
 
-      {/* RECIPE POPUP */}
+      {/* AnN edit: Moved Nick's popup code to APIRecipePopup component for easier management on 11/12 */}
+      {/* Nick's original popup (lines 447-603) extracted to /components/APIRecipePopup.tsx */}
+      {/* Benefits: Reusable across explore and profile pages, maintains single source of truth for API recipe display */}
       {isPopUpOpen && selectedRecipe && (
-        <div 
-          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-          onClick={closePopUp}
-        >
-          <div 
-            className="popUp-scrollbar bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden shadow-2xl relative flex flex-col"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* PopUp Header with Close Button */}
-            <div 
-              className="flex-shrink-0 bg-white border-b border-amber-200 px-6 py-4 flex justify-between items-center z-10"
-              onWheel={(e) => e.stopPropagation()}
-            >
-              <h2 className="text-2xl font-bold text-amber-900">{selectedRecipe.strMeal}</h2>
-              <button
-                onClick={closePopUp}
-                className="w-10 h-10 rounded-full hover:bg-amber-100 flex items-center justify-center transition-colors text-amber-900"
-                aria-label="Close popup"
-              >
-                <svg 
-                  width="24" 
-                  height="24" 
-                  viewBox="0 0 24 24" 
-                  fill="none" 
-                  stroke="currentColor" 
-                  strokeWidth="2" 
-                  strokeLinecap="round" 
-                  strokeLinejoin="round"
-                >
-                  <line x1="18" y1="6" x2="6" y2="18"></line>
-                  <line x1="6" y1="6" x2="18" y2="18"></line>
-                </svg>
-              </button>
-            </div>
-
-            {/* PopUp Content - makes it scrollable Area */}
-            <div className="overflow-y-auto flex-1 popUp-scrollbar p-6"
-              style={{ borderRadius: '0 0 1rem 1rem' }}
-            >
-              {/* Recipe Image */}
-              <div className="relative w-full h-96 rounded-xl overflow-hidden mb-6">
-                <Image
-                  src={selectedRecipe.strMealThumb}
-                  alt={selectedRecipe.strMeal}
-                  fill
-                  className="object-cover"
-                  sizes="(max-width: 896px) 100vw, 896px"
-                />
-                
-                {/* Favorite Button on Image */}
-                <button
-                  className="absolute top-4 right-4 w-12 h-12 rounded-full bg-white/90 backdrop-blur flex items-center justify-center shadow-lg hover:bg-white transition-all duration-200 hover:scale-110"
-                  onClick={() => toggleFavorite(selectedRecipe.idMeal)}
-                  aria-label="Favorite recipe"
-                >
-                  <span className={`text-3xl transition-colors ${
-                    favoritedRecipes.has(selectedRecipe.idMeal) 
-                      ? 'text-red-500' 
-                      : 'text-amber-600 hover:text-red-500'
-                  }`}>
-                    {favoritedRecipes.has(selectedRecipe.idMeal) ? '♥' : '♡'}
-                  </span>
-                </button>
-              </div>
-
-              {/* AnN edit: Removed cuisine and tags, kept category and nutrition on 10/30 */}
-              <div className="grid md:grid-cols-2 gap-6 mb-6">
-                {/* Category only */}
-                <div>
-                  <div className="flex items-center gap-2 text-amber-700">
-                    <span className="text-xl">🍴</span>
-                    <span className="font-semibold">Category:</span>
-                    <span>{selectedRecipe.strCategory}</span>
-                  </div>
-                </div>
-
-                {/* Nutritional Info (Mock data - TheMealDB doesn't provide this) */}
-                <div className="bg-amber-50 rounded-lg p-4">
-                  <h3 className="font-bold text-amber-900 mb-2">Nutritional Info (Estimated)</h3>
-                  <div className="grid grid-cols-2 gap-2 text-sm text-amber-800">
-                    <div>🔥 Calories: ~450 kcal</div>
-                    <div>🥩 Protein: ~25g</div>
-                    <div>🍞 Carbs: ~45g</div>
-                    <div>🧈 Fat: ~15g</div>
-                  </div>
-                  <p className="text-xs text-amber-600 mt-2">*Estimates may vary</p>
-                </div>
-              </div>
-
-              {/* Ingredients */}
-              <div className="mb-6">
-                <h3 className="font-bold text-amber-900 mb-3 text-xl">Ingredients</h3>
-                <ul className="grid md:grid-cols-2 gap-2">
-                  {getIngredients(selectedRecipe).map((ingredient, idx) => (
-                    <li key={idx} className="flex items-center gap-2 text-amber-800">
-                      <span className="text-amber-600">•</span>
-                      {ingredient}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-
-              {/* Instructions */}
-              {selectedRecipe.strInstructions && (
-                <div className="mb-6">
-                  <h3 className="font-bold text-amber-900 mb-3 text-xl">Instructions</h3>
-                  <div className="prose max-w-none text-amber-800 whitespace-pre-line">
-                    {selectedRecipe.strInstructions}
-                  </div>
-                </div>
-              )}
-
-              {/* YouTube Video Player */}
-              {selectedRecipe.strYoutube && (() => {
-                const videoId = getYouTubeVideoId(selectedRecipe.strYoutube);
-                return videoId ? (
-                  <div className="mb-6">
-                    <h3 className="font-bold text-amber-900 mb-3 text-xl flex items-center gap-2">
-                      <span>▶️</span>
-                      Video Tutorial
-                    </h3>
-                    <div className="relative w-full" style={{ paddingBottom: '56.25%' }}>
-                      <iframe
-                        className="absolute top-0 left-0 w-full h-full rounded-xl"
-                        src={`https://www.youtube.com/embed/${videoId}`}
-                        title="YouTube video player"
-                        frameBorder="0"
-                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                        allowFullScreen
-                      />
-                    </div>
-                  </div>
-                ) : null;
-              })()}
-
-              {/* Comments/Discussion Section */}
-              <div className="border-t border-amber-200 pt-6">
-                <h3 className="font-bold text-amber-900 mb-4 text-xl flex items-center gap-2">
-                  <span>💬</span>
-                  Discussion ({(comments[selectedRecipe.idMeal] || []).length})
-                </h3>
-
-                {/* Comment Input */}
-                <div className="mb-6">
-                  <textarea
-                    value={newComment}
-                    onChange={(e) => setNewComment(e.target.value)}
-                    placeholder="Share your thoughts about this recipe..."
-                    className="w-full px-4 py-3 bg-amber-50 border-2 border-amber-300 rounded-lg focus:outline-none focus:border-amber-600 focus:bg-amber-100 resize-none text-amber-900 placeholder-amber-500"
-                    rows={3}
-                  />
-                  <div className="flex justify-end items-center mt-2">
-                    <button
-                      onClick={() => handlePostComment(selectedRecipe.idMeal)}
-                      disabled={!newComment.trim()}
-                      className="px-6 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 disabled:bg-amber-300 disabled:cursor-not-allowed transition-colors font-semibold"
-                    >
-                      Post Comment
-                    </button>
-                  </div>
-                </div>
-
-                {/* Comments List */}
-                <div className="space-y-4">
-                  {(comments[selectedRecipe.idMeal] || []).length === 0 ? (
-                    <div className="text-center py-8 text-amber-600">
-                      <p className="text-lg">No comments yet</p>
-                      <p className="text-sm mt-2">Be the first to share your thoughts!</p>
-                    </div>
-                  ) : (
-                    (comments[selectedRecipe.idMeal] || []).map((comment) => {
-                      // Check if current user is the comment author
-                      const stored = localStorage.getItem('gatherUser') || localStorage.getItem('user');
-                      const currentUsername = stored ? JSON.parse(stored).username : null;
-                      const isOwnComment = currentUsername === comment.username;
-
-                      return (
-                        <div 
-                          key={comment.id}
-                          className="bg-amber-50 rounded-lg p-4 hover:bg-amber-100 transition-colors"
-                        >
-                          <div className="flex justify-between items-start mb-2">
-                            <div className="flex items-center gap-2">
-                              <div className="w-8 h-8 bg-amber-600 rounded-full flex items-center justify-center text-white font-bold">
-                                {comment.username.charAt(0).toUpperCase()}
-                              </div>
-                              <div>
-                                <p className="font-semibold text-amber-900">{comment.username}</p>
-                                <p className="text-xs text-amber-600">{comment.timestamp}</p>
-                              </div>
-                            </div>
-                            {isOwnComment && (
-                              <button
-                                onClick={() => handleDeleteComment(selectedRecipe.idMeal, comment.id)}
-                                className="text-red-500 hover:text-red-700 transition-colors px-2"
-                                aria-label="Delete comment"
-                              >
-                                🗑️
-                              </button>
-                            )}
-                          </div>
-                          <p className="text-amber-800 whitespace-pre-wrap">{comment.text}</p>
-                        </div>
-                      );
-                    })
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+        <APIRecipePopup
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          recipe={selectedRecipe as any} // AnN: Type cast needed for TheMealDB API compatibility
+          onClose={closePopUp}
+          showFavoriteButton={true}
+          isFavorited={favoritedRecipes.has(selectedRecipe.idMeal)}
+          onFavoriteToggle={toggleFavorite}
+        />
       )}
     </section>
   );
