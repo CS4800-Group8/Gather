@@ -9,10 +9,15 @@ import APIRecipePopup from '@/components/APIRecipePopup'; // AnN add: Reusable A
 import {
   DEFAULT_AVATAR_ID,
   AvatarPreset,
-  getAvatarPresets,
   normalizeAvatarId,
   resolveAvatarPreset,
-} from '@/lib/avatarPresets';
+} from '@/lib/avatarPresets'; // AnN edit: Removed getAvatarPresets - now in ProfileHeader on 11/12
+
+
+import ProfileHeader from '@/components/profile/ProfileHeader'; // AnN add: Extracted profile header component on 11/12
+
+
+
 import AvatarImage from '@/components/AvatarImage'; // AnN add: Use centralized avatar component on 10/23
 import UserRecipeCard, { UserRecipe } from '@/components/UserRecipeCard'; // AnN add: Extracted component on 10/31
 import APIRecipeCard, { APIRecipe } from '@/components/APIRecipeCard'; // AnN add: Extracted component on 10/31
@@ -39,7 +44,7 @@ export default function ProfilePage() {
   const [activeTab, setActiveTab] = useState<TabKey>('my');
   const [displayName, setDisplayName] = useState('username');
   const [avatarId, setAvatarId] = useState(DEFAULT_AVATAR_ID);
-  const [showAvatarPicker, setShowAvatarPicker] = useState(false);
+  // AnN edit: Removed showAvatarPicker state - now in ProfileHeader component on 11/12
   const [showModal, setShowModal] = useState(false);
   const [newRecipeName, setNewRecipeName] = useState(''); // Viet add: store recipe name to database
   const [newDescription, setNewDescription] = useState(''); // Viet add: store description to database
@@ -87,8 +92,7 @@ export default function ProfilePage() {
 
   // -------------------------------------------------
 
-
-  const avatarPresets = useMemo(() => getAvatarPresets(), []);
+  // AnN edit: Keep currentPreset for Create Recipe modal, moved avatarPresets to ProfileHeader on 11/12
   const currentPreset: AvatarPreset = useMemo(
     () => resolveAvatarPreset(avatarId),
     [avatarId]
@@ -234,10 +238,10 @@ export default function ProfilePage() {
 
   // AnN add: Persist selected avatar preset id on 10/22
   // AnN edit: Updated to save to database on 11/1
+  // AnN edit: Removed setShowAvatarPicker - now handled in ProfileHeader on 11/12
   const handleAvatarChange = async (newAvatarId: string) => {
     const nextPreset = resolveAvatarPreset(newAvatarId);
     setAvatarId(nextPreset.id);
-    setShowAvatarPicker(false);
 
     try {
       const stored = localStorage.getItem('user') || localStorage.getItem('gatherUser');
@@ -267,20 +271,7 @@ export default function ProfilePage() {
   };
 
   // AnN edit: Removed getRecipesForTab and currentRecipes - no longer needed on 10/30
-
-  // AnN edit: Made stats dynamic - posts shows real count, others TODO on 11/4
-  const statsButtons = [
-    { id: 'posts', label: '# posts', value: userRecipes.length },  // Real count of user's recipes
-    // { id: 'friends', label: '# friends', value: 0 },  // TODO: After friend system implementation
-
-    // Thu modified: Fetch real friend count on 11/6
-    { id: 'friends', label: '# friends', value: friendCount },
-  ];
-
-  const avatarButtonBase =
-    "flex h-32 w-32 items-center justify-center rounded-full text-7xl transition-transform duration-200 cursor-pointer hover:scale-105";
-
-  const avatarButtonClasses = `${avatarButtonBase} border-4 border-amber-400 bg-white shadow-[0_24px_48px_rgba(255,183,88,0.28)] hover:border-amber-500`;
+  // AnN edit: Removed statsButtons and avatarButtonClasses - now in ProfileHeader component on 11/12
 
   // Viet Add: Submits new recipe to the API and closes the modal on success
   const handleCreateRecipe = async () => {
@@ -635,71 +626,15 @@ export default function ProfilePage() {
     <div className="min-h-screen pb-16 pt-12">
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-10 px-4 sm:px-6 lg:px-8">
         <section className="px-6 py-8">
-          {/* Profile header */}
-          <div className="mb-10 flex items-center justify-between">
-            <div className="flex items-center gap-6">
-              {/* AnN add: Avatar badge renders emoji or image from preset config on 10/22 */}
-              <div className="relative">
-                <button
-                  type="button"
-                  onClick={() => setShowAvatarPicker(!showAvatarPicker)}
-                  className={avatarButtonClasses}
-                  aria-label="Change avatar"
-                >
-                  {/* AnN fix: Only show bgClass for emoji, not images on 10/23 */}
-                  <AvatarImage preset={currentPreset} size="large" />
-                </button>
-
-                {/* Avatar picker dropdown */}
-                {showAvatarPicker && (
-                  <div className="absolute left-0 top-36 z-20 rounded-2xl border-2 border-amber-200 bg-white/95 backdrop-blur p-4 shadow-xl">
-                    <p className="text-xs font-semibold text-amber-800 mb-3 text-center">Choose Your Avatar</p>
-                    <div className="flex gap-3">
-                      {avatarPresets.map((option) => (
-                        <button
-                          key={option.id}
-                          type="button"
-                          onClick={() => handleAvatarChange(option.id)}
-                          className={`flex flex-col items-center gap-2 rounded-xl p-3 transition-all duration-200 hover:scale-110 ${
-                            avatarId === option.id
-                              ? 'bg-amber-200 ring-2 ring-amber-400'
-                              : 'bg-amber-50 hover:bg-amber-100'
-                          }`}
-                        >
-                          <div className={`flex h-14 w-14 items-center justify-center rounded-full ${option.variant === 'emoji' ? option.bgClass : 'bg-transparent'}`}>
-                            {/* AnN fix: Only show bgClass for emoji, not images on 10/23 */}
-                            <AvatarImage preset={option} size="medium" />
-                          </div>
-                          <span className="text-xs font-medium text-amber-800">{option.label}</span>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-              <div className="flex flex-col gap-4">
-                <h1 className="text-4xl font-bold text-amber-900">
-                  {displayName}
-                </h1>
-                {/* Stats buttons - clickable for backend team */}
-                <div className="flex gap-3">
-                  {statsButtons.map((stat) => (
-                    <button
-                      key={stat.id}
-                      type="button"
-                      onClick={() => {
-                        // TODO: Backend team will implement functionality
-                        console.log(`Clicked on ${stat.id}`);
-                      }}
-                      className="rounded-lg bg-amber-100 px-4 py-2 text-sm font-semibold text-amber-800 hover:bg-amber-200 hover:shadow-md transition-all duration-200 cursor-pointer"
-                    >
-                      {stat.label}: {stat.value}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
+          {/* AnN edit: Extracted to ProfileHeader component on 11/12 */}
+          <ProfileHeader
+            displayName={displayName}
+            avatarId={avatarId}
+            recipeCount={userRecipes.length}
+            friendCount={friendCount}
+            onAvatarChange={handleAvatarChange}
+            isOwnProfile={true}
+          />
 
           {/* Create Recipe Button */}
           <button
