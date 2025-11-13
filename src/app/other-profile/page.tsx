@@ -9,6 +9,7 @@ import { HeartIcon } from '@heroicons/react/24/solid';
 import ProfileHeader from '@/components/profile/ProfileHeader';
 import MyRecipesTab from '@/components/profile/MyRecipesTab';
 import FavoritesTab from '@/components/profile/FavoritesTab';
+import FriendListModal from '@/components/profile/FriendListModal'; // AnN add: Friend list modal on 11/13
 
 // Types
 import { UserRecipe } from '@/components/profile/UserRecipeCard';
@@ -43,6 +44,9 @@ function OtherProfileContent() {
 
 	// Tab state
 	const [activeTab, setActiveTab] = useState<TabKey>('my');
+
+	// AnN add: Friend list modal state on 11/13
+	const [showFriendList, setShowFriendList] = useState(false);
 
 	// AnN add: Track current user's favorites to show heart state on 11/13
 	const [myFavoriteIds, setMyFavoriteIds] = useState<Set<string>>(new Set());
@@ -273,6 +277,7 @@ function OtherProfileContent() {
 						friendCount={friendCount}
 						onAvatarChange={handleAvatarChange}
 						isOwnProfile={false}
+						onFriendClick={() => setShowFriendList(true)}
 					/>
 
 					{/* AnN add: Tab navigation on 11/13 */}
@@ -320,6 +325,15 @@ function OtherProfileContent() {
 					</div>
 				</section>
 			</div>
+
+			{/* AnN add: Friend list modal on 11/13 */}
+			<FriendListModal
+				isOpen={showFriendList}
+				onClose={() => setShowFriendList(false)}
+				userId={user.id}
+				displayName={displayName}
+				isOwnProfile={false}
+			/>
 		</div>
 	);
 }

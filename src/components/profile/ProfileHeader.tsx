@@ -17,6 +17,7 @@ interface ProfileHeaderProps {
   friendCount: number;
   onAvatarChange: (avatarId: string) => void; // AnN: Changed to string to match profile page
   isOwnProfile: boolean; // For future use when showing other users
+  onFriendClick?: () => void; // AnN add: Optional callback for friend button click on 11/13
 }
 
 export default function ProfileHeader({
@@ -26,6 +27,7 @@ export default function ProfileHeader({
   friendCount,
   onAvatarChange,
   isOwnProfile,
+  onFriendClick,
 }: ProfileHeaderProps) {
   const [showAvatarPicker, setShowAvatarPicker] = useState(false);
 
@@ -113,7 +115,10 @@ export default function ProfileHeader({
                 key={stat.id}
                 type="button"
                 onClick={() => {
-                  console.log(`Clicked on ${stat.id}`);
+                  // AnN add: Open friend list modal when friend button clicked on 11/13
+                  if (stat.id === 'friends' && onFriendClick) {
+                    onFriendClick();
+                  }
                 }}
                 className="rounded-lg bg-amber-100 px-4 py-2 text-sm font-semibold text-amber-800 hover:bg-amber-200 hover:shadow-md transition-all duration-200 cursor-pointer"
               >
