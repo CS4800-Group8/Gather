@@ -2,8 +2,8 @@
 
 import Image from "next/image";
 import React from "react";
-import { UserRecipe } from "@/components/UserRecipeCard";
-import CommentSection from "./CommentSection"; // AnN add: Database-backed comment component on 11/12
+import { UserRecipe } from "@/components/profile/UserRecipeCard";
+import CommentSection from "@/components/CommentSection"; // AnN add: Database-backed comment component on 11/12
 
 interface UserRecipePopupProps {
   recipe: UserRecipe;

@@ -4,6 +4,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import AvatarImage from './AvatarImage';
 import { resolveAvatarPreset } from '@/lib/avatarPresets';
 
@@ -26,6 +27,7 @@ interface CommentSectionProps {
 }
 
 export default function CommentSection({ recipeId, recipeType }: CommentSectionProps) {
+  const router = useRouter();
   const [comments, setComments] = useState<Comment[]>([]);
   const [newComment, setNewComment] = useState('');
   const [loading, setLoading] = useState(true);
@@ -43,6 +45,17 @@ export default function CommentSection({ recipeId, recipeType }: CommentSectionP
       setCurrentUserId(user.id);
     }
   }, []);
+
+  // AnN add: Navigate to user profile on 11/13
+  const handleAvatarClick = (userId: number) => {
+    if (userId === currentUserId) {
+      // Navigate to own profile
+      router.push('/profile');
+    } else {
+      // Navigate to other user's profile
+      router.push(`/other-profile?userId=${userId}`);
+    }
+  };
 
   // AnN add: Fetch comments on mount on 11/12
   useEffect(() => {
@@ -224,18 +237,25 @@ export default function CommentSection({ recipeId, recipeType }: CommentSectionP
                 key={comment.id}
                 className="flex gap-3 p-4 bg-amber-50 rounded-xl hover:bg-amber-100 transition"
               >
-                {/* AnN edit: Single-line layout with avatar left, name/time center, delete right on 11/12 */}
-                <div className="flex-shrink-0">
+                {/* AnN edit: Clickable avatar to navigate to user profile on 11/13 */}
+                <button
+                  onClick={() => handleAvatarClick(comment.user.id)}
+                  className="flex-shrink-0 hover:opacity-80 transition-opacity cursor-pointer"
+                  aria-label={`View ${comment.user.firstname}'s profile`}
+                >
                   <AvatarImage preset={avatarPreset} size="small" />
-                </div>
+                </button>
                 
                 <div className="flex-1 min-w-0">
-                  {/* AnN edit: First line with name, time, delete - removed @username for more space on 11/12 */}
+                  {/* AnN edit: Clickable username and avatar to navigate to user profile on 11/13 */}
                   <div className="flex items-center justify-between gap-4 mb-1">
                     <div className="flex items-center gap-2 min-w-0">
-                      <span className="font-semibold text-amber-900 whitespace-nowrap">
+                      <button
+                        onClick={() => handleAvatarClick(comment.user.id)}
+                        className="font-semibold text-amber-900 whitespace-nowrap hover:text-amber-700 hover:underline transition-colors cursor-pointer"
+                      >
                         {comment.user.firstname} {comment.user.lastname}
-                      </span>
+                      </button>
                       <span className="text-xs text-amber-500">•</span>
                       <span className="text-xs text-amber-600 whitespace-nowrap">
                         {formatTime(comment.createdAt)}
