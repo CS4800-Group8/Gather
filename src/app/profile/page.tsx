@@ -4,7 +4,7 @@ import Image from 'next/image';
 import { JSX, useEffect, useMemo, useState } from 'react';
 import PopupModal from '@/components/PopupModal'; // Viet add: Use popup modal to display create recipe
 import { HeartIcon } from '@heroicons/react/24/solid'; // AnN add: Heart icon for favorited tab on 11/8
-import APIRecipePopup from '@/components/APIRecipePopup'; // AnN add: Reusable API recipe popup component on 11/12
+// AnN edit: Removed APIRecipePopup import - now in FavoritesTab component on 11/13
 
 import {
   DEFAULT_AVATAR_ID,
@@ -16,12 +16,13 @@ import {
 
 import ProfileHeader from '@/components/profile/ProfileHeader'; // AnN add: Extracted profile header component on 11/12
 import MyRecipesTab from '@/components/profile/MyRecipesTab'; // AnN add: Extracted my recipes tab component on 11/13
+import FavoritesTab from '@/components/profile/FavoritesTab'; // AnN add: Extracted favorites tab component on 11/13
 
 
 
 import AvatarImage from '@/components/AvatarImage'; // AnN add: Use centralized avatar component on 10/23
-import { UserRecipe } from '@/components/UserRecipeCard'; // AnN edit: Only import type - component now in MyRecipesTab on 11/13
-import APIRecipeCard, { APIRecipe } from '@/components/APIRecipeCard'; // AnN add: Extracted component on 10/31
+import { UserRecipe } from '@/components/profile/UserRecipeCard'; // AnN edit: Moved to profile/ folder on 11/13
+import { APIRecipe } from '@/components/APIRecipeCard'; // AnN edit: Only import type - component now in FavoritesTab on 11/13
 // AnN edit: Removed UserRecipePopup import - now in MyRecipesTab component on 11/13
 
 // AnN edit: Keep all tabs for teammates to implement later on 10/30
@@ -68,10 +69,7 @@ export default function ProfilePage() {
   const [newVideoUrl, setNewVideoUrl] = useState(''); // AnN add: Store YouTube video URL on 10/30
   const [favoritedRecipes, setFavoritedRecipes] = useState<APIRecipe[]>([]); // AnN add: Store favorited API recipes on 10/31
   const [loadingFavorites, setLoadingFavorites] = useState(false); // AnN add: Loading state for favorited recipes on 10/31
-  const [selectedAPIRecipe, setSelectedAPIRecipe] = useState<APIRecipe | null>(null); // AnN add: Selected API recipe for detail popup on 10/31
-  const [showAPIRecipePopup, setShowAPIRecipePopup] = useState(false); // AnN add: Show API recipe detail popup on 10/31
-  const [showUnfavoriteConfirm, setShowUnfavoriteConfirm] = useState(false); // AnN add: Show unfavorite confirmation on 11/4
-  const [recipeToUnfavorite, setRecipeToUnfavorite] = useState<string | null>(null); // AnN add: Store API recipe ID to unfavorite on 11/4
+  // AnN edit: Removed selectedAPIRecipe, showAPIRecipePopup, showUnfavoriteConfirm, recipeToUnfavorite - now in FavoritesTab on 11/13
 
   // Thu add: Friend count for profile stats on 11/6
   const [friendCount, setFriendCount] = useState(0);
@@ -467,37 +465,10 @@ export default function ProfilePage() {
   };
 
   // AnN edit: Removed handleOpenUserRecipePopup and handleCloseUserRecipePopup - now in MyRecipesTab on 11/13
+  // AnN edit: Removed handleOpenAPIRecipePopup and handleCloseAPIRecipePopup - now in FavoritesTab on 11/13
 
-  // AnN add: Open API recipe detail popup on 10/31
-  const handleOpenAPIRecipePopup = (recipe: APIRecipe) => {
-    setSelectedAPIRecipe(recipe);
-    setShowAPIRecipePopup(true);
-    document.body.style.overflow = 'hidden';
-  };
-
-  // AnN add: Close API recipe detail popup on 10/31
-  const handleCloseAPIRecipePopup = () => {
-    setShowAPIRecipePopup(false);
-    setSelectedAPIRecipe(null);
-    document.body.style.overflow = 'unset';
-  };
-
-  // AnN add: Show unfavorite confirmation on 11/4
-  const handleUnfavoriteAPIRecipe = (apiId: string) => {
-    setRecipeToUnfavorite(apiId);
-    setShowUnfavoriteConfirm(true);
-  };
-
-  // AnN add: Cancel unfavorite on 11/4
-  const handleUnfavoriteCancel = () => {
-    setShowUnfavoriteConfirm(false);
-    setRecipeToUnfavorite(null);
-  };
-
-  // AnN add: Confirm unfavorite API recipe on 11/4
-  const confirmUnfavoriteAPIRecipe = async () => {
-    if (!recipeToUnfavorite) return;
-
+  // AnN add: Simplified unfavorite callback for FavoritesTab component on 11/13
+  const handleUnfavoriteAPIRecipe = async (recipeId: string) => {
     try {
       const user = JSON.parse(localStorage.getItem('gatherUser') || '{}');
       const userId = user?.id;
@@ -507,24 +478,20 @@ export default function ProfilePage() {
       const response = await fetch('/api/favorite-api-recipes', {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId, apiId: recipeToUnfavorite }),
+        body: JSON.stringify({ userId, apiId: recipeId }),
       });
 
       if (response.ok) {
         // Remove from state
-        setFavoritedRecipes((prev) => prev.filter((recipe) => recipe.idMeal !== recipeToUnfavorite));
+        setFavoritedRecipes((prev) => prev.filter((recipe) => recipe.idMeal !== recipeId));
 
         // Also update localStorage if used by explore page
         const storedLikes = localStorage.getItem('favoritedRecipes');
         if (storedLikes) {
           const likes = JSON.parse(storedLikes);
-          const updatedLikes = likes.filter((id: string) => id !== recipeToUnfavorite);
+          const updatedLikes = likes.filter((id: string) => id !== recipeId);
           localStorage.setItem('favoritedRecipes', JSON.stringify(updatedLikes));
         }
-
-        // Close confirmation modal
-        setShowUnfavoriteConfirm(false);
-        setRecipeToUnfavorite(null);
       }
     } catch (err) {
       console.error('Error unfavoriting recipe:', err);
@@ -870,35 +837,7 @@ export default function ProfilePage() {
           </PopupModal>
 
           {/* AnN edit: Removed Delete confirmation modal - now in MyRecipesTab component on 11/13 */}
-
-          {/* Unfavorite confirmation modal */}
-          <PopupModal isOpen={showUnfavoriteConfirm} onClose={handleUnfavoriteCancel}>
-            <div className='flex flex-col items-center text-amber-800 gap-5 p-6'>
-              {/* Title */}
-              <h3 className='text-xl font-semibold text-amber-900'>Remove from Favorites?</h3>
-
-              {/* Message */}
-              <p className='text-center text-amber-700 text-sm'>
-                Are you sure you want to remove this recipe from your favorites?
-              </p>
-
-              {/* Buttons */}
-              <div className='flex gap-3 w-full mt-2'>
-                <button
-                  onClick={handleUnfavoriteCancel}
-                  className='flex-1 px-4 py-2 rounded-lg border border-amber-300 bg-white text-amber-800 hover:bg-amber-50 transition-colors'
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={confirmUnfavoriteAPIRecipe}
-                  className='flex-1 px-4 py-2 rounded-lg bg-red-500 text-white hover:bg-red-600 transition-colors'
-                >
-                  Remove
-                </button>
-              </div>
-            </div>
-          </PopupModal>
+          {/* AnN edit: Removed Unfavorite confirmation modal - now in FavoritesTab component on 11/13 */}
 
           {/* Recipe tabs */}
           <nav className="flex flex-wrap gap-4">
@@ -933,25 +872,14 @@ export default function ProfilePage() {
                 onRecipeDelete={handleRecipeDelete}
               />
             ) : activeTab === 'favorited' ? (
-              // AnN add: Favorited API recipes tab on 10/31
-              loadingFavorites ? (
-                <article className="rounded-3xl border-2 border-dashed border-[#caa977] bg-[#fff9ed] px-6 py-12 text-center text-sm font-medium text-[#8a6134]">
-                  Loading your favorite recipes...
-                </article>
-              ) : favoritedRecipes.length > 0 ? (
-                favoritedRecipes.map((recipe) => (
-                  <APIRecipeCard
-                    key={recipe.idMeal}
-                    recipe={recipe}
-                    onClick={handleOpenAPIRecipePopup}
-                    onDelete={handleUnfavoriteAPIRecipe}
-                  />
-                ))
-              ) : (
-                <article className="rounded-3xl border-2 border-dashed border-[#caa977] bg-[#fff9ed] px-6 py-12 text-center text-sm font-medium text-[#8a6134]">
-                  No favorite recipes yet. Like recipes from the Explore page to see them here!
-                </article>
-              )
+              // AnN edit: Extracted to FavoritesTab component on 11/13
+              <FavoritesTab
+                favorites={favoritedRecipes}
+                loading={loadingFavorites}
+                isOwnProfile={true}
+                displayName={displayName}
+                onUnfavorite={handleUnfavoriteAPIRecipe}
+              />
             ) : (
               <article className="rounded-3xl border-2 border-dashed border-[#caa977] bg-[#fff9ed] px-6 py-12 text-center text-sm font-medium text-[#8a6134]">
                 Placeholder
@@ -961,18 +889,7 @@ export default function ProfilePage() {
         </section>
 
         {/* AnN edit: Removed UserRecipePopup - now in MyRecipesTab component on 11/13 */}
-
-        {/* AnN edit: Moved API recipe popup to APIRecipePopup component for easier management on 11/12 */}
-        {/* Original hardcoded popup (lines 1103-1135) extracted to /components/APIRecipePopup.tsx */}
-        {/* Benefits: Same popup logic as explore-recipes page, easier to maintain and update */}
-        {showAPIRecipePopup && selectedAPIRecipe && (
-          <APIRecipePopup
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            recipe={selectedAPIRecipe as any} // AnN: Type cast needed for TheMealDB API compatibility
-            onClose={handleCloseAPIRecipePopup}
-            showFavoriteButton={false}
-          />
-        )}
+        {/* AnN edit: Removed API recipe popup - now in FavoritesTab component on 11/13 */}
       </div>
     </div>
   );

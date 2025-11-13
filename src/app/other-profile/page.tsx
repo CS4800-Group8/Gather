@@ -4,8 +4,8 @@ import React, { useEffect, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { resolveAvatarPreset } from "@/lib/avatarPresets";
 import AvatarImage from '@/components/AvatarImage';
-import UserRecipeCard, { UserRecipe } from '@/components/UserRecipeCard';
-import UserRecipePopup from "@/components/UserRecipePopup";
+import UserRecipeCard, { UserRecipe } from '@/components/profile/UserRecipeCard'; // AnN edit: Updated path after moving to profile/ folder on 11/13
+import UserRecipePopup from "@/components/profile/UserRecipePopup"; // AnN edit: Updated path after moving to profile/ folder on 11/13
 
 // AnN fix: Type for user profile data to replace 'any' on 11/6
 interface OtherUserProfile {

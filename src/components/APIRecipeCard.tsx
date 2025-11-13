@@ -17,7 +17,7 @@ export interface APIRecipe {
 type APIRecipeCardProps = {
   recipe: APIRecipe;
   onClick: (recipe: APIRecipe) => void;
-  onDelete: (apiId: string) => void;
+  onDelete?: (apiId: string) => void; // AnN edit: Made optional on 11/13 - only show for own profile
 };
 
 export default function APIRecipeCard({ recipe, onClick, onDelete }: APIRecipeCardProps) {
@@ -26,16 +26,19 @@ export default function APIRecipeCard({ recipe, onClick, onDelete }: APIRecipeCa
       className="glass-card overflow-hidden hover:shadow-xl transition-all duration-300 cursor-pointer group relative"
       onClick={() => onClick(recipe)}
     >
-      <button
-        className="absolute top-4 right-4 z-10 w-10 h-10 rounded-full bg-white/90 backdrop-blur flex items-center justify-center shadow-lg hover:bg-white transition-all duration-200 hover:scale-110"
-        aria-label="Unfavorite recipe"
-        onClick={(e) => {
-          e.stopPropagation();
-          onDelete(recipe.idMeal);
-        }}
-      >
-        <HeartIcon className="w-6 h-6 text-red-500 hover:text-red-600 transition-colors" />
-      </button>
+      {/* AnN edit: Only show unfavorite button if onDelete is provided (own profile) on 11/13 */}
+      {onDelete && (
+        <button
+          className="absolute top-4 right-4 z-10 w-10 h-10 rounded-full bg-white/90 backdrop-blur flex items-center justify-center shadow-lg hover:bg-white transition-all duration-200 hover:scale-110"
+          aria-label="Unfavorite recipe"
+          onClick={(e) => {
+            e.stopPropagation();
+            onDelete(recipe.idMeal);
+          }}
+        >
+          <HeartIcon className="w-6 h-6 text-red-500 hover:text-red-600 transition-colors" />
+        </button>
+      )}
 
       <div className="flex gap-6 p-6">
         <div className="relative h-48 w-48 flex-shrink-0 rounded-lg overflow-hidden">

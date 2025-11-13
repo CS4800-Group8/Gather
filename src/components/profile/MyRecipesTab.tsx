@@ -5,8 +5,8 @@
 "use client";
 
 import { useState } from "react";
-import UserRecipeCard, { UserRecipe } from "@/components/UserRecipeCard";
-import UserRecipePopup from "@/components/UserRecipePopup";
+import UserRecipeCard, { UserRecipe } from "@/components/profile/UserRecipeCard";
+import UserRecipePopup from "@/components/profile/UserRecipePopup";
 import PopupModal from "@/components/PopupModal";
 
 interface MyRecipesTabProps {
