@@ -17,6 +17,7 @@ import {
 import ProfileHeader from '@/components/profile/ProfileHeader'; // AnN add: Extracted profile header component on 11/12
 import MyRecipesTab from '@/components/profile/MyRecipesTab'; // AnN add: Extracted my recipes tab component on 11/13
 import FavoritesTab from '@/components/profile/FavoritesTab'; // AnN add: Extracted favorites tab component on 11/13
+import FriendListModal from '@/components/profile/FriendListModal'; // AnN add: Friend list modal component on 11/13
 
 
 
@@ -74,9 +75,14 @@ export default function ProfilePage() {
   // Thu add: Friend count for profile stats on 11/6
   const [friendCount, setFriendCount] = useState(0);
 
+  // AnN add: Friend list modal state on 11/13
+  const [showFriendList, setShowFriendList] = useState(false);
+  const [currentUserId, setCurrentUserId] = useState<number>(0);
+
   useEffect(() => {
     const fetchFriends = async () => {
       const user = JSON.parse(localStorage.getItem('gatherUser') || '{}');
+      setCurrentUserId(user.id); // AnN add: Store current user ID on 11/13
       const res = await fetch(`/api/friends/count?userId=${user.id}`);
       if (res.ok) {
         const data = await res.json();
@@ -572,6 +578,7 @@ export default function ProfilePage() {
             friendCount={friendCount}
             onAvatarChange={handleAvatarChange}
             isOwnProfile={true}
+            onFriendClick={() => setShowFriendList(true)}
           />
 
           {/* Create Recipe Button */}
@@ -891,6 +898,15 @@ export default function ProfilePage() {
         {/* AnN edit: Removed UserRecipePopup - now in MyRecipesTab component on 11/13 */}
         {/* AnN edit: Removed API recipe popup - now in FavoritesTab component on 11/13 */}
       </div>
+
+      {/* AnN add: Friend list modal on 11/13 */}
+      <FriendListModal
+        isOpen={showFriendList}
+        onClose={() => setShowFriendList(false)}
+        userId={currentUserId}
+        displayName={displayName}
+        isOwnProfile={true}
+      />
     </div>
   );
 }
