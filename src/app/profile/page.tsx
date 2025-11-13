@@ -15,13 +15,14 @@ import {
 
 
 import ProfileHeader from '@/components/profile/ProfileHeader'; // AnN add: Extracted profile header component on 11/12
+import MyRecipesTab from '@/components/profile/MyRecipesTab'; // AnN add: Extracted my recipes tab component on 11/13
 
 
 
 import AvatarImage from '@/components/AvatarImage'; // AnN add: Use centralized avatar component on 10/23
-import UserRecipeCard, { UserRecipe } from '@/components/UserRecipeCard'; // AnN add: Extracted component on 10/31
+import { UserRecipe } from '@/components/UserRecipeCard'; // AnN edit: Only import type - component now in MyRecipesTab on 11/13
 import APIRecipeCard, { APIRecipe } from '@/components/APIRecipeCard'; // AnN add: Extracted component on 10/31
-import UserRecipePopup from "@/components/UserRecipePopup"; // Viet add: get User Recipe Popup from component
+// AnN edit: Removed UserRecipePopup import - now in MyRecipesTab component on 11/13
 
 // AnN edit: Keep all tabs for teammates to implement later on 10/30
 type TabKey = 'my' | 'favorited';
@@ -57,8 +58,7 @@ export default function ProfilePage() {
   const [categories, setCategories] = useState<Category[]>([]); // Viet add: store every category to database
 
   const [userRecipes, setUserRecipes] = useState<UserRecipe[]>([]); // AnN add: Store user's database recipes on 10/23
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false); // AnN add: Show delete confirmation modal on 10/23
-  const [recipeToDelete, setRecipeToDelete] = useState<number | null>(null); // AnN add: Store recipe ID to delete on 10/23
+  // AnN edit: Removed showDeleteConfirm, recipeToDelete, selectedUserRecipe, showUserRecipePopup - now in MyRecipesTab on 11/13
   const [createRecipeError, setCreateRecipeError] = useState(''); // AnN add: Error message for recipe creation on 10/23
   const [uploading, setUploading] = useState(false); // AnN add: S3 upload status on 10/29
   const [uploadError, setUploadError] = useState(''); // AnN add: S3 upload error on 10/29
@@ -66,8 +66,6 @@ export default function ProfilePage() {
   const [previewUrl, setPreviewUrl] = useState<string>(''); // AnN add: Local preview URL on 10/29
   const [newInstructions, setNewInstructions] = useState(''); // AnN add: Store cooking instructions on 10/30
   const [newVideoUrl, setNewVideoUrl] = useState(''); // AnN add: Store YouTube video URL on 10/30
-  const [selectedUserRecipe, setSelectedUserRecipe] = useState<UserRecipe | null>(null); // AnN add: Selected recipe for detail popup on 10/30
-  const [showUserRecipePopup, setShowUserRecipePopup] = useState(false); // AnN add: Show user recipe detail popup on 10/30
   const [favoritedRecipes, setFavoritedRecipes] = useState<APIRecipe[]>([]); // AnN add: Store favorited API recipes on 10/31
   const [loadingFavorites, setLoadingFavorites] = useState(false); // AnN add: Loading state for favorited recipes on 10/31
   const [selectedAPIRecipe, setSelectedAPIRecipe] = useState<APIRecipe | null>(null); // AnN add: Selected API recipe for detail popup on 10/31
@@ -468,19 +466,7 @@ export default function ProfilePage() {
     setPreviewUrl('');
   };
 
-  // AnN add: Open user recipe detail popup on 10/30
-  const handleOpenUserRecipePopup = (recipe: UserRecipe) => {
-    setSelectedUserRecipe(recipe);
-    setShowUserRecipePopup(true);
-    document.body.style.overflow = 'hidden';
-  };
-
-  // AnN add: Close user recipe detail popup on 10/30
-  const handleCloseUserRecipePopup = () => {
-    setShowUserRecipePopup(false);
-    setSelectedUserRecipe(null);
-    document.body.style.overflow = 'unset';
-  };
+  // AnN edit: Removed handleOpenUserRecipePopup and handleCloseUserRecipePopup - now in MyRecipesTab on 11/13
 
   // AnN add: Open API recipe detail popup on 10/31
   const handleOpenAPIRecipePopup = (recipe: APIRecipe) => {
@@ -577,15 +563,8 @@ export default function ProfilePage() {
     console.log('Photo selected, will upload when you click Post');
   };
 
-  // AnN add: Handle delete recipe with confirmation on 10/23
-  const handleDeleteClick = (recipeId: number) => {
-    setRecipeToDelete(recipeId);
-    setShowDeleteConfirm(true);
-  };
-
-  const handleDeleteConfirm = async () => {
-    if (!recipeToDelete) return;
-
+  // AnN edit: Simplified delete handler - moved confirmation logic to MyRecipesTab on 11/13
+  const handleRecipeDelete = async (recipeId: number) => {
     try {
       const user = JSON.parse(localStorage.getItem('gatherUser') || '{}');
       const userId = user?.id;
@@ -597,7 +576,7 @@ export default function ProfilePage() {
           'x-user-id': userId.toString(),
         },
         body: JSON.stringify({
-          recipeId: recipeToDelete,
+          recipeId: recipeId,
         }),
       });
 
@@ -611,15 +590,7 @@ export default function ProfilePage() {
       }
     } catch (error) {
       console.error('Error deleting recipe:', error);
-    } finally {
-      setShowDeleteConfirm(false);
-      setRecipeToDelete(null);
     }
-  };
-
-  const handleDeleteCancel = () => {
-    setShowDeleteConfirm(false);
-    setRecipeToDelete(null);
   };
 
   return (
@@ -898,34 +869,7 @@ export default function ProfilePage() {
             </div>
           </PopupModal>
 
-          {/* AnN add: Delete confirmation modal on 10/23 */}
-          <PopupModal isOpen={showDeleteConfirm} onClose={handleDeleteCancel}>
-            <div className='flex flex-col items-center text-amber-800 gap-5 p-6'>
-              {/* Title */}
-              <h3 className='text-xl font-semibold text-amber-900'>Delete Recipe?</h3>
-
-              {/* Message */}
-              <p className='text-center text-amber-700 text-sm'>
-                Are you sure you want to delete this recipe? This action cannot be undone.
-              </p>
-
-              {/* Buttons */}
-              <div className='flex gap-3 w-full mt-2'>
-                <button
-                  onClick={handleDeleteCancel}
-                  className='flex-1 px-4 py-2 rounded-lg border border-amber-300 bg-white text-amber-800 hover:bg-amber-50 transition-colors'
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleDeleteConfirm}
-                  className='flex-1 px-4 py-2 rounded-lg bg-red-500 text-white hover:bg-red-600 transition-colors'
-                >
-                  Delete
-                </button>
-              </div>
-            </div>
-          </PopupModal>
+          {/* AnN edit: Removed Delete confirmation modal - now in MyRecipesTab component on 11/13 */}
 
           {/* Unfavorite confirmation modal */}
           <PopupModal isOpen={showUnfavoriteConfirm} onClose={handleUnfavoriteCancel}>
@@ -981,22 +925,13 @@ export default function ProfilePage() {
           {/* AnN edit: Show content based on active tab on 10/30 */}
           <div className="mt-8 flex flex-col gap-6">
             {activeTab === 'my' ? (
-              // My Recipes tab - show user's created recipes
-              userRecipes.length > 0 ? (
-                userRecipes.map((recipe) => (
-                  <UserRecipeCard
-                    key={recipe.recipeId}
-                    recipe={recipe}
-                    isOwner={true}
-                    onDelete={handleDeleteClick}
-                    onClick={handleOpenUserRecipePopup}
-                  />
-                ))
-              ) : (
-                <article className="rounded-3xl border-2 border-dashed border-[#caa977] bg-[#fff9ed] px-6 py-12 text-center text-sm font-medium text-[#8a6134]">
-                  No recipes here yet—start cooking up something delicious!
-                </article>
-              )
+              // AnN edit: Extracted to MyRecipesTab component on 11/13
+              <MyRecipesTab
+                recipes={userRecipes}
+                isOwnProfile={true}
+                displayName={displayName}
+                onRecipeDelete={handleRecipeDelete}
+              />
             ) : activeTab === 'favorited' ? (
               // AnN add: Favorited API recipes tab on 10/31
               loadingFavorites ? (
@@ -1025,13 +960,7 @@ export default function ProfilePage() {
           </div>
         </section>
 
-        {/* Viet move: User Recipe Detail Popup to components/ AnN add: Recipe Detail Popup */}
-        {showUserRecipePopup && selectedUserRecipe && (
-          <UserRecipePopup
-            recipe={selectedUserRecipe}
-            onClose={handleCloseUserRecipePopup}
-          />
-        )}
+        {/* AnN edit: Removed UserRecipePopup - now in MyRecipesTab component on 11/13 */}
 
         {/* AnN edit: Moved API recipe popup to APIRecipePopup component for easier management on 11/12 */}
         {/* Original hardcoded popup (lines 1103-1135) extracted to /components/APIRecipePopup.tsx */}
