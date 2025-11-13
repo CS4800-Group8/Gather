@@ -15,6 +15,9 @@ interface FavoritesTabProps {
   isOwnProfile: boolean;
   displayName: string;
   onUnfavorite: (recipeId: string) => Promise<void>;
+  // AnN add: Optional handlers for viewing other profiles on 11/13
+  myFavoriteIds?: Set<string>; // Current user's favorites (for heart state)
+  onFavoriteToggle?: (recipeId: string) => Promise<void>; // Toggle favorite
 }
 
 export default function FavoritesTab({
@@ -23,6 +26,8 @@ export default function FavoritesTab({
   isOwnProfile,
   displayName,
   onUnfavorite,
+  myFavoriteIds,
+  onFavoriteToggle,
 }: FavoritesTabProps) {
   // AnN add: API recipe popup state on 11/13
   const [showAPIRecipePopup, setShowAPIRecipePopup] = useState(false);
@@ -102,7 +107,10 @@ export default function FavoritesTab({
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           recipe={selectedAPIRecipe as any}  // AnN: Type cast needed for TheMealDB API compatibility
           onClose={handleCloseAPIRecipePopup}
-          showFavoriteButton={false}
+          // AnN edit: Show favorite button when viewing others' favorites on 11/13
+          showFavoriteButton={!isOwnProfile && !!onFavoriteToggle}
+          isFavorited={myFavoriteIds?.has(selectedAPIRecipe.idMeal) || false}
+          onFavoriteToggle={onFavoriteToggle}
         />
       )}
 
