@@ -5,6 +5,7 @@
 import { useEffect, useState } from 'react';
 import Image from 'next/image';
 import APIRecipePopup from '@/components/APIRecipePopup'; // AnN add: Reusable API recipe popup component on 11/12
+import SearchBar from '@/components/SearchBar'; // AnN add: Search bar component for finding recipes on 11/12
 
 /* DATABASE INFO
  * 
@@ -50,16 +51,50 @@ export default function ExploreRecipesPage() {
   const [recipes, setRecipes] = useState<Meal[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  
+
   // PopUp state
   const [selectedRecipe, setSelectedRecipe] = useState<Meal | null>(null);
   const [isPopUpOpen, setIsPopUpOpen] = useState(false);
-  
+
   // Likes state (stored in localStorage)
   const [favoritedRecipes, setFavoritedRecipes] = useState<Set<string>>(new Set());
 
+  // AnN add: Search state on 11/12
+  const [searchQuery, setSearchQuery] = useState<string>('');
+  const [searchResults, setSearchResults] = useState<Meal[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+
   // AnN edit: Removed Nick's temporary localStorage comment state on 11/12
   // Now using database-backed CommentSection component instead
+
+  // AnN add: Search TheMealDB API by recipe name on 11/12
+  const handleSearch = async (query: string) => {
+    setSearchQuery(query);
+
+    // If search is empty, clear search results and show random recipes
+    if (!query.trim()) {
+      setSearchResults([]);
+      return;
+    }
+
+    // Search the entire TheMealDB API database
+    setIsSearching(true);
+    try {
+      const response = await fetch(
+        `https://www.themealdb.com/api/json/v1/1/search.php?s=${encodeURIComponent(query)}`
+      );
+      const data = await response.json();
+      setSearchResults(data.meals || []); // meals will be null if no results
+    } catch (err) {
+      console.error('Error searching recipes:', err);
+      setSearchResults([]);
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
+  // AnN add: Display either search results or random recipes on 11/12
+  const displayedRecipes = searchQuery.trim() ? searchResults : recipes;
 
   // Load likes from localStorage
   useEffect(() => {
@@ -313,11 +348,19 @@ export default function ExploreRecipesPage() {
   // COMPONENT RENDERING - What gets displayed to the user
   return (
     <section className="px-6 py-8">
-      
+
       {/* PAGE HEADER - Title and description */}
       <div className="mb-8">
         <h1 className="text-4xl font-bold text-amber-900 mb-2">Explore Recipes</h1>
         <p className="text-amber-700">Discover delicious recipes from around the world</p>
+      </div>
+
+      {/* AnN add: Search bar for filtering recipes on 11/12 */}
+      <div className="mb-6">
+        <SearchBar
+          placeholder="Search recipes by name..."
+          onSearch={handleSearch}
+        />
       </div>
 
       {/* ERROR MESSAGE - Only shows if error state is not null */}
@@ -360,8 +403,17 @@ export default function ExploreRecipesPage() {
               </div>
             </div>
           ))
-        ) : (
-          recipes.map((recipe, index) => (
+        ) : isSearching ? (
+          /* AnN add: Searching state on 11/12 */
+          <div className="col-span-full">
+            <div className="glass-card p-12 text-center">
+              <div className="text-6xl mb-4 animate-pulse">🔍</div>
+              <h3 className="text-xl font-bold text-amber-900 mb-2">Searching...</h3>
+              <p className="text-amber-700">Finding recipes for you</p>
+            </div>
+          </div>
+        ) : displayedRecipes.length > 0 ? (
+          displayedRecipes.map((recipe, index) => (
             <div
               key={`${recipe.idMeal}-${index}`}
               className="glass-card overflow-hidden hover:shadow-xl transition-all duration-300 cursor-pointer group relative"
@@ -416,6 +468,15 @@ export default function ExploreRecipesPage() {
               </div>
             </div>
           ))
+        ) : (
+          /* AnN add: No results message on 11/12 */
+          <div className="col-span-full">
+            <div className="glass-card p-12 text-center">
+              <div className="text-6xl mb-4">🔍</div>
+              <h3 className="text-xl font-bold text-amber-900 mb-2">No recipes found</h3>
+              <p className="text-amber-700">Try searching for a different recipe name</p>
+            </div>
+          </div>
         )}
       </div>
 
