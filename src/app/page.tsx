@@ -3,9 +3,9 @@
 import { useEffect, useState } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import UserRecipePopup from '@/components/UserRecipePopup';
+import UserRecipePopup from '@/components/profile/UserRecipePopup';
 import SearchBar from '@/components/SearchBar';
-import { UserRecipe } from '@/components/UserRecipeCard';
+import { UserRecipe } from '@/components/profile/UserRecipeCard';
 
 interface User {
   id: number;
