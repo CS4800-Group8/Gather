@@ -42,7 +42,7 @@ function OtherProfileContent() {
 	// User data
 	const [user, setUser] = useState<OtherUserProfile | null>(null);
 	const [userRecipes, setUserRecipes] = useState<UserRecipe[]>([]);
-	const [favoritedRecipes, setFavoritedRecipes] = useState<APIRecipe[]>([]);
+	const [favoritedAPIRecipes, setFavoritedAPIRecipes] = useState<APIRecipe[]>([]);
 
 	// Viet add: store user-created favorite recipes
 	const [favoritedUserRecipes, setFavoritedUserRecipes] = useState<UserRecipe[]>([]);
@@ -74,10 +74,10 @@ function OtherProfileContent() {
 			}
 
 			const data = await response.json();
-			const favoriteAPIIds = data.favoriteRecipes?.map((fav: { apiId: string }) => fav.apiId) || [];
+			const favoriteAPIIds = data.favoriteAPIRecipes?.map((fav: { apiId: string }) => fav.apiId) || [];
 
 			if (favoriteAPIIds.length === 0) {
-				setFavoritedRecipes([]);
+				setFavoritedAPIRecipes([]);
 				setLoadingFavorites(false);
 				return;
 			}
@@ -120,7 +120,7 @@ function OtherProfileContent() {
 				};
 			});
 
-			setFavoritedRecipes(parsedRecipes);
+			setFavoritedAPIRecipes(parsedRecipes);
 		} catch (err) {
 			console.error('Error fetching favorited recipes:', err);
 		} finally {
@@ -363,7 +363,7 @@ function OtherProfileContent() {
 							/>
 						) : activeTab === 'favorited' ? (
 							<FavoritesTab
-								favorites={[...favoritedRecipes, ...favoritedUserRecipes]} // Viet fix: combine both API and user-created favorite recipes
+								favorites={[...favoritedAPIRecipes, ...favoritedUserRecipes]} // Viet fix: combine both API and user-created favorite recipes
 								loading={loadingFavorites}
 								isOwnProfile={false}
 								displayName={displayName}

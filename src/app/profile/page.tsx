@@ -68,7 +68,7 @@ export default function ProfilePage() {
   const [previewUrl, setPreviewUrl] = useState<string>(''); // AnN add: Local preview URL on 10/29
   const [newInstructions, setNewInstructions] = useState(''); // AnN add: Store cooking instructions on 10/30
   const [newVideoUrl, setNewVideoUrl] = useState(''); // AnN add: Store YouTube video URL on 10/30
-  const [favoritedRecipes, setFavoritedRecipes] = useState<APIRecipe[]>([]); // AnN add: Store favorited API recipes on 10/31
+  const [favoritedAPIRecipes, setFavoritedAPIRecipes] = useState<APIRecipe[]>([]); // AnN add: Store favorited API recipes on 10/31
   const [loadingFavorites, setLoadingFavorites] = useState(false); // AnN add: Loading state for favorited recipes on 10/31
 
   // Viet add: Store user-created favorite recipes
@@ -127,7 +127,7 @@ export default function ProfilePage() {
   };
 
   // AnN add: Fetch favorited API recipes on 10/31
-  const fetchFavoritedRecipes = async () => {
+  const fetchFavoritedAPIRecipes = async () => {
     try {
       setLoadingFavorites(true);
       const user = JSON.parse(localStorage.getItem('gatherUser') || '{}');
@@ -147,10 +147,10 @@ export default function ProfilePage() {
       }
 
       const data = await response.json();
-      const favoriteAPIIds = data.favoriteRecipes?.map((fav: { apiId: string }) => fav.apiId) || [];
+      const favoriteAPIIds = data.favoriteAPIRecipes?.map((fav: { apiId: string }) => fav.apiId) || [];
 
       if (favoriteAPIIds.length === 0) {
-        setFavoritedRecipes([]);
+        setFavoritedAPIRecipes([]);
         setLoadingFavorites(false);
         return;
       }
@@ -194,7 +194,7 @@ export default function ProfilePage() {
         };
       });
 
-      setFavoritedRecipes(parsedRecipes);
+      setFavoritedAPIRecipes(parsedRecipes);
       setLoadingFavorites(false);
     } catch (err) {
       console.error('Error fetching favorited recipes:', err);
@@ -253,7 +253,7 @@ export default function ProfilePage() {
   // AnN add: Fetch all recipes on page load on 10/23
   useEffect(() => {
     fetchUserRecipes();
-    fetchFavoritedRecipes(); // AnN add: Fetch favorited recipes on page load too (so tab switching is instant) on 10/31
+    fetchFavoritedAPIRecipes(); // AnN add: Fetch favorited recipes on page load too (so tab switching is instant) on 10/31
     fetchFavoritedUserRecipes();  // Viet add: user-created favorites
     fetchMyFavorites();           // Viet add: heart state (IDs)
   }, []);
@@ -556,7 +556,7 @@ export default function ProfilePage() {
 
       if (response.ok) {
         if (isAPIRecipe) {
-          setFavoritedRecipes((prev) =>
+          setFavoritedAPIRecipes((prev) =>
             prev.filter((r) => r.idMeal !== recipeId.toString())
           );
         } else {
@@ -953,7 +953,7 @@ export default function ProfilePage() {
             ) : activeTab === 'favorited' ? (
               // AnN edit: Extracted to FavoritesTab component on 11/13
               <FavoritesTab
-                favorites={[...favoritedRecipes, ...favoritedUserRecipes]}
+                favorites={[...favoritedAPIRecipes, ...favoritedUserRecipes]}
                 loading={loadingFavorites}
                 isOwnProfile={true}
                 displayName={displayName}

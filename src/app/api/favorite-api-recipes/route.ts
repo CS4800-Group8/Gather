@@ -127,14 +127,14 @@ export async function GET(req: Request) {
       );
     }
 
-    const favoriteRecipesAPI = await prisma.favoriteAPIRecipe.findMany({
+    const parsedFavorites = await prisma.favoriteAPIRecipe.findMany({
       where: {
         userId: parseInt(userId)
       }
     });
 
     return NextResponse.json(
-      { favoriteRecipes: favoriteRecipesAPI },
+      { favoriteAPIRecipes: parsedFavorites },
       { status: 200 }
     );
 

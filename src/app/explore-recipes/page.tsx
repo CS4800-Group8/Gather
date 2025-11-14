@@ -57,7 +57,7 @@ export default function ExploreRecipesPage() {
   const [isPopUpOpen, setIsPopUpOpen] = useState(false);
 
   // Likes state (stored in localStorage)
-  const [favoritedRecipes, setFavoritedRecipes] = useState<Set<string>>(new Set());
+  const [favoritedAPIRecipes, setFavoritedAPIRecipes] = useState<Set<string>>(new Set());
 
   // AnN add: Search state on 11/12
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -104,8 +104,8 @@ export default function ExploreRecipesPage() {
         const stored = localStorage.getItem('gatherUser') || localStorage.getItem('user');
         if (!stored) {
           // Not logged in, clear localStorage favorites
-          localStorage.removeItem('favoritedRecipes');
-          setFavoritedRecipes(new Set());
+          localStorage.removeItem('favoritedAPIRecipes');
+          setFavoritedAPIRecipes(new Set());
           return;
         }
 
@@ -116,19 +116,19 @@ export default function ExploreRecipesPage() {
         const response = await fetch(`/api/favorite-api-recipes?userId=${userData.id}`);
         if (response.ok) {
           const data = await response.json();
-          const favoriteIds: string[] = data.favoriteRecipes?.map((fav: { apiId: string }) => fav.apiId) || [];
+          const favoriteIds: string[] = data.favoriteAPIRecipes?.map((fav: { apiId: string }) => fav.apiId) || [];
           const favoritesSet = new Set<string>(favoriteIds);
 
           // Update both state and localStorage cache
-          setFavoritedRecipes(favoritesSet);
-          localStorage.setItem('favoritedRecipes', JSON.stringify([...favoritesSet]));
+          setFavoritedAPIRecipes(favoritesSet);
+          localStorage.setItem('favoritedAPIRecipes', JSON.stringify([...favoritesSet]));
         }
       } catch (error) {
         console.error('Error loading favorites:', error);
         // Fall back to localStorage if API fails
-        const storedLikes = localStorage.getItem('favoritedRecipes');
+        const storedLikes = localStorage.getItem('favoritedAPIRecipes');
         if (storedLikes) {
-          setFavoritedRecipes(new Set(JSON.parse(storedLikes)));
+          setFavoritedAPIRecipes(new Set(JSON.parse(storedLikes)));
         }
       }
     };
@@ -344,16 +344,16 @@ export default function ExploreRecipesPage() {
     }
 
     // Handle favorite functionality
-    const isCurrentlyFavorited = favoritedRecipes.has(apiId);
+    const isCurrentlyFavorited = favoritedAPIRecipes.has(apiId);
     try {
       if (isCurrentlyFavorited) {
         // Remove from favorites
         const success = await removeFavoriteAPIRecipe(apiId);
         if (success) {
-          setFavoritedRecipes(prev => {
+          setFavoritedAPIRecipes(prev => {
             const newLikes = new Set(prev);
             newLikes.delete(apiId);
-            localStorage.setItem('favoritedRecipes', JSON.stringify([...newLikes]));
+            localStorage.setItem('favoritedAPIRecipes', JSON.stringify([...newLikes]));
             return newLikes;
           });
         }
@@ -361,10 +361,10 @@ export default function ExploreRecipesPage() {
         // Add to favorites
         const success = await saveFavoriteAPIRecipe(apiId);
         if (success) {
-          setFavoritedRecipes(prev => {
+          setFavoritedAPIRecipes(prev => {
             const newLikes = new Set(prev);
             newLikes.add(apiId);
-            localStorage.setItem('favoritedRecipes', JSON.stringify([...newLikes]));
+            localStorage.setItem('favoritedAPIRecipes', JSON.stringify([...newLikes]));
             return newLikes;
           });
         }
@@ -457,11 +457,11 @@ export default function ExploreRecipesPage() {
                 onClick={(e) => toggleFavorite(recipe.idMeal, e)}
               >
                 <span className={`text-2xl transition-colors ${
-                  favoritedRecipes.has(recipe.idMeal) 
+                  favoritedAPIRecipes.has(recipe.idMeal) 
                     ? 'text-red-500' 
                     : 'text-amber-600 hover:text-red-500'
                 }`}>
-                  {favoritedRecipes.has(recipe.idMeal) ? '♥' : '♡'}
+                  {favoritedAPIRecipes.has(recipe.idMeal) ? '♥' : '♡'}
                 </span>
               </button>
 
@@ -521,7 +521,7 @@ export default function ExploreRecipesPage() {
           recipe={selectedRecipe as any} // AnN: Type cast needed for TheMealDB API compatibility
           onClose={closePopUp}
           showFavoriteButton={true}
-          isFavorited={favoritedRecipes.has(selectedRecipe.idMeal)}
+          isFavorited={favoritedAPIRecipes.has(selectedRecipe.idMeal)}
           onFavoriteToggle={toggleFavorite}
         />
       )}
