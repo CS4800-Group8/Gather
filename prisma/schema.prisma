@@ -7,7 +7,8 @@
 //    Category, 
 //    Notification,
 //    Friendship,
-//    Comment
+//    Comment,
+//    Rating,
 
 
 // ==================== PRISMA SCHEMA ====================
@@ -41,6 +42,7 @@ model User {
   favoriteAPIRecipes FavoriteAPIRecipe[]
   notifications   Notification[]
   comments Comment[] // One-to-Many relationship: One User can have many Comments // Added 11/11
+  ratings Rating[] // One user can have many ratings // Added 11/13
 
   // Self-relations for friendships
   sentRequests     Friendship[] @relation("Requester")
@@ -66,7 +68,8 @@ model Recipe {
   recipeIngredients RecipeIngredient[]
   recipeCategories  RecipeCategory[]
   FavoriteRecipe    FavoriteRecipe[]
-  comments Comment[] // One-to-Many relationship: One Recipe can have many Comments // Added 11/11
+  comments Comment[] // One-to-Many relationship: One Recipe can have many Comments 
+  ratings Rating[] // One recipe can have many ratings 
 }
 
 //
@@ -189,17 +192,33 @@ model Comment {
   // updatedAt   DateTime @updatedAt  optional field for future use
 
   // Foreign Keys
-
-  // The User who made the comment
-  userId      Int
-
-  // For User-created recipes
-  recipeId    Int?
-
-  // For API recipes
-  apiId       String? // TheMealDB idMeal
+  userId      Int     // The User who made the comment  
+  recipeId    Int?    // For User-created recipes
+  apiId       String? // For API recipes // TheMealDB idMeal
 
   // Relations
   user        User   @relation(fields: [userId], references: [id], onDelete: Cascade)
   recipe      Recipe? @relation(fields: [recipeId], references: [recipeId], onDelete: Cascade)
+}
+
+//
+// ==================== RATING ====================
+//
+model Rating {
+  id        Int      @id @default(autoincrement())
+  value     Int      // rating score (1–5 stars)
+  createdAt DateTime @default(now())
+
+  // Foreign keys
+  userId   Int
+  recipeId Int?      // for user-created recipes
+  apiId    String?   // for API recipes
+
+  // Relations
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  recipe   Recipe?   @relation(fields: [recipeId], references: [recipeId], onDelete: Cascade)
+
+  // Ensure one rating per user per recipe/api recipe
+  @@unique([userId, recipeId])
+  @@unique([userId, apiId])
 }
