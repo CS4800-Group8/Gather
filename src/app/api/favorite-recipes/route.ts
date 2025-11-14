@@ -1,4 +1,4 @@
-// Manage user's favorite user-created recipes: add, remove, and list favorites.
+// Manage user's favorite recipes (user-created): add, remove, and list favorites.
 
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
@@ -6,9 +6,9 @@ import prisma from "@/lib/prisma";
 // POST - Add user recipe to favorites
 export async function POST(req: Request) {
   try {
-    const body = await req.json();
-    const { userId, recipeId } = body;
+    const { userId, recipeId } = await req.json();
 
+    // Validate input
     if (!userId || !recipeId) {
       return NextResponse.json(
         { error: "User ID and Recipe ID are required" },
@@ -20,8 +20,8 @@ export async function POST(req: Request) {
     const existingFavorite = await prisma.favoriteRecipe.findUnique({
       where: {
         userId_recipeId: {
-          userId: parseInt(userId),
-          recipeId: parseInt(recipeId),
+          userId: Number(userId),
+          recipeId: Number(recipeId),
         },
       },
     });
@@ -36,8 +36,8 @@ export async function POST(req: Request) {
     // Add to favorites
     const favoriteRecipe = await prisma.favoriteRecipe.create({
       data: {
-        userId: parseInt(userId),
-        recipeId: parseInt(recipeId),
+        userId: Number(userId),
+        recipeId: Number(recipeId),
       },
     });
 
@@ -51,7 +51,7 @@ export async function POST(req: Request) {
   } catch (error) {
     console.error("Error adding favorite recipe:", error);
     return NextResponse.json(
-      { error: "Something went wrong. Please try again later." },
+      { error: "Failed to add favorite recipe" },
       { status: 500 }
     );
   }
@@ -60,9 +60,9 @@ export async function POST(req: Request) {
 // DELETE - Remove user recipe from favorites
 export async function DELETE(req: Request) {
   try {
-    const body = await req.json();
-    const { userId, recipeId } = body;
+    const { userId, recipeId } = await req.json();
 
+    // Validate input
     if (!userId || !recipeId) {
       return NextResponse.json(
         { error: "User ID and Recipe ID are required" },
@@ -70,11 +70,12 @@ export async function DELETE(req: Request) {
       );
     }
 
+    // Check if favorite exists
     const existingFavorite = await prisma.favoriteRecipe.findUnique({
       where: {
         userId_recipeId: {
-          userId: parseInt(userId),
-          recipeId: parseInt(recipeId),
+          userId: Number(userId),
+          recipeId: Number(recipeId),
         },
       },
     });
@@ -86,11 +87,12 @@ export async function DELETE(req: Request) {
       );
     }
 
+    // Remove favorite
     await prisma.favoriteRecipe.delete({
       where: {
         userId_recipeId: {
-          userId: parseInt(userId),
-          recipeId: parseInt(recipeId),
+          userId: Number(userId),
+          recipeId: Number(recipeId),
         },
       },
     });
@@ -102,7 +104,7 @@ export async function DELETE(req: Request) {
   } catch (error) {
     console.error("Error removing favorite recipe:", error);
     return NextResponse.json(
-      { error: "Something went wrong. Please try again later." },
+      { error: "Failed to remove favorite recipe" },
       { status: 500 }
     );
   }
@@ -112,12 +114,16 @@ export async function DELETE(req: Request) {
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
-    const userId = searchParams.get('userId');
+    const userId = searchParams.get("userId");
 
     if (!userId) {
-      return NextResponse.json({ error: "User ID is required" }, { status: 400 });
+      return NextResponse.json(
+        { error: "User ID is required" },
+        { status: 400 }
+      );
     }
 
+    // Fetch favorite recipes and related data
     const favoriteRecipes = await prisma.favoriteRecipe.findMany({
       where: { userId: Number(userId) },
       include: {
@@ -130,7 +136,7 @@ export async function GET(req: Request) {
       },
     });
 
-    // Flatten nested relations to match your frontend
+    // Flatten nested relations for frontend display
     const parsedFavorites = favoriteRecipes.map((fav) => ({
       ...fav,
       recipe: {
@@ -147,9 +153,15 @@ export async function GET(req: Request) {
       },
     }));
 
-    return NextResponse.json({ favoriteRecipes: parsedFavorites }, { status: 200 });
+    return NextResponse.json(
+      { favoriteRecipes: parsedFavorites },
+      { status: 200 }
+    );
   } catch (error) {
     console.error("Error fetching favorite recipes:", error);
-    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Failed to fetch favorite recipes" },
+      { status: 500 }
+    );
   }
 }
