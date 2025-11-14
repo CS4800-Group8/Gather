@@ -84,7 +84,6 @@ export default function UserRecipeCard({
           aria-label="Toggle favorite"
           onClick={(e) => {
             e.stopPropagation();
-
             if (onDelete) {
               onDelete(recipe.recipeId);
             } 

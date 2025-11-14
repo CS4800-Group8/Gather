@@ -55,7 +55,7 @@ export default function HomePage() {
     if (storedFavorites) {
       setFavoritedRecipes(new Set(JSON.parse(storedFavorites)));
     }
-    fetchUserRecipes();
+    fetchUserRecipes(); 
   }, []);
 
   // Search functionality
