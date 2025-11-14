@@ -1,4 +1,5 @@
 // AnN add: API Recipe Card component on 10/31
+import React from 'react';
 import Image from 'next/image';
 import { HeartIcon } from '@heroicons/react/24/solid';
 
@@ -12,22 +13,40 @@ export interface APIRecipe {
   strYoutube: string;
   strTags: string | null;
   ingredients: { name: string; measure: string }[];
+  source?: 'api';
 }
 
 type APIRecipeCardProps = {
   recipe: APIRecipe;
   onClick: (recipe: APIRecipe) => void;
   onDelete?: (apiId: string) => void; // AnN edit: Made optional on 11/13 - only show for own profile
+  // Viet add: favorite logic
+  isFavorited?: boolean;
+  onFavoriteToggle?: (recipeId: string | number, source: 'api' | 'user') => void;
 };
 
-export default function APIRecipeCard({ recipe, onClick, onDelete }: APIRecipeCardProps) {
+export default function APIRecipeCard({ 
+  recipe, 
+  onClick, 
+  onDelete,
+  isFavorited = false,
+  onFavoriteToggle,
+ }: APIRecipeCardProps) {
+
+  // Viet add: favorite toggle handler
+    const handleFavoriteClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onFavoriteToggle?.(recipe.idMeal, 'api');
+  };
+
   return (
     <article
       className="glass-card overflow-hidden hover:shadow-xl transition-all duration-300 cursor-pointer group relative"
       onClick={() => onClick(recipe)}
     >
       {/* AnN edit: Only show unfavorite button if onDelete is provided (own profile) on 11/13 */}
-      {onDelete && (
+      {/* Viet edit: Added conditional favorite button if not owner */}
+      {onDelete ? (
         <button
           className="absolute top-4 right-4 z-10 w-10 h-10 rounded-full bg-white/90 backdrop-blur flex items-center justify-center shadow-lg hover:bg-white transition-all duration-200 hover:scale-110"
           aria-label="Unfavorite recipe"
@@ -37,6 +56,18 @@ export default function APIRecipeCard({ recipe, onClick, onDelete }: APIRecipeCa
           }}
         >
           <HeartIcon className="w-6 h-6 text-red-500 hover:text-red-600 transition-colors" />
+        </button>
+      ) : (
+        <button
+          className="absolute top-4 right-4 z-10 w-10 h-10 rounded-full bg-white/90 backdrop-blur flex items-center justify-center shadow-lg hover:bg-white transition-all duration-200 hover:scale-110"
+          aria-label="Add to favorites"
+          onClick={handleFavoriteClick}
+        >
+          {isFavorited ? (
+            <HeartIcon className="w-6 h-6 text-red-500 hover:text-red-600 transition-colors" />
+          ) : (
+            <span className="text-xl text-amber-600 hover:text-red-500 transition-colors">♡</span>
+          )}
         </button>
       )}
 
