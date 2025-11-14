@@ -70,6 +70,11 @@ export default function ProfilePage() {
   const [newVideoUrl, setNewVideoUrl] = useState(''); // AnN add: Store YouTube video URL on 10/30
   const [favoritedRecipes, setFavoritedRecipes] = useState<APIRecipe[]>([]); // AnN add: Store favorited API recipes on 10/31
   const [loadingFavorites, setLoadingFavorites] = useState(false); // AnN add: Loading state for favorited recipes on 10/31
+
+  // Viet add: Store user-created favorite recipes
+  const [favoritedUserRecipes, setFavoritedUserRecipes] = useState<UserRecipe[]>([]);
+  const [myFavoriteIds, setMyFavoriteIds] = useState<Set<string>>(new Set()); // Viet add: Track all favorites
+
   // AnN edit: Removed selectedAPIRecipe, showAPIRecipePopup, showUnfavoriteConfirm, recipeToUnfavorite - now in FavoritesTab on 11/13
 
   // Thu add: Friend count for profile stats on 11/6
@@ -185,6 +190,7 @@ export default function ProfilePage() {
           strYoutube: meal.strYoutube || '',
           strTags: meal.strTags || null,
           ingredients,
+          source: 'api',
         };
       });
 
@@ -196,10 +202,60 @@ export default function ProfilePage() {
     }
   };
 
+  // Viet add: Fetch user-created favorited recipes DB
+  const fetchFavoritedUserRecipes = async () => {
+    try {
+      const user = JSON.parse(localStorage.getItem('gatherUser') || '{}');
+      const userId = user?.id;
+      if (!userId) return;
+
+      const response = await fetch(`/api/favorite-recipes?userId=${userId}`);
+      if (response.ok) {
+        const data = await response.json();
+        // Each favorite includes the related "recipe" from Prisma
+        const favorites = data.favoriteRecipes?.map((fav: any) => ({
+          ...fav.recipe,
+          source: 'user',
+      })) || [];
+        setFavoritedUserRecipes(favorites);
+      }
+    } catch (err) {
+      console.error('Error fetching user-created favorites:', err);
+    }
+  };
+
+  // Viet add: Fetch both API and user-created favorite IDs
+  const fetchMyFavorites = async () => {
+    try {
+      const user = JSON.parse(localStorage.getItem('gatherUser') || '{}');
+      const userId = user?.id;
+      if (!userId) return;
+
+      // Fetch API-based favorites
+      const apiRes = await fetch(`/api/favorite-api-recipes?userId=${userId}`);
+      const apiData = apiRes.ok ? await apiRes.json() : { favoriteRecipes: [] };
+      const apiIds = apiData.favoriteRecipes?.map((fav: { apiId: string }) => fav.apiId) || [];
+
+      // Fetch user-created favorites
+      const userRes = await fetch(`/api/favorite-recipes?userId=${userId}`);
+      const userData = userRes.ok ? await userRes.json() : { favoriteRecipes: [] };
+      const userIds =
+        userData.favoriteRecipes?.map((fav: { recipeId: number }) => fav.recipeId.toString()) || [];
+
+      // Combine all IDs
+      const allIds = [...apiIds, ...userIds];
+      setMyFavoriteIds(new Set(allIds));
+    } catch (err) {
+      console.error('Error fetching my favorites:', err);
+    }
+  };
+
   // AnN add: Fetch all recipes on page load on 10/23
   useEffect(() => {
     fetchUserRecipes();
     fetchFavoritedRecipes(); // AnN add: Fetch favorited recipes on page load too (so tab switching is instant) on 10/31
+    fetchFavoritedUserRecipes();  // Viet add: user-created favorites
+    fetchMyFavorites();           // Viet add: heart state (IDs)
   }, []);
 
   // Load user profile from localStorage
@@ -473,34 +529,50 @@ export default function ProfilePage() {
   // AnN edit: Removed handleOpenUserRecipePopup and handleCloseUserRecipePopup - now in MyRecipesTab on 11/13
   // AnN edit: Removed handleOpenAPIRecipePopup and handleCloseAPIRecipePopup - now in FavoritesTab on 11/13
 
-  // AnN add: Simplified unfavorite callback for FavoritesTab component on 11/13
-  const handleUnfavoriteAPIRecipe = async (recipeId: string) => {
+  // Viet fix: Unfavorite handler for both API and user-created recipes
+  const handleUnfavoriteRecipe = async (
+    recipeId: string | number,
+    source?: 'api' | 'user'
+  ) => {
     try {
-      const user = JSON.parse(localStorage.getItem('gatherUser') || '{}');
-      const userId = user?.id;
-
+      const currentUser = JSON.parse(localStorage.getItem('gatherUser') || '{}');
+      const userId = currentUser?.id;
       if (!userId) return;
 
-      const response = await fetch('/api/favorite-api-recipes', {
+      const isAPIRecipe = source === 'api';
+      const endpoint = isAPIRecipe
+        ? '/api/favorite-api-recipes'
+        : '/api/favorite-recipes';
+
+      const bodyData = isAPIRecipe
+        ? { userId, apiId: recipeId.toString() }
+        : { userId, recipeId: Number(recipeId) };
+
+      const response = await fetch(endpoint, {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId, apiId: recipeId }),
+        body: JSON.stringify(bodyData),
       });
 
       if (response.ok) {
-        // Remove from state
-        setFavoritedRecipes((prev) => prev.filter((recipe) => recipe.idMeal !== recipeId));
-
-        // Also update localStorage if used by explore page
-        const storedLikes = localStorage.getItem('favoritedRecipes');
-        if (storedLikes) {
-          const likes = JSON.parse(storedLikes);
-          const updatedLikes = likes.filter((id: string) => id !== recipeId);
-          localStorage.setItem('favoritedRecipes', JSON.stringify(updatedLikes));
+        if (isAPIRecipe) {
+          setFavoritedRecipes((prev) =>
+            prev.filter((r) => r.idMeal !== recipeId.toString())
+          );
+        } else {
+          setFavoritedUserRecipes((prev) =>
+            prev.filter((r) => r.recipeId !== Number(recipeId))
+          );
         }
+
+        setMyFavoriteIds((prev) => {
+          const updated = new Set(prev);
+          updated.delete(recipeId.toString());
+          return updated;
+        });
       }
     } catch (err) {
-      console.error('Error unfavoriting recipe:', err);
+      console.error('Error removing favorite:', err);
     }
   };
 
@@ -881,11 +953,13 @@ export default function ProfilePage() {
             ) : activeTab === 'favorited' ? (
               // AnN edit: Extracted to FavoritesTab component on 11/13
               <FavoritesTab
-                favorites={favoritedRecipes}
+                favorites={[...favoritedRecipes, ...favoritedUserRecipes]}
                 loading={loadingFavorites}
                 isOwnProfile={true}
                 displayName={displayName}
-                onUnfavorite={handleUnfavoriteAPIRecipe}
+                onUnfavorite={handleUnfavoriteRecipe}
+                myFavoriteIds={myFavoriteIds}
+                onFavoriteToggle={handleUnfavoriteRecipe}
               />
             ) : (
               <article className="rounded-3xl border-2 border-dashed border-[#caa977] bg-[#fff9ed] px-6 py-12 text-center text-sm font-medium text-[#8a6134]">

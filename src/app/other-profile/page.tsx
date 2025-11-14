@@ -34,11 +34,19 @@ interface OtherUserProfile {
 function OtherProfileContent() {
 	const searchParams = useSearchParams();
 	const userId = searchParams.get("userId"); // read the ID from URL
+	
+	// Viet add: get logged-in user's ID for saving favorites
+	const currentUser = JSON.parse(localStorage.getItem('gatherUser') || '{}');
+	const myUserId = currentUser?.id;
 
 	// User data
 	const [user, setUser] = useState<OtherUserProfile | null>(null);
 	const [userRecipes, setUserRecipes] = useState<UserRecipe[]>([]);
 	const [favoritedRecipes, setFavoritedRecipes] = useState<APIRecipe[]>([]);
+
+	// Viet add: store user-created favorite recipes
+	const [favoritedUserRecipes, setFavoritedUserRecipes] = useState<UserRecipe[]>([]);
+
 	const [loadingFavorites, setLoadingFavorites] = useState(false);
 	const [friendCount, setFriendCount] = useState(0);
 
@@ -120,6 +128,25 @@ function OtherProfileContent() {
 		}
 	};
 
+	// Viet add: Fetch user-created favorited recipes
+	const fetchFavoritedUserRecipes = async () => {
+		try {
+			const currentUser = JSON.parse(localStorage.getItem('gatherUser') || '{}');
+			const myUserId = currentUser?.id;
+			if (!myUserId) return;
+
+			const response = await fetch(`/api/favorite-recipes?userId=${userId}`);
+			if (response.ok) {
+				const data = await response.json();
+				// Each favorite includes "recipe" relation from Prisma
+				const favorites = data.favoriteRecipes?.map((fav: any) => fav.recipe) || [];
+				setFavoritedUserRecipes(favorites);
+			}
+		} catch (err) {
+			console.error('Error fetching favorited user recipes:', err);
+		}
+	};
+
 	// AnN add: Fetch user's created recipes on 11/13
 	const fetchUserRecipes = async () => {
 		try {
@@ -128,7 +155,12 @@ function OtherProfileContent() {
 			const response = await fetch(`/api/recipes?userId=${userId}`);
 			if (response.ok) {
 				const data = await response.json();
-				setUserRecipes(data.recipes || []);
+				setUserRecipes(
+					(data.recipes || []).map((r: any) => ({
+						...r,
+						source: 'user',
+					}))
+				);
 			} else {
 				console.error("Failed to fetch recipes:", response.status);
 			}
@@ -152,7 +184,7 @@ function OtherProfileContent() {
 		}
 	};
 
-	// AnN add: Fetch current user's favorites to show heart state on 11/13
+	// Viet fix: fetch both API favorites and user-created favorites
 	const fetchMyFavorites = async () => {
 		try {
 			const currentUser = JSON.parse(localStorage.getItem('gatherUser') || '{}');
@@ -160,19 +192,30 @@ function OtherProfileContent() {
 
 			if (!myUserId) return;
 
-			const response = await fetch(`/api/favorite-api-recipes?userId=${myUserId}`);
-			if (response.ok) {
-				const data = await response.json();
-				const favoriteIds = data.favoriteRecipes?.map((fav: { apiId: string }) => fav.apiId) || [];
-				setMyFavoriteIds(new Set(favoriteIds));
-			}
+			// Fetch API-based favorites
+			const apiRes = await fetch(`/api/favorite-api-recipes?userId=${myUserId}`);
+			const apiData = apiRes.ok ? await apiRes.json() : { favoriteRecipes: [] };
+			const apiIds = apiData.favoriteRecipes?.map((fav: { apiId: string }) => fav.apiId) || [];
+
+			// Viet add: Fetch user-created favorites from DB
+			const userRes = await fetch(`/api/favorite-recipes?userId=${myUserId}`);
+			const userData = userRes.ok ? await userRes.json() : { favoriteRecipes: [] };
+			const userIds =
+				userData.favoriteRecipes?.map((fav: { recipeId: number }) => fav.recipeId.toString()) || [];
+
+			// Combine both API + user-created recipe IDs
+			const allIds = [...apiIds, ...userIds];
+			setMyFavoriteIds(new Set(allIds));	
 		} catch (err) {
-			console.error('Error fetching my favorites:', err);
+			console.error("Error fetching my favorites:", err);
 		}
 	};
 
-	// AnN add: Toggle favorite for API recipes on 11/13
-	const handleFavoriteToggle = async (recipeId: string) => {
+	// Viet fix: handle favorites for both API and user-created recipes
+	const handleFavoriteToggle = async (
+		recipeId: string | number,
+		source: 'api' | 'user'
+		) => {
 		try {
 			const currentUser = JSON.parse(localStorage.getItem('gatherUser') || '{}');
 			const myUserId = currentUser?.id;
@@ -182,34 +225,37 @@ function OtherProfileContent() {
 				return;
 			}
 
-			const isFavorited = myFavoriteIds.has(recipeId);
+			const recipeIdStr = recipeId.toString();
+			const isFavorited = myFavoriteIds.has(recipeIdStr);
 
-			if (isFavorited) {
-				// Remove from favorites
-				const response = await fetch('/api/favorite-api-recipes', {
-					method: 'DELETE',
-					headers: { 'Content-Type': 'application/json' },
-					body: JSON.stringify({ userId: myUserId, apiId: recipeId }),
+			// Detect type: API recipes have string IDs, user recipes have numeric IDs
+			const apiEndpoint =
+				source === 'api'
+					? '/api/favorite-api-recipes'
+					: '/api/favorite-recipes';
+
+			const bodyData =
+				source === 'api'
+					? { userId: myUserId, apiId: recipeIdStr }
+					: { userId: myUserId, recipeId: Number(recipeId) };
+
+			// Add or remove favorite
+			const response = await fetch(apiEndpoint, {
+				method: isFavorited ? 'DELETE' : 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify(bodyData),
+			});
+
+			if (response.ok) {
+				setMyFavoriteIds((prev) => {
+					const updated = new Set(prev);
+					if (isFavorited) {
+						updated.delete(recipeIdStr);
+					} else {
+						updated.add(recipeIdStr);
+					}
+					return updated;
 				});
-
-				if (response.ok) {
-					setMyFavoriteIds((prev) => {
-						const updated = new Set(prev);
-						updated.delete(recipeId);
-						return updated;
-					});
-				}
-			} else {
-				// Add to favorites
-				const response = await fetch('/api/favorite-api-recipes', {
-					method: 'POST',
-					headers: { 'Content-Type': 'application/json' },
-					body: JSON.stringify({ userId: myUserId, apiId: recipeId }),
-				});
-
-				if (response.ok) {
-					setMyFavoriteIds((prev) => new Set(prev).add(recipeId));
-				}
 			}
 		} catch (err) {
 			console.error('Error toggling favorite:', err);
@@ -237,6 +283,7 @@ function OtherProfileContent() {
 		fetchUser();
 		fetchUserRecipes();
 		fetchFavoritedRecipes();
+		fetchFavoritedUserRecipes(); // Viet add: load user-created favorite recipes
 		fetchFriendCount();
 		fetchMyFavorites(); // AnN add: Fetch current user's favorites on 11/13
 	}, [userId]);
@@ -310,10 +357,13 @@ function OtherProfileContent() {
 								isOwnProfile={false}
 								displayName={displayName}
 								onRecipeDelete={handleRecipeDelete}
+								// Viet add: pass favorite state and handler
+								myFavoriteIds={myFavoriteIds}
+								onFavoriteToggle={handleFavoriteToggle}
 							/>
 						) : activeTab === 'favorited' ? (
 							<FavoritesTab
-								favorites={favoritedRecipes}
+								favorites={[...favoritedRecipes, ...favoritedUserRecipes]} // Viet fix: combine both API and user-created favorite recipes
 								loading={loadingFavorites}
 								isOwnProfile={false}
 								displayName={displayName}
