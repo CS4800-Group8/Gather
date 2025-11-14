@@ -7,6 +7,7 @@
 
 import Image from "next/image";
 import CommentSection from "@/components/CommentSection";
+import RatingSection from "@/components/RatingSection"; // Thu added // 11/13
 
 // AnN add: Interface for API recipe data structure on 11/12
 interface APIRecipe {
@@ -190,7 +191,14 @@ export default function APIRecipePopup({
 
             {/* Right column: Comments section */}
             <div className="lg:sticky lg:top-0 lg:self-start lg:max-h-[calc(90vh-120px)] lg:overflow-y-auto popUp-scrollbar">
-              {/* AnN add: Database-backed comments for API recipes on 11/12 */}
+              
+              {/* Thu added: Rating section for API recipes on 11/13 */}
+              <RatingSection
+                recipeId={recipe.idMeal}
+                recipeType="api"
+              />
+
+              {/* AnN added: Database-backed comments for API recipes on 11/12 */}
               <CommentSection
                 recipeId={recipe.idMeal}
                 recipeType="api"
