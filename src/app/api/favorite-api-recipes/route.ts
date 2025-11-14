@@ -113,36 +113,3 @@ export async function DELETE(req: Request) {
     );
   }
 }
-
-// GET - Get user's favorite API recipes
-export async function GET(req: Request) {
-  try {
-    const { searchParams } = new URL(req.url);
-    const userId = searchParams.get('userId');
-
-    if (!userId) {
-      return NextResponse.json(
-        { error: "User ID is required" },
-        { status: 400 }
-      );
-    }
-
-    const favoriteRecipesAPI = await prisma.favoriteAPIRecipe.findMany({
-      where: {
-        userId: parseInt(userId)
-      }
-    });
-
-    return NextResponse.json(
-      { favoriteRecipes: favoriteRecipesAPI },
-      { status: 200 }
-    );
-
-  } catch (error) {
-    console.error('Error fetching favorite recipes:', error);
-    return NextResponse.json(
-      { error: "Something went wrong. Please try again later." },
-      { status: 500 }
-    );
-  }
-}
