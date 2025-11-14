@@ -4,6 +4,8 @@ import Image from "next/image";
 import React from "react";
 import { UserRecipe } from "@/components/profile/UserRecipeCard";
 import CommentSection from "@/components/CommentSection"; // AnN add: Database-backed comment component on 11/12
+import RatingSection from "@/components/RatingSection"; // Thu added // 11/13
+
 
 interface UserRecipePopupProps {
   recipe: UserRecipe;
@@ -149,6 +151,12 @@ export default function UserRecipePopup({ recipe, onClose }: UserRecipePopupProp
 
             {/* Right column: Comments section */}
             <div className="lg:sticky lg:top-0 lg:self-start lg:max-h-[calc(90vh-120px)] lg:overflow-y-auto popUp-scrollbar">
+              {/* Thu added: Rating section for API recipes on 11/13 */}
+              <RatingSection
+                recipeId={recipe.recipeId.toString()}
+                recipeType="user"
+              />
+
               <CommentSection
                 recipeId={recipe.recipeId.toString()}
                 recipeType="user"
