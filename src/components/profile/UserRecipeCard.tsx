@@ -1,7 +1,6 @@
 // AnN add: Card component for user's created recipes on 10/23
 // AnN edit: Extracted to separate file on 10/31
 import Image from 'next/image';
-import { useState } from "react";
 import { TrashIcon } from '@heroicons/react/24/outline';
 import { HeartIcon } from '@heroicons/react/24/solid';
 
@@ -49,15 +48,8 @@ export default function UserRecipeCard({
   onClick,
   // Viet add: isFavorited and onFavoriteToggle
   isFavorited = false,
-  onFavoriteToggle, 
+  onFavoriteToggle,
 }: UserRecipeCardProps) {
-
-  // Viet add: favorite recipe handler
-  const handleFavoriteClick = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    onFavoriteToggle?.(recipe.recipeId, 'user');
-  };
-
   return (
     <article
       className="glass-card overflow-hidden hover:shadow-xl transition-all duration-300 cursor-pointer group relative"
@@ -77,26 +69,29 @@ export default function UserRecipeCard({
         </button>
       )}
 
-      {/* Viet add: If not owner add favorite button */}
-      {!isOwner && (
+      {/* Viet add: If not owner, show favorite/unfavorite button */}
+      {/* AnN fix: Simplified logic - onDelete for unfavoriting own favorites, onFavoriteToggle for toggling others' recipes */}
+      {!isOwner && (onDelete || onFavoriteToggle) && (
         <button
           className="absolute top-4 right-4 z-10 w-10 h-10 rounded-full bg-white/90 backdrop-blur flex items-center justify-center shadow-lg hover:bg-white transition-all duration-200 hover:scale-110"
-          aria-label="Toggle favorite"
+          aria-label={onDelete ? "Unfavorite recipe" : "Toggle favorite"}
           onClick={(e) => {
             e.stopPropagation();
+            // If onDelete provided (own favorites tab), use it to unfavorite
             if (onDelete) {
               onDelete(recipe.recipeId);
-            } 
+            }
+            // Otherwise use onFavoriteToggle to add/remove from favorites
             else {
               onFavoriteToggle?.(recipe.recipeId, 'user');
             }
           }}
         >
-          {isFavorited ? (
-          <HeartIcon className="w-6 h-6 text-red-500 hover:text-red-600 transition-colors" />
-        ) : (
-          <span className="text-xl text-amber-600 hover:text-red-500 transition-colors">♡</span>
-        )}
+          {isFavorited || onDelete ? (
+            <HeartIcon className="w-6 h-6 text-red-500 hover:text-red-600 transition-colors" />
+          ) : (
+            <span className="text-xl text-amber-600 hover:text-red-500 transition-colors">♡</span>
+          )}
         </button>
       )}
 

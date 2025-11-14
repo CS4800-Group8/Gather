@@ -26,6 +26,9 @@ interface APIRecipe {
 interface APIRecipePopupProps {
   recipe: APIRecipe;
   onClose: () => void;
+  showFavoriteButton?: boolean; // Optional: show heart button on image
+  isFavorited?: boolean; // Optional: is this recipe favorited
+  onFavoriteToggle?: (recipeId: string) => void; // Optional: toggle favorite callback
 }
 
 // AnN add: Helper to extract YouTube video ID from URL on 11/12
@@ -54,7 +57,9 @@ function getIngredients(recipe: APIRecipe): string[] {
 export default function APIRecipePopup({
   recipe,
   onClose,
-
+  showFavoriteButton = false,
+  isFavorited = false,
+  onFavoriteToggle,
 }: APIRecipePopupProps) {
   return (
     <div
@@ -85,7 +90,7 @@ export default function APIRecipePopup({
           <div className="grid lg:grid-cols-[1fr,400px] gap-6 p-6">
             {/* Left column: Recipe details */}
             <div>
-              {/* Recipe Image */}
+              {/* Recipe Image with optional Favorite Button */}
               <div className="relative w-full h-96 rounded-xl overflow-hidden mb-6">
                 <Image
                   src={recipe.strMealThumb || '/recipe-presets/default.jpg'}
@@ -94,6 +99,23 @@ export default function APIRecipePopup({
                   className="object-cover"
                   sizes="(max-width: 896px) 100vw, 896px"
                 />
+
+                {/* Viet add: Optional favorite button overlay */}
+                {showFavoriteButton && onFavoriteToggle && (
+                  <button
+                    className="absolute top-4 right-4 w-12 h-12 rounded-full bg-white/90 backdrop-blur flex items-center justify-center shadow-lg hover:bg-white transition-all duration-200 hover:scale-110"
+                    onClick={() => onFavoriteToggle(recipe.idMeal)}
+                    aria-label="Favorite recipe"
+                  >
+                    <span className={`text-3xl transition-colors ${
+                      isFavorited
+                        ? 'text-red-500'
+                        : 'text-amber-600 hover:text-red-500'
+                    }`}>
+                      {isFavorited ? '♥' : '♡'}
+                    </span>
+                  </button>
+                )}
               </div>
 
               {/* Category and Nutritional Info */}

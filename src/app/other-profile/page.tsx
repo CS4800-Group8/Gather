@@ -74,16 +74,16 @@ function OtherProfileContent() {
 			}
 
 			const data = await response.json();
-			const favoriteApiIds = data.favoriteRecipes?.map((fav: { apiId: string }) => fav.apiId) || [];
+			const favoriteAPIIds = data.favoriteRecipes?.map((fav: { apiId: string }) => fav.apiId) || [];
 
-			if (favoriteApiIds.length === 0) {
+			if (favoriteAPIIds.length === 0) {
 				setFavoritedRecipes([]);
 				setLoadingFavorites(false);
 				return;
 			}
 
 			// Fetch full recipe details from TheMealDB for each apiId
-			const recipePromises = favoriteApiIds.map(async (apiId: string) => {
+			const recipePromises = favoriteAPIIds.map(async (apiId: string) => {
 				try {
 					const res = await fetch(`https://www.themealdb.com/api/json/v1/1/lookup.php?i=${apiId}`);
 					const recipeData = await res.json();
@@ -139,7 +139,7 @@ function OtherProfileContent() {
 			if (response.ok) {
 				const data = await response.json();
 				// Each favorite includes "recipe" relation from Prisma
-				const favorites = data.favoriteRecipes?.map((fav: any) => fav.recipe) || [];
+				const favorites = data.favoriteRecipes?.map((fav: { recipe: UserRecipe }) => fav.recipe) || [];
 				setFavoritedUserRecipes(favorites);
 			}
 		} catch (err) {
@@ -156,9 +156,9 @@ function OtherProfileContent() {
 			if (response.ok) {
 				const data = await response.json();
 				setUserRecipes(
-					(data.recipes || []).map((r: any) => ({
+					(data.recipes || []).map((r: UserRecipe) => ({
 						...r,
-						source: 'user',
+						source: 'user' as const,
 					}))
 				);
 			} else {
@@ -195,7 +195,7 @@ function OtherProfileContent() {
 			// Fetch API-based favorites
 			const apiRes = await fetch(`/api/favorite-api-recipes?userId=${myUserId}`);
 			const apiData = apiRes.ok ? await apiRes.json() : { favoriteRecipes: [] };
-			const apiIds = apiData.favoriteRecipes?.map((fav: { apiId: string }) => fav.apiId) || [];
+			const APIIds = apiData.favoriteRecipes?.map((fav: { apiId: string }) => fav.apiId) || [];
 
 			// Viet add: Fetch user-created favorites from DB
 			const userRes = await fetch(`/api/favorite-recipes?userId=${myUserId}`);
@@ -204,7 +204,7 @@ function OtherProfileContent() {
 				userData.favoriteRecipes?.map((fav: { recipeId: number }) => fav.recipeId.toString()) || [];
 
 			// Combine both API + user-created recipe IDs
-			const allIds = [...apiIds, ...userIds];
+			const allIds = [...APIIds, ...userIds];
 			setMyFavoriteIds(new Set(allIds));	
 		} catch (err) {
 			console.error("Error fetching my favorites:", err);

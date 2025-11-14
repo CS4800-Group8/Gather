@@ -111,10 +111,14 @@ export async function DELETE(req: Request) {
 }
 
 // GET - Get user's favorite user-created recipes
+// Supports two modes:
+// 1. GET /api/favorite-recipes?userId=1 -> Returns all favorited recipes for user
+// 2. GET /api/favorite-recipes?userId=1&recipeId=5 -> Checks if specific recipe is favorited
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
     const userId = searchParams.get("userId");
+    const recipeId = searchParams.get("recipeId");
 
     if (!userId) {
       return NextResponse.json(
@@ -123,7 +127,21 @@ export async function GET(req: Request) {
       );
     }
 
-    // Fetch favorite recipes and related data
+    // Mode 2: Check if specific recipe is favorited (Gia's use case for home page)
+    if (recipeId) {
+      const favorite = await prisma.favoriteRecipe.findUnique({
+        where: {
+          userId_recipeId: {
+            userId: Number(userId),
+            recipeId: Number(recipeId),
+          },
+        },
+      });
+
+      return NextResponse.json({ isFavorited: !!favorite });
+    }
+
+    // Mode 1: Get all favorited recipes (Viet's use case for favorites tab)
     const favoriteRecipes = await prisma.favoriteRecipe.findMany({
       where: { userId: Number(userId) },
       include: {

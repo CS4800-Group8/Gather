@@ -96,12 +96,44 @@ export default function ExploreRecipesPage() {
   // AnN add: Display either search results or random recipes on 11/12
   const displayedRecipes = searchQuery.trim() ? searchResults : recipes;
 
-  // Load likes from localStorage
+  // AnN fix: Load favorites from database instead of just localStorage on 11/14
+  // This ensures explore page shows correct favorite state even if changed from profile page
   useEffect(() => {
-    const storedLikes = localStorage.getItem('favoritedRecipes');
-    if (storedLikes) {
-      setFavoritedRecipes(new Set(JSON.parse(storedLikes)));
-    }
+    const loadFavorites = async () => {
+      try {
+        const stored = localStorage.getItem('gatherUser') || localStorage.getItem('user');
+        if (!stored) {
+          // Not logged in, clear localStorage favorites
+          localStorage.removeItem('favoritedRecipes');
+          setFavoritedRecipes(new Set());
+          return;
+        }
+
+        const userData = JSON.parse(stored);
+        if (!userData.id) return;
+
+        // Fetch favorites from database (source of truth)
+        const response = await fetch(`/api/favorite-api-recipes?userId=${userData.id}`);
+        if (response.ok) {
+          const data = await response.json();
+          const favoriteIds: string[] = data.favoriteRecipes?.map((fav: { apiId: string }) => fav.apiId) || [];
+          const favoritesSet = new Set<string>(favoriteIds);
+
+          // Update both state and localStorage cache
+          setFavoritedRecipes(favoritesSet);
+          localStorage.setItem('favoritedRecipes', JSON.stringify([...favoritesSet]));
+        }
+      } catch (error) {
+        console.error('Error loading favorites:', error);
+        // Fall back to localStorage if API fails
+        const storedLikes = localStorage.getItem('favoritedRecipes');
+        if (storedLikes) {
+          setFavoritedRecipes(new Set(JSON.parse(storedLikes)));
+        }
+      }
+    };
+
+    loadFavorites();
   }, []);
 
   // Open popUp with full recipe details

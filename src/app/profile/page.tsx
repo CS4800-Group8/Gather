@@ -147,16 +147,16 @@ export default function ProfilePage() {
       }
 
       const data = await response.json();
-      const favoriteApiIds = data.favoriteRecipes?.map((fav: { apiId: string }) => fav.apiId) || [];
+      const favoriteAPIIds = data.favoriteRecipes?.map((fav: { apiId: string }) => fav.apiId) || [];
 
-      if (favoriteApiIds.length === 0) {
+      if (favoriteAPIIds.length === 0) {
         setFavoritedRecipes([]);
         setLoadingFavorites(false);
         return;
       }
 
       // Fetch full recipe details from TheMealDB for each apiId
-      const recipePromises = favoriteApiIds.map(async (apiId: string) => {
+      const recipePromises = favoriteAPIIds.map(async (apiId: string) => {
         try {
           const res = await fetch(`https://www.themealdb.com/api/json/v1/1/lookup.php?i=${apiId}`);
           const recipeData = await res.json();
@@ -213,9 +213,9 @@ export default function ProfilePage() {
       if (response.ok) {
         const data = await response.json();
         // Each favorite includes the related "recipe" from Prisma
-        const favorites = data.favoriteRecipes?.map((fav: any) => ({
+        const favorites = data.favoriteRecipes?.map((fav: { recipe: UserRecipe }) => ({
           ...fav.recipe,
-          source: 'user',
+          source: 'user' as const,
       })) || [];
         setFavoritedUserRecipes(favorites);
       }

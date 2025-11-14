@@ -49,13 +49,45 @@ export default function HomePage() {
     }
   };
 
-  // Load favorites from localStorage
+  // AnN fix: Load favorites from database instead of just localStorage on 11/14
+  // This ensures home page shows correct favorite state even if changed from profile page
   useEffect(() => {
-    const storedFavorites = localStorage.getItem('favoritedUserRecipes');
-    if (storedFavorites) {
-      setFavoritedRecipes(new Set(JSON.parse(storedFavorites)));
-    }
-    fetchUserRecipes(); 
+    const loadFavorites = async () => {
+      try {
+        const stored = localStorage.getItem('gatherUser') || localStorage.getItem('user');
+        if (!stored) {
+          // Not logged in, clear localStorage favorites
+          localStorage.removeItem('favoritedUserRecipes');
+          setFavoritedRecipes(new Set());
+          return;
+        }
+
+        const userData = JSON.parse(stored);
+        if (!userData.id) return;
+
+        // Fetch favorites from database (source of truth)
+        const response = await fetch(`/api/favorite-recipes?userId=${userData.id}`);
+        if (response.ok) {
+          const data = await response.json();
+          const favoriteIds: number[] = data.favoriteRecipes?.map((fav: { recipeId: number }) => fav.recipeId) || [];
+          const favoritesSet = new Set<number>(favoriteIds);
+
+          // Update both state and localStorage cache
+          setFavoritedRecipes(favoritesSet);
+          localStorage.setItem('favoritedUserRecipes', JSON.stringify([...favoritesSet]));
+        }
+      } catch (error) {
+        console.error('Error loading favorites:', error);
+        // Fall back to localStorage if API fails
+        const storedFavorites = localStorage.getItem('favoritedUserRecipes');
+        if (storedFavorites) {
+          setFavoritedRecipes(new Set(JSON.parse(storedFavorites)));
+        }
+      }
+    };
+
+    loadFavorites();
+    fetchUserRecipes();
   }, []);
 
   // Search functionality
