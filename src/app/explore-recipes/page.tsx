@@ -4,6 +4,8 @@
 
 import { useEffect, useState } from 'react';
 import Image from 'next/image';
+import APIRecipePopup from '@/components/APIRecipePopup'; // AnN add: Reusable API recipe popup component on 11/12
+import SearchBar from '@/components/SearchBar'; // AnN add: Search bar component for finding recipes on 11/12
 
 /* DATABASE INFO
  * 
@@ -20,28 +22,15 @@ interface Meal {
   strMealThumb: string;     // Image URL ("https://www.themealdb.com/images/media/meals/...")
   strCategory: string;      // Category ("Vegetarian", "Seafood", "Dessert")
   strArea: string;          // Cuisine type ("Italian", "Chinese", "Mexican")
-  strTags: string | null;   // Comma-separated tags ("Pasta,Curry") or null if none
+  strTags?: string | null;  // Comma-separated tags ("Pasta,Curry") or null if none
   strInstructions?: string; // Cooking instructions has ? because it might not actually exist
   strYoutube?: string;      // Youtube link has ? because it might not actually exist
-  // Dynamic ingredient/measure(1-20)
-  [key: `strIngredient${number}`]: string | undefined;
-  [key: `strMeasure${number}`]: string | undefined;
+  // AnN add: Dynamic fields for compatibility with APIRecipePopup on 11/12
+  [key: string]: string | null | undefined;
 }
 
-// Helper function to extract YouTube video ID from URL
-const getYouTubeVideoId = (url: string): string | null => {
-  if (!url) return null;
-  
-  // Handle youtube.com/watch?v=VIDEO_ID format
-  const watchMatch = url.match(/(?:youtube\.com\/watch\?v=)([a-zA-Z0-9_-]+)/);
-  if (watchMatch) return watchMatch[1];
-  
-  // Handle youtu.be/VIDEO_ID format
-  const shortMatch = url.match(/(?:youtu\.be\/)([a-zA-Z0-9_-]+)/);
-  if (shortMatch) return shortMatch[1];
-  
-  return null;
-};
+// AnN edit: Removed getYouTubeVideoId helper function on 11/12
+// Now included in APIRecipePopup component to avoid duplication
 
 export default function ExploreRecipesPage() {
   /* 
@@ -62,20 +51,89 @@ export default function ExploreRecipesPage() {
   const [recipes, setRecipes] = useState<Meal[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  
+
   // PopUp state
   const [selectedRecipe, setSelectedRecipe] = useState<Meal | null>(null);
   const [isPopUpOpen, setIsPopUpOpen] = useState(false);
-  
+
   // Likes state (stored in localStorage)
   const [favoritedRecipes, setFavoritedRecipes] = useState<Set<string>>(new Set());
 
-  // Load likes from localStorage
-  useEffect(() => {
-    const storedLikes = localStorage.getItem('favoritedRecipes');
-    if (storedLikes) {
-      setFavoritedRecipes(new Set(JSON.parse(storedLikes)));
+  // AnN add: Search state on 11/12
+  const [searchQuery, setSearchQuery] = useState<string>('');
+  const [searchResults, setSearchResults] = useState<Meal[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+
+  // AnN edit: Removed Nick's temporary localStorage comment state on 11/12
+  // Now using database-backed CommentSection component instead
+
+  // AnN add: Search TheMealDB API by recipe name on 11/12
+  const handleSearch = async (query: string) => {
+    setSearchQuery(query);
+
+    // If search is empty, clear search results and show random recipes
+    if (!query.trim()) {
+      setSearchResults([]);
+      return;
     }
+
+    // Search the entire TheMealDB API database
+    setIsSearching(true);
+    try {
+      const response = await fetch(
+        `https://www.themealdb.com/api/json/v1/1/search.php?s=${encodeURIComponent(query)}`
+      );
+      const data = await response.json();
+      setSearchResults(data.meals || []); // meals will be null if no results
+    } catch (err) {
+      console.error('Error searching recipes:', err);
+      setSearchResults([]);
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
+  // AnN add: Display either search results or random recipes on 11/12
+  const displayedRecipes = searchQuery.trim() ? searchResults : recipes;
+
+  // AnN fix: Load favorites from database instead of just localStorage on 11/14
+  // This ensures explore page shows correct favorite state even if changed from profile page
+  useEffect(() => {
+    const loadFavorites = async () => {
+      try {
+        const stored = localStorage.getItem('gatherUser') || localStorage.getItem('user');
+        if (!stored) {
+          // Not logged in, clear localStorage favorites
+          localStorage.removeItem('favoritedRecipes');
+          setFavoritedRecipes(new Set());
+          return;
+        }
+
+        const userData = JSON.parse(stored);
+        if (!userData.id) return;
+
+        // Fetch favorites from database (source of truth)
+        const response = await fetch(`/api/favorite-api-recipes?userId=${userData.id}`);
+        if (response.ok) {
+          const data = await response.json();
+          const favoriteIds: string[] = data.favoriteRecipes?.map((fav: { apiId: string }) => fav.apiId) || [];
+          const favoritesSet = new Set<string>(favoriteIds);
+
+          // Update both state and localStorage cache
+          setFavoritedRecipes(favoritesSet);
+          localStorage.setItem('favoritedRecipes', JSON.stringify([...favoritesSet]));
+        }
+      } catch (error) {
+        console.error('Error loading favorites:', error);
+        // Fall back to localStorage if API fails
+        const storedLikes = localStorage.getItem('favoritedRecipes');
+        if (storedLikes) {
+          setFavoritedRecipes(new Set(JSON.parse(storedLikes)));
+        }
+      }
+    };
+
+    loadFavorites();
   }, []);
 
   // Open popUp with full recipe details
@@ -108,18 +166,8 @@ export default function ExploreRecipesPage() {
     document.body.style.overflow = 'unset';
   };
 
-  // Get ingredients list
-  const getIngredients = (meal: Meal) => {
-    const ingredients = [];
-    for (let i = 1; i <= 20; i++) {
-      const ingredient = meal[`strIngredient${i}` as keyof Meal];
-      const measure = meal[`strMeasure${i}` as keyof Meal];
-      if (ingredient && ingredient.trim()) {
-        ingredients.push(`${measure} ${ingredient}`.trim());
-      }
-    }
-    return ingredients;
-  };
+  // AnN edit: Removed getIngredients and getYouTubeVideoId helpers on 11/12
+  // These functions are now in APIRecipePopup component to avoid duplication
 
    /* API FETCHING LOGIC - useEffect runs once when component mounts
    * 
@@ -138,34 +186,33 @@ export default function ExploreRecipesPage() {
         // Step 1: Set loading to true (show skeleton cards) which acts as a loading bar 
         setLoading(true);
         
-        /* Step 2: Create array of 15 fetch calls
-         * Each item is a fetch promise that:
-         *   1. Calls the API: fetch('...')
-         *   2. Converts response to JSON: .then(res => res.json())
-         *   3. Extracts first meal: .then(data => data.meals[0])
-         * 
-         * We extract data.meals[0] to get just the meal object itself
+        /* Step 2: Fetch recipes until we have 15 valid ones with images
+         * Keep fetching until we collect 15 unique meals that have valid images
          */
-        const promises = Array.from({ length: 15 }, () =>
-          fetch('https://www.themealdb.com/api/json/v1/1/random.php')
-            .then(res => res.json())
-            .then(data => data.meals[0])
-        );
+        const validMeals: Meal[] = [];
+        const seenIds = new Set<string>();
         
-        /* Step 3: Wait for ALL promises to complete
-         * 
-         * Promise.all(promises) waits for all 15 fetches to finish
-         * Returns: [meal1, meal2, meal3, ..., meal15]
-         * If ANY promise fails, the whole thing fails (caught by catch block)
+        /* Step 3: Loop through random API calls until we have 15 unique meals with images
+         * For each iteration:
+         *   1. Fetch a random meal from the API
+         *   2. Check if the meal exists, has a valid image (strMealThumb), and isn't a duplicate
+         *   3. If valid, add it to our collection and track its ID
+         *   4. Continue until we have exactly 15 meals
          */
-        const meals = await Promise.all(promises);
+        while (validMeals.length < 15) {
+          const response = await fetch('https://www.themealdb.com/api/json/v1/1/random.php');
+          const data = await response.json();
+          const meal = data.meals[0];
+          
+          // Check if meal has a valid image and hasn't been added yet
+          if (meal && meal.strMealThumb && !seenIds.has(meal.idMeal)) {
+            validMeals.push(meal);
+            seenIds.add(meal.idMeal);
+          }
+        }
         
-        // Step 4: filter already loaded recipes --> true random can give duplicate meals
-        const uniqueMeals = meals.filter((meal, index, self) =>
-          index === self.findIndex((m) => m.idMeal === meal.idMeal)
-        );
-        
-        setRecipes(uniqueMeals);
+        // Step 4: Now we have found enough unique meals with pictures --> set those meals as the recipes to display
+        setRecipes(validMeals);
         
       } catch (err) {
         /* Step 5: Error handling
@@ -296,8 +343,8 @@ export default function ExploreRecipesPage() {
       return;
     }
 
+    // Handle favorite functionality
     const isCurrentlyFavorited = favoritedRecipes.has(apiId);
-    
     try {
       if (isCurrentlyFavorited) {
         // Remove from favorites
@@ -327,14 +374,25 @@ export default function ExploreRecipesPage() {
     }
   };
 
+  // AnN edit: Removed Nick's temporary localStorage comment handlers on 11/12
+  // Comment functionality now handled by CommentSection component with database persistence
+
   // COMPONENT RENDERING - What gets displayed to the user
   return (
     <section className="px-6 py-8">
-      
+
       {/* PAGE HEADER - Title and description */}
       <div className="mb-8">
         <h1 className="text-4xl font-bold text-amber-900 mb-2">Explore Recipes</h1>
         <p className="text-amber-700">Discover delicious recipes from around the world</p>
+      </div>
+
+      {/* AnN add: Search bar for filtering recipes on 11/12 */}
+      <div className="mb-6">
+        <SearchBar
+          placeholder="Search recipes by name..."
+          onSearch={handleSearch}
+        />
       </div>
 
       {/* ERROR MESSAGE - Only shows if error state is not null */}
@@ -377,8 +435,17 @@ export default function ExploreRecipesPage() {
               </div>
             </div>
           ))
-        ) : (
-          recipes.map((recipe, index) => (
+        ) : isSearching ? (
+          /* AnN add: Searching state on 11/12 */
+          <div className="col-span-full">
+            <div className="glass-card p-12 text-center">
+              <div className="text-6xl mb-4 animate-pulse">🔍</div>
+              <h3 className="text-xl font-bold text-amber-900 mb-2">Searching...</h3>
+              <p className="text-amber-700">Finding recipes for you</p>
+            </div>
+          </div>
+        ) : displayedRecipes.length > 0 ? (
+          displayedRecipes.map((recipe, index) => (
             <div
               key={`${recipe.idMeal}-${index}`}
               className="glass-card overflow-hidden hover:shadow-xl transition-all duration-300 cursor-pointer group relative"
@@ -433,148 +500,30 @@ export default function ExploreRecipesPage() {
               </div>
             </div>
           ))
+        ) : (
+          /* AnN add: No results message on 11/12 */
+          <div className="col-span-full">
+            <div className="glass-card p-12 text-center">
+              <div className="text-6xl mb-4">🔍</div>
+              <h3 className="text-xl font-bold text-amber-900 mb-2">No recipes found</h3>
+              <p className="text-amber-700">Try searching for a different recipe name</p>
+            </div>
+          </div>
         )}
       </div>
 
-      {/* RECIPE POPUP */}
+      {/* AnN edit: Moved Nick's popup code to APIRecipePopup component for easier management on 11/12 */}
+      {/* Nick's original popup (lines 447-603) extracted to /components/APIRecipePopup.tsx */}
+      {/* Benefits: Reusable across explore and profile pages, maintains single source of truth for API recipe display */}
       {isPopUpOpen && selectedRecipe && (
-        <div 
-          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-          onClick={closePopUp}
-        >
-          <div 
-            className="popUp-scrollbar bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden shadow-2xl relative flex flex-col"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* PopUp Header with Close Button */}
-            <div 
-              className="flex-shrink-0 bg-white border-b border-amber-200 px-6 py-4 flex justify-between items-center z-10"
-              onWheel={(e) => e.stopPropagation()}
-            >
-              <h2 className="text-2xl font-bold text-amber-900">{selectedRecipe.strMeal}</h2>
-              <button
-                onClick={closePopUp}
-                className="w-10 h-10 rounded-full hover:bg-amber-100 flex items-center justify-center transition-colors text-amber-900"
-                aria-label="Close popup"
-              >
-                <svg 
-                  width="24" 
-                  height="24" 
-                  viewBox="0 0 24 24" 
-                  fill="none" 
-                  stroke="currentColor" 
-                  strokeWidth="2" 
-                  strokeLinecap="round" 
-                  strokeLinejoin="round"
-                >
-                  <line x1="18" y1="6" x2="6" y2="18"></line>
-                  <line x1="6" y1="6" x2="18" y2="18"></line>
-                </svg>
-              </button>
-            </div>
-
-            {/* PopUp Content - makes it scrollable Area */}
-            <div className="overflow-y-auto flex-1 popUp-scrollbar p-6"
-              style={{ borderRadius: '0 0 1rem 1rem' }}
-            >
-              {/* Recipe Image */}
-              <div className="relative w-full h-96 rounded-xl overflow-hidden mb-6">
-                <Image
-                  src={selectedRecipe.strMealThumb}
-                  alt={selectedRecipe.strMeal}
-                  fill
-                  className="object-cover"
-                  sizes="(max-width: 896px) 100vw, 896px"
-                />
-                
-                {/* Favorite Button on Image */}
-                <button
-                  className="absolute top-4 right-4 w-12 h-12 rounded-full bg-white/90 backdrop-blur flex items-center justify-center shadow-lg hover:bg-white transition-all duration-200 hover:scale-110"
-                  onClick={() => toggleFavorite(selectedRecipe.idMeal)}
-                  aria-label="Favorite recipe"
-                >
-                  <span className={`text-3xl transition-colors ${
-                    favoritedRecipes.has(selectedRecipe.idMeal) 
-                      ? 'text-red-500' 
-                      : 'text-amber-600 hover:text-red-500'
-                  }`}>
-                    {favoritedRecipes.has(selectedRecipe.idMeal) ? '♥' : '♡'}
-                  </span>
-                </button>
-              </div>
-
-              {/* AnN edit: Removed cuisine and tags, kept category and nutrition on 10/30 */}
-              <div className="grid md:grid-cols-2 gap-6 mb-6">
-                {/* Category only */}
-                <div>
-                  <div className="flex items-center gap-2 text-amber-700">
-                    <span className="text-xl">🍴</span>
-                    <span className="font-semibold">Category:</span>
-                    <span>{selectedRecipe.strCategory}</span>
-                  </div>
-                </div>
-
-                {/* Nutritional Info (Mock data - TheMealDB doesn't provide this) */}
-                <div className="bg-amber-50 rounded-lg p-4">
-                  <h3 className="font-bold text-amber-900 mb-2">Nutritional Info (Estimated)</h3>
-                  <div className="grid grid-cols-2 gap-2 text-sm text-amber-800">
-                    <div>🔥 Calories: ~450 kcal</div>
-                    <div>🥩 Protein: ~25g</div>
-                    <div>🍞 Carbs: ~45g</div>
-                    <div>🧈 Fat: ~15g</div>
-                  </div>
-                  <p className="text-xs text-amber-600 mt-2">*Estimates may vary</p>
-                </div>
-              </div>
-
-              {/* Ingredients */}
-              <div className="mb-6">
-                <h3 className="font-bold text-amber-900 mb-3 text-xl">Ingredients</h3>
-                <ul className="grid md:grid-cols-2 gap-2">
-                  {getIngredients(selectedRecipe).map((ingredient, idx) => (
-                    <li key={idx} className="flex items-center gap-2 text-amber-800">
-                      <span className="text-amber-600">•</span>
-                      {ingredient}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-
-              {/* Instructions */}
-              {selectedRecipe.strInstructions && (
-                <div className="mb-6">
-                  <h3 className="font-bold text-amber-900 mb-3 text-xl">Instructions</h3>
-                  <div className="prose max-w-none text-amber-800 whitespace-pre-line">
-                    {selectedRecipe.strInstructions}
-                  </div>
-                </div>
-              )}
-
-              {/* YouTube Video Player */}
-              {selectedRecipe.strYoutube && (() => {
-                const videoId = getYouTubeVideoId(selectedRecipe.strYoutube);
-                return videoId ? (
-                  <div className="mb-6">
-                    <h3 className="font-bold text-amber-900 mb-3 text-xl flex items-center gap-2">
-                      <span>▶️</span>
-                      Video Tutorial
-                    </h3>
-                    <div className="relative w-full" style={{ paddingBottom: '56.25%' }}>
-                      <iframe
-                        className="absolute top-0 left-0 w-full h-full rounded-xl"
-                        src={`https://www.youtube.com/embed/${videoId}`}
-                        title="YouTube video player"
-                        frameBorder="0"
-                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                        allowFullScreen
-                      />
-                    </div>
-                  </div>
-                ) : null;
-              })()}
-            </div>
-          </div>
-        </div>
+        <APIRecipePopup
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          recipe={selectedRecipe as any} // AnN: Type cast needed for TheMealDB API compatibility
+          onClose={closePopUp}
+          showFavoriteButton={true}
+          isFavorited={favoritedRecipes.has(selectedRecipe.idMeal)}
+          onFavoriteToggle={toggleFavorite}
+        />
       )}
     </section>
   );

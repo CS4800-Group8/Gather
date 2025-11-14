@@ -1,8 +1,8 @@
 // AnN add: Card component for user's created recipes on 10/23
 // AnN edit: Extracted to separate file on 10/31
 import Image from 'next/image';
-import { useState } from "react";
 import { TrashIcon } from '@heroicons/react/24/outline';
+import { HeartIcon } from '@heroicons/react/24/solid';
 
 // Viet add: Interface for ingredients and categories
 interface Ingredient {
@@ -28,6 +28,7 @@ export interface UserRecipe {
   // Viet add: ingredients and categories to interface
   ingredients?: Ingredient[];
   categories?: Category[];
+  source?: 'user';
 }
 
 type UserRecipeCardProps = {
@@ -35,17 +36,20 @@ type UserRecipeCardProps = {
   isOwner: boolean; // Viet add: determine who is the owner of the recipe
   onDelete?: (recipeId: number) => void;
   onClick?: (recipe: UserRecipe) => void;
+  // Viet add: include favorite logic
+  isFavorited?: boolean;
+  onFavoriteToggle?: (recipeId: string | number, source: 'api' | 'user') => void;
 };
 
-export default function UserRecipeCard({ recipe, isOwner, onDelete, onClick }: UserRecipeCardProps) {
-  const [isFavorited, setIsFavorited] = useState(false);
-
-  // Toggle favorite button
-  const handleFavoriteClick = (e: React.MouseEvent) => {
-    e.stopPropagation(); 
-    setIsFavorited((prev) => !prev); 
-  };
-
+export default function UserRecipeCard({ 
+  recipe, 
+  isOwner, 
+  onDelete, 
+  onClick,
+  // Viet add: isFavorited and onFavoriteToggle
+  isFavorited = false,
+  onFavoriteToggle,
+}: UserRecipeCardProps) {
   return (
     <article
       className="glass-card overflow-hidden hover:shadow-xl transition-all duration-300 cursor-pointer group relative"
@@ -65,19 +69,29 @@ export default function UserRecipeCard({ recipe, isOwner, onDelete, onClick }: U
         </button>
       )}
 
-      {/* Viet add: If not owner add favorite button */}
-      {!isOwner && (
+      {/* Viet add: If not owner, show favorite/unfavorite button */}
+      {/* AnN fix: Simplified logic - onDelete for unfavoriting own favorites, onFavoriteToggle for toggling others' recipes */}
+      {!isOwner && (onDelete || onFavoriteToggle) && (
         <button
           className="absolute top-4 right-4 z-10 w-10 h-10 rounded-full bg-white/90 backdrop-blur flex items-center justify-center shadow-lg hover:bg-white transition-all duration-200 hover:scale-110"
-          aria-label="Add to favorites"
-          onClick={handleFavoriteClick}
+          aria-label={onDelete ? "Unfavorite recipe" : "Toggle favorite"}
+          onClick={(e) => {
+            e.stopPropagation();
+            // If onDelete provided (own favorites tab), use it to unfavorite
+            if (onDelete) {
+              onDelete(recipe.recipeId);
+            }
+            // Otherwise use onFavoriteToggle to add/remove from favorites
+            else {
+              onFavoriteToggle?.(recipe.recipeId, 'user');
+            }
+          }}
         >
-          <span 
-            className={`text-xl transition-colors ${
-              isFavorited ? 'text-red-500' : 'text-amber-600 hover:text-red-500'
-            }`}>
-              {isFavorited ? '♥' : '♡'}
-            </span>
+          {isFavorited || onDelete ? (
+            <HeartIcon className="w-6 h-6 text-red-500 hover:text-red-600 transition-colors" />
+          ) : (
+            <span className="text-xl text-amber-600 hover:text-red-500 transition-colors">♡</span>
+          )}
         </button>
       )}
 

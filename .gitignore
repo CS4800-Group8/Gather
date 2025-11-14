@@ -45,4 +45,6 @@ next-env.d.ts
 CS4800_SRS.md
 PROJECT.md
 PATTERNS.md
+PROJECT_STRUCTURE.md
+COMMENT_INTEGRATION_PLAN.md
 test-migration.js
