@@ -6,18 +6,20 @@
 
 import { useState } from "react";
 import APIRecipeCard, { APIRecipe } from "@/components/APIRecipeCard";
+import UserRecipeCard, { UserRecipe } from "@/components/profile/UserRecipeCard";
 import APIRecipePopup from "@/components/APIRecipePopup";
+import UserRecipePopup from "@/components/profile/UserRecipePopup"; // Viet add: popup for user-created favorite recipes
 import PopupModal from "@/components/PopupModal";
 
 interface FavoritesTabProps {
-  favorites: APIRecipe[];
+  favorites: (APIRecipe | UserRecipe)[];
   loading: boolean;
   isOwnProfile: boolean;
   displayName: string;
-  onUnfavorite: (recipeId: string) => Promise<void>;
+  onUnfavorite: (recipeId: string | number, source?: 'api' | 'user') => Promise<void>;
   // AnN add: Optional handlers for viewing other profiles on 11/13
   myFavoriteIds?: Set<string>; // Current user's favorites (for heart state)
-  onFavoriteToggle?: (recipeId: string) => Promise<void>; // Toggle favorite
+  onFavoriteToggle?: (recipeId: string | number, source: 'api' | 'user') => Promise<void>; // Toggle favorite
 }
 
 export default function FavoritesTab({
@@ -26,16 +28,19 @@ export default function FavoritesTab({
   isOwnProfile,
   displayName,
   onUnfavorite,
-  myFavoriteIds,
+  myFavoriteIds = new Set(),
   onFavoriteToggle,
 }: FavoritesTabProps) {
   // AnN add: API recipe popup state on 11/13
   const [showAPIRecipePopup, setShowAPIRecipePopup] = useState(false);
   const [selectedAPIRecipe, setSelectedAPIRecipe] = useState<APIRecipe | null>(null);
 
+  // Viet add: popup state for user-created favorites
+  const [selectedUserRecipe, setSelectedUserRecipe] = useState<UserRecipe | null>(null);
+
   // AnN add: Unfavorite confirmation modal state on 11/13
   const [showUnfavoriteConfirm, setShowUnfavoriteConfirm] = useState(false);
-  const [recipeToUnfavorite, setRecipeToUnfavorite] = useState<string | null>(null);
+  const [recipeToUnfavorite, setRecipeToUnfavorite] = useState<{ id: string | number; source?: 'api' | 'user' } | null>(null); // Viet fix: store both recipe ID and source type
 
   // AnN add: Open API recipe detail popup on 11/13
   const handleOpenAPIRecipePopup = (recipe: APIRecipe) => {
@@ -51,9 +56,21 @@ export default function FavoritesTab({
     document.body.style.overflow = 'unset';
   };
 
+  // Viet add: open handlers for user-created recipe popup
+  const handleOpenUserRecipePopup = (recipe: UserRecipe) => {
+    setSelectedUserRecipe(recipe);
+    document.body.style.overflow = "hidden"; 
+  };
+
+  // Viet add: close handlers for user-created recipe popup
+  const handleCloseUserRecipePopup = () => {
+    setSelectedUserRecipe(null);
+    document.body.style.overflow = "unset";
+  };
+
   // AnN add: Show unfavorite confirmation modal on 11/13
-  const handleUnfavoriteClick = (recipeId: string) => {
-    setRecipeToUnfavorite(recipeId);
+  const handleUnfavoriteClick = (recipeId: string | number, source?: 'api' | 'user') => {
+    setRecipeToUnfavorite({ id: recipeId, source }); // store both
     setShowUnfavoriteConfirm(true);
   };
 
@@ -68,7 +85,7 @@ export default function FavoritesTab({
     if (!recipeToUnfavorite) return;
 
     try {
-      await onUnfavorite(recipeToUnfavorite);
+      await onUnfavorite(recipeToUnfavorite.id, recipeToUnfavorite.source); // uses both fields
     } finally {
       setShowUnfavoriteConfirm(false);
       setRecipeToUnfavorite(null);
@@ -84,14 +101,42 @@ export default function FavoritesTab({
             Loading your favorite recipes...
           </article>
         ) : favorites.length > 0 ? (
-          favorites.map((recipe) => (
-            <APIRecipeCard
-              key={recipe.idMeal}
-              recipe={recipe}
-              onClick={handleOpenAPIRecipePopup}
-              onDelete={isOwnProfile ? handleUnfavoriteClick : undefined}
-            />
-          ))
+          favorites.map((recipe) => {
+            // Viet fix: detect whether this is an API recipe or a user-created recipe
+            const isAPIRecipe = "idMeal" in recipe;
+            
+            return isAPIRecipe ? (
+              <APIRecipeCard
+                key={recipe.idMeal}
+                recipe={recipe}
+                onClick={handleOpenAPIRecipePopup}
+                onDelete={isOwnProfile ? () => handleUnfavoriteClick(recipe.idMeal, recipe.source) : undefined}
+                // Viet add: show heart toggle if viewing other user's favorites
+                isFavorited={myFavoriteIds.has(recipe.idMeal)}
+                onFavoriteToggle={
+                  !isOwnProfile
+                    ? (id) => onFavoriteToggle?.(id, recipe.source || 'api')
+                    : undefined
+                }
+              />
+            ) : (
+              <UserRecipeCard
+                key={recipe.recipeId}
+                recipe={recipe}
+                isOwner={false}
+                isFavorited={myFavoriteIds.has(recipe.recipeId.toString())}
+                onDelete={isOwnProfile 
+                  ? () => handleUnfavoriteClick(recipe.recipeId, recipe.source || 'user')
+                  : undefined
+                }
+                // Viet add: always pass favorite handler for other profiles
+                onFavoriteToggle={(id) =>
+                  onFavoriteToggle?.(id, recipe.source || 'user')
+                }
+                onClick={() => handleOpenUserRecipePopup(recipe)} // Viet add: open popup
+              />
+            );
+          })
         ) : (
           <article className="rounded-3xl border-2 border-dashed border-[#caa977] bg-[#fff9ed] px-6 py-12 text-center text-sm font-medium text-[#8a6134]">
             {isOwnProfile
@@ -107,10 +152,14 @@ export default function FavoritesTab({
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           recipe={selectedAPIRecipe as any}  // AnN: Type cast needed for TheMealDB API compatibility
           onClose={handleCloseAPIRecipePopup}
-          // AnN edit: Show favorite button when viewing others' favorites on 11/13
-          showFavoriteButton={!isOwnProfile && !!onFavoriteToggle}
-          isFavorited={myFavoriteIds?.has(selectedAPIRecipe.idMeal) || false}
-          onFavoriteToggle={onFavoriteToggle}
+        />
+      )}
+
+      {/* Viet add: User-created Recipe Popup */}
+      {selectedUserRecipe && (
+        <UserRecipePopup
+          recipe={selectedUserRecipe}
+          onClose={handleCloseUserRecipePopup}
         />
       )}
 

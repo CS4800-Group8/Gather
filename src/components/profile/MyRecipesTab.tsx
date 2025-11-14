@@ -14,6 +14,9 @@ interface MyRecipesTabProps {
   isOwnProfile: boolean;
   displayName: string;
   onRecipeDelete: (recipeId: number) => Promise<void>;
+  // Viet add: allow showing favorite state and toggling it
+  myFavoriteIds?: Set<string>;
+  onFavoriteToggle?: (id: string | number, source: 'api' | 'user') => Promise<void>;
 }
 
 export default function MyRecipesTab({
@@ -21,6 +24,9 @@ export default function MyRecipesTab({
   isOwnProfile,
   displayName,
   onRecipeDelete,
+  // Viet add: new favorite props
+  myFavoriteIds = new Set(),
+  onFavoriteToggle,
 }: MyRecipesTabProps) {
   // AnN add: User recipe popup state on 11/13
   const [showUserRecipePopup, setShowUserRecipePopup] = useState(false);
@@ -80,6 +86,9 @@ export default function MyRecipesTab({
               isOwner={isOwnProfile}
               onDelete={isOwnProfile ? handleDeleteClick : undefined}
               onClick={handleOpenUserRecipePopup}
+              // Viet add: pass favorite state and toggle handler for other users' recipes
+              isFavorited={myFavoriteIds.has(recipe.recipeId.toString())}
+              onFavoriteToggle={onFavoriteToggle}
             />
           ))
         ) : (

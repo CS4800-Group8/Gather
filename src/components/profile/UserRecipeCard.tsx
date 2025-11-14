@@ -3,6 +3,7 @@
 import Image from 'next/image';
 import { useState } from "react";
 import { TrashIcon } from '@heroicons/react/24/outline';
+import { HeartIcon } from '@heroicons/react/24/solid';
 
 // Viet add: Interface for ingredients and categories
 interface Ingredient {
@@ -28,6 +29,7 @@ export interface UserRecipe {
   // Viet add: ingredients and categories to interface
   ingredients?: Ingredient[];
   categories?: Category[];
+  source?: 'user';
 }
 
 type UserRecipeCardProps = {
@@ -35,15 +37,25 @@ type UserRecipeCardProps = {
   isOwner: boolean; // Viet add: determine who is the owner of the recipe
   onDelete?: (recipeId: number) => void;
   onClick?: (recipe: UserRecipe) => void;
+  // Viet add: include favorite logic
+  isFavorited?: boolean;
+  onFavoriteToggle?: (recipeId: string | number, source: 'api' | 'user') => void;
 };
 
-export default function UserRecipeCard({ recipe, isOwner, onDelete, onClick }: UserRecipeCardProps) {
-  const [isFavorited, setIsFavorited] = useState(false);
+export default function UserRecipeCard({ 
+  recipe, 
+  isOwner, 
+  onDelete, 
+  onClick,
+  // Viet add: isFavorited and onFavoriteToggle
+  isFavorited = false,
+  onFavoriteToggle, 
+}: UserRecipeCardProps) {
 
-  // Toggle favorite button
+  // Viet add: favorite recipe handler
   const handleFavoriteClick = (e: React.MouseEvent) => {
-    e.stopPropagation(); 
-    setIsFavorited((prev) => !prev); 
+    e.stopPropagation();
+    onFavoriteToggle?.(recipe.recipeId, 'user');
   };
 
   return (
@@ -69,15 +81,23 @@ export default function UserRecipeCard({ recipe, isOwner, onDelete, onClick }: U
       {!isOwner && (
         <button
           className="absolute top-4 right-4 z-10 w-10 h-10 rounded-full bg-white/90 backdrop-blur flex items-center justify-center shadow-lg hover:bg-white transition-all duration-200 hover:scale-110"
-          aria-label="Add to favorites"
-          onClick={handleFavoriteClick}
+          aria-label="Toggle favorite"
+          onClick={(e) => {
+            e.stopPropagation();
+
+            if (onDelete) {
+              onDelete(recipe.recipeId);
+            } 
+            else {
+              onFavoriteToggle?.(recipe.recipeId, 'user');
+            }
+          }}
         >
-          <span 
-            className={`text-xl transition-colors ${
-              isFavorited ? 'text-red-500' : 'text-amber-600 hover:text-red-500'
-            }`}>
-              {isFavorited ? '♥' : '♡'}
-            </span>
+          {isFavorited ? (
+          <HeartIcon className="w-6 h-6 text-red-500 hover:text-red-600 transition-colors" />
+        ) : (
+          <span className="text-xl text-amber-600 hover:text-red-500 transition-colors">♡</span>
+        )}
         </button>
       )}
 
