@@ -100,3 +100,36 @@ export async function DELETE(request: NextRequest) {
     );
   }
 }
+
+// GET - Get user's favorite recipes
+export async function GET(request: NextRequest) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const userId = searchParams.get('userId');
+    const recipeId = searchParams.get('recipeId');
+
+    if (!userId || !recipeId) {
+      return NextResponse.json(
+        { error: 'User ID and Recipe ID are required' },
+        { status: 400 }
+      );
+    }
+
+    const favorite = await prisma.favoriteRecipe.findUnique({
+      where: {
+        userId_recipeId: {
+          userId: parseInt(userId),
+          recipeId: parseInt(recipeId),
+        },
+      },
+    });
+
+    return NextResponse.json({ isFavorited: !!favorite });
+  } catch (error) {
+    console.error('Error checking favorite recipe:', error);
+    return NextResponse.json(
+      { error: 'Failed to check favorite recipe' },
+      { status: 500 }
+    );
+  }
+}
