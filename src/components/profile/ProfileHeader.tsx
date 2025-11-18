@@ -2,13 +2,14 @@
 
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import AvatarImage from "@/components/AvatarImage";
 import {
   getAvatarPresets,
   resolveAvatarPreset,
   AvatarPreset,
 } from "@/lib/avatarPresets";
+import { XMarkIcon } from "@heroicons/react/24/outline"; // AnN add: Close icon for avatar picker on 11/18
 
 interface ProfileHeaderProps {
   displayName: string;
@@ -36,6 +37,23 @@ export default function ProfileHeader({
     () => resolveAvatarPreset(typeof avatarId === 'number' ? String(avatarId) : avatarId),
     [avatarId]
   );
+
+  // AnN add: Close avatar picker on ESC key press on 11/18
+  useEffect(() => {
+    const handleEscKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && showAvatarPicker) {
+        setShowAvatarPicker(false);
+      }
+    };
+
+    if (showAvatarPicker) {
+      document.addEventListener('keydown', handleEscKey);
+    }
+
+    return () => {
+      document.removeEventListener('keydown', handleEscKey);
+    };
+  }, [showAvatarPicker]);
 
   const avatarButtonClasses = `relative flex h-32 w-32 items-center justify-center rounded-full transition-all duration-200 hover:scale-105 focus:outline-none focus:ring-4 focus:ring-amber-300 cursor-pointer ${
     currentPreset.variant === 'emoji' ? currentPreset.bgClass : 'bg-transparent'
@@ -66,41 +84,63 @@ export default function ProfileHeader({
             </div>
           )}
 
-          {/* Avatar picker dropdown - only show for own profile */}
+          {/* AnN edit: Avatar picker modal - cleaner design with backdrop on 11/18 */}
           {isOwnProfile && showAvatarPicker && (
-            <div className="absolute left-0 top-36 z-20 rounded-2xl border-2 border-amber-200 bg-white/95 backdrop-blur p-4 shadow-xl">
-              <p className="text-xs font-semibold text-amber-800 mb-3 text-center">
-                Choose Your Avatar
-              </p>
-              <div className="flex gap-3">
-                {avatarPresets.map((option) => (
+            <>
+              {/* Backdrop overlay */}
+              <div
+                className="fixed inset-0 bg-black/40 backdrop-blur-sm z-40"
+                onClick={() => setShowAvatarPicker(false)}
+              />
+
+              {/* Modal content */}
+              <div className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-[90vw] max-w-2xl rounded-3xl border-2 border-amber-200 bg-white shadow-2xl">
+                {/* Header with close button */}
+                <div className="flex items-center justify-between border-b border-amber-200 px-6 py-4">
+                  <h3 className="text-lg font-bold text-amber-900">Choose Your Avatar</h3>
                   <button
-                    key={option.id}
                     type="button"
-                    onClick={() => {
-                      onAvatarChange(option.id);
-                      setShowAvatarPicker(false);
-                    }}
-                    className={`flex flex-col items-center gap-2 rounded-xl p-3 transition-all duration-200 hover:scale-110 ${
-                      String(avatarId) === option.id
-                        ? 'bg-amber-200 ring-2 ring-amber-400'
-                        : 'bg-amber-50 hover:bg-amber-100'
-                    }`}
+                    onClick={() => setShowAvatarPicker(false)}
+                    className="flex h-8 w-8 items-center justify-center rounded-full hover:bg-amber-100 transition-colors"
+                    aria-label="Close avatar picker"
                   >
-                    <div
-                      className={`flex h-14 w-14 items-center justify-center rounded-full ${
-                        option.variant === 'emoji' ? option.bgClass : 'bg-transparent'
-                      }`}
-                    >
-                      <AvatarImage preset={option} size="medium" />
-                    </div>
-                    <span className="text-xs font-medium text-amber-800">
-                      {option.label}
-                    </span>
+                    <XMarkIcon className="h-5 w-5 text-amber-700" />
                   </button>
-                ))}
+                </div>
+
+                {/* Avatar grid */}
+                <div className="p-6 max-h-[60vh] overflow-y-auto">
+                  <div className="grid grid-cols-3 sm:grid-cols-5 gap-4">
+                    {avatarPresets.map((option) => (
+                      <button
+                        key={option.id}
+                        type="button"
+                        onClick={() => {
+                          onAvatarChange(option.id);
+                          setShowAvatarPicker(false);
+                        }}
+                        className={`flex flex-col items-center gap-2 rounded-xl p-3 transition-all duration-200 hover:scale-105 ${
+                          String(avatarId) === option.id
+                            ? 'bg-amber-200 ring-2 ring-amber-400'
+                            : 'bg-amber-50 hover:bg-amber-100'
+                        }`}
+                      >
+                        <div
+                          className={`flex h-16 w-16 items-center justify-center rounded-full ${
+                            option.variant === 'emoji' ? option.bgClass : 'bg-transparent'
+                          }`}
+                        >
+                          <AvatarImage preset={option} size="medium" />
+                        </div>
+                        <span className="text-xs font-medium text-amber-800 text-center">
+                          {option.label}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
               </div>
-            </div>
+            </>
           )}
         </div>
 
