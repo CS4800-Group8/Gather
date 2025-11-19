@@ -11,7 +11,8 @@ import {
 } from "@/lib/avatarPresets";
 import AvatarImage from "./AvatarImage"; // An add: Use centralized avatar component on 10/23
 import NotiCard from "./NotiCard"; // AnN add: Notification card component on 11/6
-import { BellIcon, Bars3Icon, XMarkIcon } from "@heroicons/react/24/outline"; // AnN add: Modern bell icon on 11/6, hamburger menu icons on 11/18
+import { BellIcon, Bars3Icon, XMarkIcon, ChatBubbleLeftRightIcon } from "@heroicons/react/24/outline"; // AnN add: Modern bell icon on 11/6, hamburger menu icons on 11/18, chat icon on 11/19
+import { usePolling } from "@/hooks/usePolling"; // AnN add: Reusable polling hook on 11/19
 
 const navLinks = siteConfig.nav;
 
@@ -124,34 +125,37 @@ export default function Header() {
     };
   }, [showNotifications, showProfile, showMobileMenu]);
 
-  // AnN add: Fetch notifications with faster polling on 11/6
+  // AnN refactor: Extract notification fetching logic on 11/19
+  const fetchNotifications = async () => {
+    if (!user?.id) return;
+
+    try {
+      const response = await fetch(`/api/notifications?userId=${user.id}`);
+      if (response.ok) {
+        const data = await response.json();
+        setNotifications(data.notifications || []);
+        const unread = (data.notifications || []).filter((n: Notification) => !n.isRead).length;
+        setUnreadCount(unread);
+      }
+    } catch (error) {
+      console.error("Error fetching notifications:", error);
+    }
+  };
+
+  // AnN refactor: Use reusable polling hook on 11/19
+  // Polls every 5 seconds when user is logged in
+  usePolling(fetchNotifications, 5000, !!user?.id);
+
+  // AnN add: Additional optimizations for immediate updates on 11/6
   useEffect(() => {
     if (!user?.id) return;
 
-    const fetchNotifications = async () => {
-      try {
-        const response = await fetch(`/api/notifications?userId=${user.id}`);
-        if (response.ok) {
-          const data = await response.json();
-          setNotifications(data.notifications || []);
-          const unread = (data.notifications || []).filter((n: Notification) => !n.isRead).length;
-          setUnreadCount(unread);
-        }
-      } catch (error) {
-        console.error("Error fetching notifications:", error);
-      }
-    };
-
-    fetchNotifications();
-    // AnN add: Poll every 5 seconds for faster updates on 11/6
-    const interval = setInterval(fetchNotifications, 5000);
-
-    // AnN add: Refresh when window regains focus on 11/6
+    // Refresh when window regains focus
     const handleFocus = () => {
       fetchNotifications();
     };
 
-    // AnN add: Refresh when tab becomes visible on 11/6
+    // Refresh when tab becomes visible
     const handleVisibilityChange = () => {
       if (!document.hidden) {
         fetchNotifications();
@@ -162,9 +166,8 @@ export default function Header() {
     document.addEventListener("visibilitychange", handleVisibilityChange);
 
     return () => {
-      clearInterval(interval);
       window.removeEventListener("focus", handleFocus);
-      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      window.removeEventListener("visibilitychange", handleVisibilityChange);
     };
   }, [user?.id]);
 
@@ -282,6 +285,24 @@ export default function Header() {
               if (!user && item.href !== "/explore-recipes") {
                 return null;
               }
+
+              // AnN add: Render Messages as icon only on 11/19
+              if (item.href === "/messages") {
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className={`flex h-11 w-11 items-center justify-center rounded-full ${
+                      isActive(item.href)
+                        ? "bg-amber-600 text-white shadow-md hover:bg-amber-700"
+                        : "bg-[#ffdca0] text-amber-700 shadow-[0_6px_12px_rgba(255,195,120,0.25)] hover:bg-[#ffc873]"
+                    } transition`}
+                  >
+                    <ChatBubbleLeftRightIcon className="h-6 w-6" />
+                  </Link>
+                );
+              }
+
               return (
                 <Link
                   key={item.href}
