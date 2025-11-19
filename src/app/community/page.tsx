@@ -252,6 +252,42 @@ export default function CommunityPage() {
     }
   };
 
+  // AnN add: Message handler - Create conversation and navigate on 11/19
+  const handleMessage = async (userId: number) => {
+    const stored = localStorage.getItem('gatherUser');
+    const currentUser = stored ? JSON.parse(stored) : null;
+
+    if (!currentUser?.id) {
+      alert('You must be logged in to send messages.');
+      return;
+    }
+
+    try {
+      // Create or get existing conversation
+      const response = await fetch('/api/conversations', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId1: currentUser.id,
+          userId2: userId,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to create conversation');
+      }
+
+      const data = await response.json();
+      const conversationId = data.conversation.id;
+
+      // Navigate to messages page with conversation selected
+      router.push(`/messages?conversationId=${conversationId}`);
+    } catch (error) {
+      console.error('Error creating conversation:', error);
+      alert('Failed to open conversation. Please try again.');
+    }
+  };
+
   return (
     <section className="py-8">
       {/* Page header */}
@@ -313,6 +349,7 @@ export default function CommunityPage() {
                     onButtonClick={handleUnfriend}
                     buttonText="Friends ✓"
                     buttonDisabled={false}
+                    onMessageClick={handleMessage}
                   />
                 );
               }
@@ -330,6 +367,7 @@ export default function CommunityPage() {
                     onButtonClick={handleCancelRequest}
                     buttonText="Pending"
                     buttonDisabled={false}
+                    onMessageClick={handleMessage}
                   />
                 );
               }
@@ -346,6 +384,7 @@ export default function CommunityPage() {
                     }}
                     onAccept={() => handleAcceptFriend(user.id)}
                     onReject={() => handleRejectFriend(user.id)}
+                    onMessageClick={handleMessage}
                   />
                 );
               }
@@ -361,6 +400,7 @@ export default function CommunityPage() {
                   }}
                   onButtonClick={handleAddFriend}
                   buttonText="Add Friend"
+                  onMessageClick={handleMessage}
                 />
               );
             })
