@@ -1,7 +1,7 @@
 // AnN add: Messages page - Facebook Messenger style chat interface on 11/19
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { ChatBubbleLeftRightIcon } from "@heroicons/react/24/outline";
 import ConversationList from "@/components/chat/ConversationList";
@@ -9,7 +9,8 @@ import ConversationHeader from "@/components/chat/ConversationHeader";
 import MessageList from "@/components/chat/MessageList";
 import MessageInput from "@/components/chat/MessageInput";
 
-export default function MessagesPage() {
+// AnN fix: Wrap component using useSearchParams in Suspense for Next.js 15 on 11/19
+function MessagesContent() {
   const searchParams = useSearchParams();
   const conversationIdParam = searchParams.get("conversationId");
 
@@ -40,7 +41,7 @@ export default function MessagesPage() {
         .then(res => res.json())
         .then(data => {
           const conv = data.conversations.find(
-            (c: any) => c.id === parseInt(conversationIdParam)
+            (c: { id: number }) => c.id === parseInt(conversationIdParam)
           );
           if (conv) setSelectedConversation(conv);
         })
@@ -76,7 +77,8 @@ export default function MessagesPage() {
   return (
     <div className="fixed inset-0 top-20 flex bg-gradient-to-br from-amber-50/40 via-orange-50/20 to-amber-50/40 overflow-hidden">
       {/* AnN add: Left sidebar - Conversation list on 11/19 */}
-      <div className="w-full md:w-80 border-r border-amber-200/60 bg-white/95 backdrop-blur-sm shadow-lg flex flex-col">
+      {/* AnN fix: Hide on mobile when conversation is selected on 11/19 */}
+      <div className={`${selectedConversation ? 'hidden md:flex' : 'flex'} w-full md:w-80 border-r border-amber-200/60 bg-white/95 backdrop-blur-sm shadow-lg flex-col`}>
         <div className="h-16 border-b border-amber-200/60 px-6 bg-gradient-to-r from-amber-100/40 to-transparent flex-shrink-0 flex items-center">
           <div>
             <h1 className="text-lg font-bold text-amber-900">Messages</h1>
@@ -93,7 +95,8 @@ export default function MessagesPage() {
       </div>
 
       {/* AnN add: Right main area - Messages + input on 11/19 */}
-      <div className="hidden md:flex md:flex-1 flex-col bg-white/60 backdrop-blur-sm">
+      {/* AnN fix: Show on mobile when conversation is selected on 11/19 */}
+      <div className={`${selectedConversation ? 'flex' : 'hidden md:flex'} flex-1 flex-col bg-white/60 backdrop-blur-sm`}>
         {selectedConversation ? (
           <>
             <ConversationHeader
@@ -124,5 +127,20 @@ export default function MessagesPage() {
         )}
       </div>
     </div>
+  );
+}
+
+// AnN add: Wrap in Suspense boundary for Next.js 15 production build on 11/19
+export default function MessagesPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex min-h-screen items-center justify-center">
+        <div className="text-center">
+          <p className="text-lg text-amber-700">Loading messages...</p>
+        </div>
+      </div>
+    }>
+      <MessagesContent />
+    </Suspense>
   );
 }
