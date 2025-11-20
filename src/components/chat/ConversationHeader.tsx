@@ -5,6 +5,7 @@
 
 
 import { ChevronLeftIcon, InformationCircleIcon } from "@heroicons/react/24/outline";
+import { useRouter } from "next/navigation";
 import AvatarImage from "@/components/AvatarImage";
 import { resolveAvatarPreset } from "@/lib/avatarPresets";
 
@@ -27,12 +28,18 @@ export default function ConversationHeader({
   onBack,
 }: ConversationHeaderProps) {
   const { otherUser } = conversation;
+  const router = useRouter();
 
   // AnN refactor: No fetching needed - data comes from parent's polling on 11/19
 
+  // AnN add: Navigate to user profile on 11/19
+  const handleAvatarClick = () => {
+    router.push(`/other-profile?userId=${otherUser.id}`);
+  };
+
   return (
     <div className="h-16 border-b border-amber-200/60 bg-white/95 backdrop-blur-sm px-6 shadow-sm flex items-center">
-      <div className="flex items-center gap-3 max-w-4xl mx-auto w-full">
+      <div className="flex items-center gap-3 max-w-4xl w-full">
         {/* AnN add: Back button for mobile on 11/19 */}
         {onBack && (
           <button
@@ -45,14 +52,18 @@ export default function ConversationHeader({
         )}
 
         {/* AnN add: Avatar with online status on 11/19 */}
-        <div className="relative shrink-0">
+        <button
+          onClick={handleAvatarClick}
+          className="relative shrink-0 hover:opacity-80 transition-opacity cursor-pointer"
+          aria-label="View profile"
+        >
           <AvatarImage
             preset={resolveAvatarPreset(otherUser.avatarId)}
             size="medium"
           />
           {/* Online status indicator - placeholder */}
           {/* <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white rounded-full" /> */}
-        </div>
+        </button>
 
         {/* AnN add: User info on 11/19 */}
         <div className="flex-1 min-w-0">
@@ -64,14 +75,6 @@ export default function ConversationHeader({
             {/* AnN todo: Add "Active now" / "Active 5m ago" status later */}
           </p>
         </div>
-
-        {/* AnN add: Info button - placeholder for future features on 11/19 */}
-        <button
-          className="shrink-0 p-2 hover:bg-amber-50 rounded-full transition-colors"
-          aria-label="Conversation info"
-        >
-          <InformationCircleIcon className="h-6 w-6 text-amber-600" />
-        </button>
       </div>
     </div>
   );

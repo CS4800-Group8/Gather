@@ -2,8 +2,9 @@
 
 import React, { JSX, useEffect, useState, Suspense } from "react";
 import Image from "next/image";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import { HeartIcon } from '@heroicons/react/24/solid';
+import { ChatBubbleLeftIcon, UserPlusIcon, UserMinusIcon, ClockIcon, UserIcon } from '@heroicons/react/24/outline'; // AnN add: Icons for buttons on 11/19
 
 // Profile components
 import ProfileHeader from '@/components/profile/ProfileHeader';
@@ -33,8 +34,9 @@ interface OtherUserProfile {
 // AnN fix: Separate component to use searchParams for Next.js 15 compatibility on 11/6
 function OtherProfileContent() {
 	const searchParams = useSearchParams();
+	const router = useRouter(); // AnN add: Router for navigation on 11/19
 	const userId = searchParams.get("userId"); // read the ID from URL
-	
+
 	// Viet add: get logged-in user's ID for saving favorites
 	const currentUser = JSON.parse(localStorage.getItem('gatherUser') || '{}');
 	const myUserId = currentUser?.id;
@@ -55,6 +57,11 @@ function OtherProfileContent() {
 
 	// AnN add: Friend list modal state on 11/13
 	const [showFriendList, setShowFriendList] = useState(false);
+
+	// AnN add: Friend status state on 11/19
+	const [friendStatus, setFriendStatus] = useState<'none' | 'pending' | 'accepted'>('none');
+	const [isRequester, setIsRequester] = useState(false); // Track if current user sent the request
+	const [showUnfriendConfirm, setShowUnfriendConfirm] = useState(false);
 
 	// AnN add: Track current user's favorites to show heart state on 11/13
 	const [myFavoriteIds, setMyFavoriteIds] = useState<Set<string>>(new Set());
@@ -262,6 +269,139 @@ function OtherProfileContent() {
 		}
 	};
 
+	// AnN add: Fetch friend status on 11/19
+	const fetchFriendStatus = async () => {
+		if (!userId || !myUserId) return;
+
+		try {
+			const response = await fetch(`/api/friends/status?userId=${myUserId}`);
+			if (response.ok) {
+				const data = await response.json();
+				const friendships = data.friendships || [];
+
+				// Find friendship between current user and viewed user
+				const friendship = friendships.find(
+					(f: { requesterId: number; addresseeId: number; status: string }) =>
+						(f.requesterId === myUserId && f.addresseeId === parseInt(userId)) ||
+						(f.addresseeId === myUserId && f.requesterId === parseInt(userId))
+				);
+
+				if (friendship) {
+					setFriendStatus(friendship.status);
+					setIsRequester(friendship.requesterId === myUserId);
+				} else {
+					setFriendStatus('none');
+					setIsRequester(false);
+				}
+			}
+		} catch (err) {
+			console.error('Error fetching friend status:', err);
+		}
+	};
+
+	// AnN add: Add friend handler on 11/19
+	const handleAddFriend = async () => {
+		if (!myUserId || !userId) return;
+
+		try {
+			const response = await fetch('/api/friends/request', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({
+					requesterId: myUserId,
+					addresseeId: parseInt(userId),
+				}),
+			});
+
+			if (response.ok) {
+				setFriendStatus('pending');
+				setIsRequester(true);
+			} else {
+				const data = await response.json();
+				alert(data.error || 'Failed to send friend request');
+			}
+		} catch (error) {
+			console.error('Error adding friend:', error);
+			alert('Something went wrong while sending friend request.');
+		}
+	};
+
+	// AnN add: Cancel friend request handler on 11/19
+	const handleCancelRequest = async () => {
+		if (!myUserId || !userId) return;
+
+		const response = await fetch('/api/friends/respond', {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({
+				requesterId: myUserId,
+				addresseeId: parseInt(userId),
+				action: 'reject',
+			}),
+		});
+
+		if (response.ok) {
+			setFriendStatus('none');
+			setIsRequester(false);
+		}
+	};
+
+	// AnN add: Unfriend handler on 11/19
+	const handleUnfriend = async () => {
+		if (!myUserId || !userId) return;
+
+		const response = await fetch('/api/friends/respond', {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({
+				requesterId: myUserId,
+				addresseeId: parseInt(userId),
+				action: 'reject',
+			}),
+		});
+
+		if (response.ok) {
+			setFriendStatus('none');
+			setIsRequester(false);
+			setShowUnfriendConfirm(false);
+			// Update friend count
+			setFriendCount(prev => Math.max(0, prev - 1));
+		}
+	};
+
+	// AnN add: Message handler - Create conversation and navigate on 11/19
+	const handleMessage = async () => {
+		if (!myUserId || !userId) {
+			alert('You must be logged in to send messages.');
+			return;
+		}
+
+		try {
+			// Create or get existing conversation
+			const response = await fetch('/api/conversations', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({
+					userId1: myUserId,
+					userId2: parseInt(userId),
+				}),
+			});
+
+			if (!response.ok) {
+				throw new Error('Failed to create conversation');
+			}
+
+			const data = await response.json();
+			const conversationId = data.conversation.id;
+
+			// Navigate to messages page with conversation selected
+			router.push(`/messages?conversationId=${conversationId}`);
+		} catch (error) {
+			console.error('Error creating conversation:', error);
+			alert('Failed to open conversation. Please try again.');
+		}
+	};
+
 	// Fetch user data and all associated data
 	useEffect(() => {
 		if (!userId) return;
@@ -286,6 +426,7 @@ function OtherProfileContent() {
 		fetchFavoritedUserRecipes(); // Viet add: load user-created favorite recipes
 		fetchFriendCount();
 		fetchMyFavorites(); // AnN add: Fetch current user's favorites on 11/13
+		fetchFriendStatus(); // AnN add: Fetch friend status on 11/19
 	}, [userId]);
 
 	// AnN add: No-op handlers for view-only mode on 11/13
@@ -316,16 +457,100 @@ function OtherProfileContent() {
 		<div className="min-h-screen pb-16 pt-12">
 			<div className="mx-auto flex w-full max-w-6xl flex-col gap-10 px-4 sm:px-6 lg:px-8">
 				<section className="px-6 py-8">
-					{/* AnN add: Replaced hardcoded header with ProfileHeader component on 11/13 */}
-					<ProfileHeader
-						displayName={displayName}
-						avatarId={user.avatarId}
-						recipeCount={userRecipes.length}
-						friendCount={friendCount}
-						onAvatarChange={handleAvatarChange}
-						isOwnProfile={false}
-						onFriendClick={() => setShowFriendList(true)}
-					/>
+					{/* AnN add: Profile header with action buttons on the right (Facebook style) on 11/19 */}
+					<div className="flex flex-col md:flex-row md:items-start md:justify-between gap-6 mb-10">
+						<div className="flex-1">
+							{/* AnN add: Replaced hardcoded header with ProfileHeader component on 11/13 */}
+							<ProfileHeader
+								displayName={displayName}
+								avatarId={user.avatarId}
+								recipeCount={userRecipes.length}
+								friendCount={friendCount}
+								onAvatarChange={handleAvatarChange}
+								isOwnProfile={false}
+								onFriendClick={() => setShowFriendList(true)}
+							/>
+						</div>
+
+						{/* AnN add: Friend and Message action buttons on the right on 11/19 */}
+						<div className="flex gap-2 flex-wrap md:flex-nowrap md:pt-4">
+						{/* Friend button - changes based on status */}
+						{friendStatus === 'none' && (
+							<button
+								onClick={handleAddFriend}
+								className="flex-1 md:flex-none flex items-center justify-center gap-2 px-5 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 shadow-md font-semibold text-sm transition-all min-w-[120px]"
+							>
+								<UserPlusIcon className="h-5 w-5" />
+								Add Friend
+							</button>
+						)}
+						{friendStatus === 'pending' && isRequester && (
+							<button
+								onClick={handleCancelRequest}
+								className="flex-1 md:flex-none flex items-center justify-center gap-2 px-5 py-2 bg-amber-200 text-amber-800 rounded-lg hover:bg-amber-300 font-semibold text-sm transition-all min-w-[140px]"
+							>
+								<ClockIcon className="h-5 w-5" />
+								Request Sent
+							</button>
+						)}
+						{friendStatus === 'pending' && !isRequester && (
+							<button
+								className="flex-1 md:flex-none flex items-center justify-center gap-2 px-5 py-2 bg-amber-200 text-amber-800 rounded-lg font-semibold text-sm min-w-[120px]"
+								disabled
+							>
+								<ClockIcon className="h-5 w-5" />
+								Pending
+							</button>
+						)}
+						{friendStatus === 'accepted' && (
+							<button
+								onClick={() => setShowUnfriendConfirm(true)}
+								className="flex-1 md:flex-none flex items-center justify-center gap-2 px-5 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 shadow-md font-semibold text-sm transition-all min-w-[120px]"
+							>
+								<UserIcon className="h-5 w-5" />
+								Friends
+							</button>
+						)}
+
+						{/* Message button - always visible */}
+						<button
+							onClick={handleMessage}
+							className="flex-1 md:flex-none flex items-center justify-center gap-2 px-5 py-2 bg-white text-amber-700 border-2 border-amber-300 rounded-lg hover:bg-amber-50 font-semibold text-sm transition-all min-w-[120px]"
+						>
+							<ChatBubbleLeftIcon className="h-5 w-5" />
+							Message
+						</button>
+						</div>
+					</div>
+
+					{/* AnN add: Unfriend confirmation modal on 11/19 */}
+					{showUnfriendConfirm && (
+						<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+							<div className="glass-card p-8 max-w-md w-full mx-4 text-center">
+								<h3 className="text-xl font-bold text-amber-900 mb-3">
+									Unfriend {user.firstname} {user.lastname}?
+								</h3>
+								<p className="text-sm text-amber-700 mb-6">
+									You can send them a friend request again later.
+								</p>
+
+								<div className="flex gap-3 justify-center">
+									<button
+										onClick={() => setShowUnfriendConfirm(false)}
+										className="px-6 py-2 bg-amber-100 text-amber-700 rounded-lg hover:bg-amber-200 text-sm font-medium transition-all"
+									>
+										Cancel
+									</button>
+									<button
+										onClick={handleUnfriend}
+										className="px-6 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 text-sm font-medium transition-all"
+									>
+										Unfriend
+									</button>
+								</div>
+							</div>
+						</div>
+					)}
 
 					{/* AnN add: Tab navigation on 11/13 */}
 					<nav className="flex flex-wrap gap-4 mt-8">

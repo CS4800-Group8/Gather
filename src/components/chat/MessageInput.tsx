@@ -59,8 +59,8 @@ export default function MessageInput({
 
   return (
     <div className="border-t border-amber-200/60 bg-gradient-to-r from-white via-amber-50/30 to-white px-6 py-3 shadow-lg backdrop-blur-sm">
-      <div className="max-w-4xl mx-auto">
-        <div className="flex gap-3 items-end">
+      <div>
+        <div className="flex gap-3 items-start">
           {/* AnN add: Text input on 11/19 */}
           <div className="flex-1 relative">
             <textarea

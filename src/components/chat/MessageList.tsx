@@ -4,6 +4,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { useRouter } from "next/navigation";
 import { HandRaisedIcon } from "@heroicons/react/24/outline";
 import { usePolling } from "@/hooks/usePolling";
 import AvatarImage from "@/components/AvatarImage";
@@ -37,6 +38,7 @@ export default function MessageList({
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const prevMessageCountRef = useRef(0);
+  const router = useRouter();
 
   // AnN add: Auto-scroll to bottom when new messages arrive on 11/19
   const scrollToBottom = () => {
@@ -119,7 +121,7 @@ export default function MessageList({
           </div>
         </div>
       ) : (
-        <div className="space-y-3 max-w-4xl pb-6">
+        <div className="space-y-3 pb-6">
           {messages.map((message, index) => {
             const isCurrentUser = message.senderId === currentUserId;
             const showAvatar =
@@ -128,16 +130,22 @@ export default function MessageList({
             return (
               <div
                 key={message.id}
-                className={`flex gap-3 items-end ${isCurrentUser ? "justify-end" : "justify-start"} animate-in fade-in slide-in-from-bottom-2 duration-300`}
+                className={`flex ${isCurrentUser ? "gap-4 justify-end" : "gap-5 justify-start"} items-end animate-in fade-in slide-in-from-bottom-2 duration-300`}
               >
                 {/* AnN add: Avatar on left for other user on 11/19 */}
                 {!isCurrentUser && (
                   <div className="w-8 shrink-0">
                     {showAvatar && (
-                      <AvatarImage
-                        preset={resolveAvatarPreset(message.sender.avatarId)}
-                        size="small"
-                      />
+                      <button
+                        onClick={() => router.push(`/other-profile?userId=${message.senderId}`)}
+                        className="hover:opacity-80 transition-opacity cursor-pointer"
+                        aria-label="View profile"
+                      >
+                        <AvatarImage
+                          preset={resolveAvatarPreset(message.sender.avatarId)}
+                          size="small"
+                        />
+                      </button>
                     )}
                   </div>
                 )}
