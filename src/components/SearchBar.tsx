@@ -4,30 +4,100 @@
 
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import PopupModal from "@/components/PopupModal"; // Viet add: use PopupModal for filter
 
 interface SearchBarProps {
   placeholder?: string;
-  onSearch: (query: string) => void;
+  onSearch: (query: string, selectedCategories: string[], selectedIngredients: string[]) => void; // Viet edit: Updated onSearch to include selected categories & ingredients
   className?: string;
+  source?: "api" | "db"; // Viet add: new prop to decide filter source
 }
 
 export default function SearchBar({
   placeholder = "Search recipes...",
   onSearch,
   className = "",
+  source = "db", // Viet add: default to "db"
 }: SearchBarProps) {
   const [query, setQuery] = useState("");
+
+  // Viet add: Popup and filter states
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [categories, setCategories] = useState<string[]>([]);
+  const [ingredients, setIngredients] = useState<string[]>([]);
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const [selectedIngredients, setSelectedIngredients] = useState<string[]>([]);
+
+  // Viet add: Fetch categories and ingredients when popup opens
+  useEffect(() => {
+    if (isFilterOpen) {
+      const fetchFilters = async () => {
+        try {
+          if (source === "api") {
+            // Viet add: Fetch from TheMealDB
+            const [catRes, ingRes] = await Promise.all([
+              fetch("https://www.themealdb.com/api/json/v1/1/list.php?c=list"),
+              fetch("https://www.themealdb.com/api/json/v1/1/list.php?i=list"),
+            ]);
+            const catData = await catRes.json();
+            const ingData = await ingRes.json();
+
+            setCategories(catData.meals.map((c: any) => c.strCategory));
+            setIngredients(ingData.meals.map((i: any) => i.strIngredient));
+          } else {
+            // Viet add: Fetch from DB
+            const [catRes, ingRes] = await Promise.all([
+              fetch("/api/categories"),
+              fetch("/api/ingredients"),
+            ]);
+            const catData = await catRes.json();
+            const ingData = await ingRes.json();
+            setCategories(catData.map((c: any) => c.categoryName));
+            setIngredients(ingData.map((i: any) => i.ingredientName));
+          }
+        } catch (err) {
+          console.error("Error fetching filters:", err);
+        }
+      };
+      fetchFilters();
+    }
+  }, [isFilterOpen]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     setQuery(value);
-    onSearch(value);
+    onSearch(value, selectedCategories, selectedIngredients); // Viet edit: include filters
   };
 
   const handleClear = () => {
     setQuery("");
-    onSearch("");
+    onSearch("", selectedCategories, selectedIngredients);
+  };
+
+  // Viet add: Handle checkbox toggling for category and ingredient
+  const toggleCategory = (cat: string) => {
+    setSelectedCategories((prev) =>
+      prev.includes(cat) ? prev.filter((c) => c !== cat) : [...prev, cat]
+    );
+  };
+
+  const toggleIngredient = (ing: string) => {
+    setSelectedIngredients((prev) =>
+      prev.includes(ing) ? prev.filter((i) => i !== ing) : [...prev, ing]
+    );
+  };
+
+   // Viet add: Apply filters and close popup
+  const applyFilters = () => {
+    setIsFilterOpen(false);
+    onSearch(query, selectedCategories, selectedIngredients);
+  };
+
+  // Viet add: Clear all filters
+  const clearFilters = () => {
+    setSelectedCategories([]);
+    setSelectedIngredients([]);
   };
 
   return (
@@ -80,6 +150,95 @@ export default function SearchBar({
           </svg>
         </button>
       )}
+
+      {/* Viet add: Filter button */}
+      <button
+        onClick={() => setIsFilterOpen(true)}
+        className="absolute right-3 top-1/2 -translate-y-1/2 bg-amber-500 text-white 
+        px-3 py-2 rounded-lg hover:bg-amber-600 transition-colors shadow"
+      >
+        Filter
+      </button>
+
+      {/* Viet add: Filter Popup */}
+      <PopupModal isOpen={isFilterOpen} onClose={() => setIsFilterOpen(false)}>
+        <div className="text-amber-900 px-6 py-4 max-h-[80vh] overflow-y-auto rounded-2xl">
+          <button
+            onClick={() => setIsFilterOpen(false)}
+            className="absolute top-5 right-12 px-2 py-1 text-amber-700 rounded-full hover:text-amber-900 hover:bg-amber-100 text-xl"
+          >
+            ✖
+          </button>
+
+          <h2 className="text-2xl font-bold mb-4 text-center">Filter Recipes</h2>
+
+          {/* Categories */}
+          <div className="mb-6">
+            <h3 className="text-lg font-semibold mb-2">Categories</h3>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+              {categories.map((cat) => (
+                <label
+                  key={cat}
+                  className={`flex items-center gap-2 px-3 py-2 border rounded-lg cursor-pointer transition-all ${
+                    selectedCategories.includes(cat)
+                      ? "bg-amber-100 border-amber-400"
+                      : "border-amber-200 hover:border-amber-400"
+                  }`}
+                >
+                  <input
+                    type="checkbox"
+                    checked={selectedCategories.includes(cat)}
+                    onChange={() => toggleCategory(cat)}
+                    className="accent-amber-500"
+                  />
+                  <span>{cat}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+
+          {/* Ingredients */}
+          <div className="mb-6">
+            <h3 className="text-lg font-semibold mb-2">Ingredients</h3>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+              {ingredients.map((ing) => (
+                <label
+                  key={ing}
+                  className={`flex items-center gap-2 px-3 py-2 border rounded-lg cursor-pointer transition-all ${
+                    selectedIngredients.includes(ing)
+                      ? "bg-amber-100 border-amber-400"
+                      : "border-amber-200 hover:border-amber-400"
+                  }`}
+                >
+                  <input
+                    type="checkbox"
+                    checked={selectedIngredients.includes(ing)}
+                    onChange={() => toggleIngredient(ing)}
+                    className="accent-amber-500"
+                  />
+                  <span>{ing}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+
+          {/* Buttons */}
+          <div className="flex justify-end gap-4 mt-6">
+            <button
+              onClick={clearFilters}
+              className="px-4 py-2 rounded-lg border border-amber-400 text-amber-700 hover:bg-amber-100 transition"
+            >
+              Clear
+            </button>
+            <button
+              onClick={applyFilters}
+              className="px-4 py-2 rounded-lg bg-amber-500 text-white hover:bg-amber-600 transition"
+            >
+              Apply
+            </button>
+          </div>
+        </div>
+      </PopupModal>
     </div>
   );
 }
