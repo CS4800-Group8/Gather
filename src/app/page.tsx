@@ -129,7 +129,8 @@ export default function HomePage() {
     }
   };
 
-  const displayedRecipes = searchQuery.trim() || searchResults.length > 0 ? searchResults : recipes;
+  const isFilterActive = searchQuery.trim() !== "" || isSearching || (searchResults.length >= 0 && searchResults !== null);
+  const displayedRecipes = searchQuery.trim() !== "" || isFilterActive ? searchResults : recipes;
 
   // Open recipe popup
   const openRecipePopUp = (recipe: HomePageRecipe) => {
