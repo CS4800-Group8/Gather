@@ -116,7 +116,7 @@ export default function HomePage() {
 
       const res = await fetch(`/api/recipes/search?${params.toString()}`);
       const data = await res.json();
-      let recipes = data.recipes || [];
+      const recipes = data.recipes || [];
 
       setSearchResults(recipes);
     } catch (err) {

@@ -14,6 +14,22 @@ interface SearchBarProps {
   source?: "api" | "db"; // Viet add: new prop to decide filter source
 }
 
+interface APICategory {
+  strCategory: string;
+}
+
+interface APIIngredient {
+  strIngredient: string;
+}
+
+interface DBCategory {
+  categoryName: string;
+}
+
+interface DBIngredient {
+  ingredientName: string;
+}
+
 export default function SearchBar({
   placeholder = "Search recipes...",
   onSearch,
@@ -40,21 +56,22 @@ export default function SearchBar({
               fetch("https://www.themealdb.com/api/json/v1/1/list.php?c=list"),
               fetch("https://www.themealdb.com/api/json/v1/1/list.php?i=list"),
             ]);
-            const catData = await catRes.json();
-            const ingData = await ingRes.json();
+            const catData: { meals: APICategory[] } = await catRes.json();
+            const ingData: { meals: APIIngredient[] } = await ingRes.json();
 
-            setCategories(catData.meals.map((c: any) => c.strCategory));
-            setIngredients(ingData.meals.map((i: any) => i.strIngredient));
+            setCategories(catData.meals.map((c) => c.strCategory));
+            setIngredients(ingData.meals.map((i) => i.strIngredient));
           } else {
             // Viet add: Fetch from DB
             const [catRes, ingRes] = await Promise.all([
               fetch("/api/categories"),
               fetch("/api/ingredients"),
             ]);
-            const catData = await catRes.json();
-            const ingData = await ingRes.json();
-            setCategories(catData.map((c: any) => c.categoryName));
-            setIngredients(ingData.map((i: any) => i.ingredientName));
+            const catData: DBCategory[] = await catRes.json();
+            const ingData: DBIngredient[] = await ingRes.json();
+            
+            setCategories(catData.map((c) => c.categoryName));
+            setIngredients(ingData.map((i) => i.ingredientName));
           }
         } catch (err) {
           console.error("Error fetching filters:", err);

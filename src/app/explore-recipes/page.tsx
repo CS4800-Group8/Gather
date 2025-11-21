@@ -87,7 +87,7 @@ export default function ExploreRecipesPage() {
 
     setIsSearching(true);
     try {
-      let meals: any[] = [];
+      let meals: Meal[] = [];
 
       // Category filters
       if (selectedCategories.length > 0) {
@@ -100,7 +100,7 @@ export default function ExploreRecipesPage() {
 
         // Fetch full meal details
         const detailedCategoryMeals = await Promise.all(
-          categoryMeals.map(async (m: any) => {
+          categoryMeals.map(async (m: Meal) => {
             const res = await fetch(`https://www.themealdb.com/api/json/v1/1/lookup.php?i=${m.idMeal}`);
             const data = await res.json();
             return data.meals ? data.meals[0] : m;
@@ -121,7 +121,7 @@ export default function ExploreRecipesPage() {
 
         // Fetch full meal details
         const detailedIngredientMeals = await Promise.all(
-          ingredientMeals.map(async (m: any) => {
+          ingredientMeals.map(async (m: Meal) => {
             const res = await fetch(`https://www.themealdb.com/api/json/v1/1/lookup.php?i=${m.idMeal}`);
             const data = await res.json();
             return data.meals ? data.meals[0] : m;

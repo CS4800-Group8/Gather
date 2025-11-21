@@ -2,6 +2,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
+import { Prisma } from '@prisma/client';
 
 // GET - Get users' recipe by searching
 export async function GET(request: NextRequest) {
@@ -11,17 +12,17 @@ export async function GET(request: NextRequest) {
     const categories = (searchParams.get("categories") || "").split(",").filter(Boolean);
     const ingredients = (searchParams.get("ingredients") || "").split(",").filter(Boolean);
 
-   // Viet edit: Support filtering by name, category, and ingredient
-    const whereClause: any = {
+    // Viet edit: Support filtering by name, category, and ingredient
+    const whereClause: Prisma.RecipeWhereInput = {
       AND: [
         query
           ? {
               OR: [
-                { recipeName: { contains: query, mode: "insensitive" } },
-                { description: { contains: query, mode: "insensitive" } },
+                { recipeName: { contains: query, mode: 'insensitive' } },
+                { description: { contains: query, mode: 'insensitive' } },
               ],
             }
-          : {},
+          : undefined,
         categories.length > 0 || ingredients.length > 0
           ? {
               OR: [
@@ -32,13 +33,13 @@ export async function GET(request: NextRequest) {
                           category: {
                             categoryName: {
                               in: categories.map((c) => c.trim()),
-                              mode: "insensitive",
+                              mode: 'insensitive',
                             },
                           },
                         },
                       },
                     }
-                  : {},
+                  : undefined,
                 ingredients.length > 0
                   ? {
                       recipeIngredients: {
@@ -46,17 +47,17 @@ export async function GET(request: NextRequest) {
                           ingredient: {
                             ingredientName: {
                               in: ingredients.map((i) => i.trim()),
-                              mode: "insensitive",
+                              mode: 'insensitive',
                             },
                           },
                         },
                       },
                     }
-                  : {},
+                  : undefined,
               ],
             }
-          : {},
-      ],
+          : undefined,
+      ].filter(Boolean) as Prisma.RecipeWhereInput[], // ✅ filter out undefined entries safely
     };
 
     const recipes = await prisma.recipe.findMany({
