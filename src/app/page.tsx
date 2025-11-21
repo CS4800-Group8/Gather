@@ -114,8 +114,6 @@ export default function HomePage() {
       if (selectedIngredients.length > 0)
         params.append("ingredients", selectedIngredients.join(","));
 
-      console.log("Searching with:", params.toString());
-
       const res = await fetch(`/api/recipes/search?${params.toString()}`);
       const data = await res.json();
       let recipes = data.recipes || [];
@@ -129,8 +127,7 @@ export default function HomePage() {
     }
   };
 
-  const isFilterActive = searchQuery.trim() !== "" || isSearching || (searchResults.length >= 0 && searchResults !== null);
-  const displayedRecipes = searchQuery.trim() !== "" || isFilterActive ? searchResults : recipes;
+  const displayedRecipes = searchQuery.trim() || searchResults.length > 0 ? searchResults : recipes;
 
   // Open recipe popup
   const openRecipePopUp = (recipe: HomePageRecipe) => {
