@@ -64,29 +64,95 @@ export default function ExploreRecipesPage() {
   const [searchResults, setSearchResults] = useState<Meal[]>([]);
   const [isSearching, setIsSearching] = useState(false);
 
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const [selectedIngredients, setSelectedIngredients] = useState<string[]>([]);
+  
   // AnN edit: Removed Nick's temporary localStorage comment state on 11/12
   // Now using database-backed CommentSection component instead
 
-  // AnN add: Search TheMealDB API by recipe name on 11/12
-  const handleSearch = async (query: string) => {
+  // Viet edit: Updated handleSearch to support name, category, and ingredient filters
+  const handleSearch = async (
+    query: string,
+    selectedCategories: string[] = [],
+    selectedIngredients: string[] = []
+  ) => {
     setSearchQuery(query);
-
-    // If search is empty, clear search results and show random recipes
-    if (!query.trim()) {
+    setSelectedCategories(selectedCategories);
+    setSelectedIngredients(selectedIngredients);
+    
+    if (!query.trim() && selectedCategories.length === 0 && selectedIngredients.length === 0) {
       setSearchResults([]);
       return;
     }
 
-    // Search the entire TheMealDB API database
     setIsSearching(true);
     try {
-      const response = await fetch(
-        `https://www.themealdb.com/api/json/v1/1/search.php?s=${encodeURIComponent(query)}`
-      );
-      const data = await response.json();
-      setSearchResults(data.meals || []); // meals will be null if no results
+      let meals: any[] = [];
+
+      // Category filters
+      if (selectedCategories.length > 0) {
+        const categoryPromises = selectedCategories.map((cat) =>
+          fetch(`https://www.themealdb.com/api/json/v1/1/filter.php?c=${encodeURIComponent(cat)}`)
+        );
+        const categoryResponses = await Promise.all(categoryPromises);
+        const categoryData = await Promise.all(categoryResponses.map((r) => r.json()));
+        const categoryMeals = categoryData.flatMap((d) => d.meals || []);
+
+        // Fetch full meal details
+        const detailedCategoryMeals = await Promise.all(
+          categoryMeals.map(async (m: any) => {
+            const res = await fetch(`https://www.themealdb.com/api/json/v1/1/lookup.php?i=${m.idMeal}`);
+            const data = await res.json();
+            return data.meals ? data.meals[0] : m;
+          })
+        );
+
+        meals = detailedCategoryMeals;
+      }
+
+      // Ingredient filters
+      if (selectedIngredients.length > 0) {
+        const ingredientPromises = selectedIngredients.map((ing) =>
+          fetch(`https://www.themealdb.com/api/json/v1/1/filter.php?i=${encodeURIComponent(ing)}`)
+        );
+        const ingredientResponses = await Promise.all(ingredientPromises);
+        const ingredientData = await Promise.all(ingredientResponses.map((r) => r.json()));
+        const ingredientMeals = ingredientData.flatMap((d) => d.meals || []);
+
+        // Fetch full meal details
+        const detailedIngredientMeals = await Promise.all(
+          ingredientMeals.map(async (m: any) => {
+            const res = await fetch(`https://www.themealdb.com/api/json/v1/1/lookup.php?i=${m.idMeal}`);
+            const data = await res.json();
+            return data.meals ? data.meals[0] : m;
+          })
+        );
+
+        // Merge with category results (avoid duplicates)
+        const seen = new Set(meals.map((m) => m.idMeal));
+        meals = [...meals, ...detailedIngredientMeals.filter((m) => !seen.has(m.idMeal))];
+      }
+
+      // Name search handling
+      if (query.trim()) {
+        if (selectedCategories.length > 0 || selectedIngredients.length > 0) {
+          // Filter within existing meals if filters are applied
+          meals = meals.filter(m =>
+            m.strMeal.toLowerCase().includes(query.toLowerCase())
+          );
+        } else {
+          // Otherwise, perform a fresh API name search
+          const res = await fetch(
+            `https://www.themealdb.com/api/json/v1/1/search.php?s=${encodeURIComponent(query)}`
+          );
+          const data = await res.json();
+          meals = data.meals || [];
+        }
+      }
+
+      setSearchResults(meals);
     } catch (err) {
-      console.error('Error searching recipes:', err);
+      console.error("Error searching recipes:", err);
       setSearchResults([]);
     } finally {
       setIsSearching(false);
@@ -94,7 +160,7 @@ export default function ExploreRecipesPage() {
   };
 
   // AnN add: Display either search results or random recipes on 11/12
-  const displayedRecipes = searchQuery.trim() ? searchResults : recipes;
+  const displayedRecipes = searchQuery.trim() || searchResults.length > 0 ? searchResults : recipes;
 
   // AnN fix: Load favorites from database instead of just localStorage on 11/14
   // This ensures explore page shows correct favorite state even if changed from profile page
@@ -392,6 +458,7 @@ export default function ExploreRecipesPage() {
         <SearchBar
           placeholder="Search recipes by name..."
           onSearch={handleSearch}
+          source='api'
         />
       </div>
 
