@@ -54,10 +54,10 @@ export async function GET(request: NextRequest) {
                       },
                     }
                   : undefined,
-              ],
+              ].filter(Boolean),
             }
           : undefined,
-      ].filter(Boolean) as Prisma.RecipeWhereInput[], // ✅ filter out undefined entries safely
+      ].filter(Boolean) as Prisma.RecipeWhereInput[],
     };
 
     const recipes = await prisma.recipe.findMany({
