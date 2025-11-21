@@ -11,7 +11,8 @@ import {
 } from "@/lib/avatarPresets";
 import AvatarImage from "./AvatarImage"; // An add: Use centralized avatar component on 10/23
 import NotiCard from "./NotiCard"; // AnN add: Notification card component on 11/6
-import { BellIcon } from "@heroicons/react/24/outline"; // AnN add: Modern bell icon on 11/6
+import { BellIcon, Bars3Icon, XMarkIcon, ChatBubbleLeftRightIcon } from "@heroicons/react/24/outline"; // AnN add: Modern bell icon on 11/6, hamburger menu icons on 11/18, chat icon on 11/19
+import { usePolling } from "@/hooks/usePolling"; // AnN add: Reusable polling hook on 11/19
 
 const navLinks = siteConfig.nav;
 
@@ -58,6 +59,8 @@ export default function Header() {
   const [showNotifications, setShowNotifications] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
+  // AnN add: Mobile menu state on 11/18
+  const [showMobileMenu, setShowMobileMenu] = useState(false);
 
   useEffect(() => {
     const loadUser = () => {
@@ -87,36 +90,100 @@ export default function Header() {
     // An fix: close the profile popover when navigating
     setShowProfile(false);
     setShowNotifications(false);
+    setShowMobileMenu(false); // AnN add: Close mobile menu on navigation on 11/18
   }, [pathname]);
 
-  // AnN add: Fetch notifications with faster polling on 11/6
+  // AnN add: Prevent body scroll when modals are open on 11/18
   useEffect(() => {
-    if (!user?.id) return;
+    if (showMobileMenu || showNotifications || showProfile) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
 
-    const fetchNotifications = async () => {
-      try {
-        const response = await fetch(`/api/notifications?userId=${user.id}`);
-        if (response.ok) {
-          const data = await response.json();
-          setNotifications(data.notifications || []);
-          const unread = (data.notifications || []).filter((n: Notification) => !n.isRead).length;
-          setUnreadCount(unread);
-        }
-      } catch (error) {
-        console.error("Error fetching notifications:", error);
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [showMobileMenu, showNotifications, showProfile]);
+
+  // AnN add: ESC key support for mobile modals on 11/18
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        if (showNotifications) setShowNotifications(false);
+        if (showProfile) setShowProfile(false);
+        if (showMobileMenu) setShowMobileMenu(false);
       }
     };
 
-    fetchNotifications();
-    // AnN add: Poll every 5 seconds for faster updates on 11/6
-    const interval = setInterval(fetchNotifications, 5000);
+    if (showNotifications || showProfile || showMobileMenu) {
+      document.addEventListener('keydown', handleEscape);
+    }
 
-    // AnN add: Refresh when window regains focus on 11/6
+    return () => {
+      document.removeEventListener('keydown', handleEscape);
+    };
+  }, [showNotifications, showProfile, showMobileMenu]);
+
+  // AnN refactor: Extract notification fetching logic on 11/19
+  const fetchNotifications = async () => {
+    if (!user?.id) return;
+
+    try {
+      const response = await fetch(`/api/notifications?userId=${user.id}`);
+      if (response.ok) {
+        const data = await response.json();
+        setNotifications(data.notifications || []);
+        const unread = (data.notifications || []).filter((n: Notification) => !n.isRead).length;
+        setUnreadCount(unread);
+      }
+    } catch (error) {
+      console.error("Error fetching notifications:", error);
+    }
+  };
+
+  // AnN refactor: Use reusable polling hook on 11/19
+  // Polls every 5 seconds when user is logged in
+  usePolling(fetchNotifications, 5000, !!user?.id);
+
+  // AnN add: Poll for new messages to show red dot indicator on 20/11
+  const [hasNewMessages, setHasNewMessages] = useState(false);
+
+  const checkNewMessages = async () => {
+    if (!user?.id) return;
+
+    const lastViewed = localStorage.getItem("lastViewedMessages");
+    if (!lastViewed) {
+      // If user has never visited messages, don't show notification
+      return;
+    }
+
+    try {
+      const response = await fetch(
+        `/api/messages/has-new?userId=${user.id}&lastViewed=${lastViewed}`
+      );
+      if (response.ok) {
+        const data = await response.json();
+        setHasNewMessages(data.hasNew || false);
+      }
+    } catch (error) {
+      console.error("Error checking new messages:", error);
+    }
+  };
+
+  // Poll every 5 seconds when user is logged in
+  usePolling(checkNewMessages, 5000, !!user?.id);
+
+  // AnN add: Additional optimizations for immediate updates on 11/6
+  useEffect(() => {
+    if (!user?.id) return;
+
+    // Refresh when window regains focus
     const handleFocus = () => {
       fetchNotifications();
     };
 
-    // AnN add: Refresh when tab becomes visible on 11/6
+    // Refresh when tab becomes visible
     const handleVisibilityChange = () => {
       if (!document.hidden) {
         fetchNotifications();
@@ -127,9 +194,8 @@ export default function Header() {
     document.addEventListener("visibilitychange", handleVisibilityChange);
 
     return () => {
-      clearInterval(interval);
       window.removeEventListener("focus", handleFocus);
-      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      window.removeEventListener("visibilitychange", handleVisibilityChange);
     };
   }, [user?.id]);
 
@@ -223,28 +289,57 @@ export default function Header() {
   return (
     <header className="fixed top-0 left-0 right-0 z-50 w-full border-b border-amber-300 bg-amber-100/95 backdrop-blur-md shadow-md">
       <div className="mx-auto flex w-full max-w-6xl flex-row items-center justify-between gap-4 px-4 py-3 sm:px-6 sm:py-4 lg:px-8">
-        <Link href="/" className="flex items-start gap-3">
-          <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#fff3cf] text-[#ffb86b]">
-            <span className="text-xl">🥗</span>
+        {/* AnN edit: Responsive logo - centered on mobile, top-aligned on desktop on 11/18 */}
+        <Link href="/" className="flex items-center sm:items-start gap-2 sm:gap-3">
+          <div className="flex h-10 w-10 sm:h-11 sm:w-11 items-center justify-center rounded-2xl bg-[#fff3cf] text-[#ffb86b]">
+            <span className="text-lg sm:text-xl">🥗</span>
           </div>
-          <div className="flex flex-col">
-            <span className="text-lg font-semibold text-amber-700 md:text-xl">
+          <div className="flex flex-col justify-center sm:justify-start">
+            <span className="text-base sm:text-lg md:text-xl font-semibold text-amber-700">
               {siteConfig.name}
             </span>
-            <span className="text-xs font-medium uppercase tracking-[0.32em] text-amber-900/40">
+            <span className="hidden sm:block text-xs font-medium uppercase tracking-[0.32em] text-amber-900/40">
               {siteConfig.company}
             </span>
           </div>
         </Link>
 
-        <div className="flex flex-wrap items-center justify-end gap-2 sm:gap-3">
-          <nav className="flex flex-wrap items-center gap-2">
+        {/* AnN add: Desktop navigation (hidden on mobile) on 11/18 */}
+        <div className="hidden md:flex items-center gap-2 sm:gap-3">
+          <nav className="flex items-center gap-2">
             {navLinks.map((item) => {
               // AnN fix: Hide Home, Community, and Notifications when not logged in on 11/6
               // Keep Explore Recipes visible for everyone
               if (!user && item.href !== "/explore-recipes") {
                 return null;
               }
+
+              // AnN add: Render Messages as icon only on 11/19
+              // AnN add: Show red dot when new messages on 20/11
+              if (item.href === "/messages") {
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className={`relative flex h-11 w-11 items-center justify-center rounded-full ${
+                      isActive(item.href)
+                        ? "bg-amber-600 text-white shadow-md hover:bg-amber-700"
+                        : "bg-[#ffdca0] text-amber-700 shadow-[0_6px_12px_rgba(255,195,120,0.25)] hover:bg-[#ffc873]"
+                    } transition`}
+                  >
+                    <ChatBubbleLeftRightIcon className="h-6 w-6" />
+                    {/* AnN add: Red pulsing dot when new messages on 20/11 */}
+                    {/* AnN fix: Hide dot when user is on messages page on 20/11 */}
+                    {hasNewMessages && !isActive(item.href) && (
+                      <span className="absolute top-1 right-1 flex h-3 w-3 items-center justify-center">
+                        <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-400 opacity-75"></span>
+                        <span className="relative inline-flex h-3 w-3 rounded-full bg-red-500"></span>
+                      </span>
+                    )}
+                  </Link>
+                );
+              }
+
               return (
                 <Link
                   key={item.href}
@@ -280,9 +375,9 @@ export default function Header() {
                     )}
                   </button>
 
-                  {/* Notification Popup */}
+                  {/* AnN edit: Responsive notification popup - fixed position on mobile for proper alignment on 11/18 */}
                   {showNotifications && (
-                    <div className="absolute right-0 mt-3 w-96 max-h-[32rem] overflow-hidden rounded-3xl border border-[#ffeede]/90 bg-white/95 shadow-[0_22px_44px_rgba(255,183,88,0.26)]">
+                    <div className="fixed sm:absolute left-4 right-4 sm:left-auto sm:right-0 top-20 sm:top-auto mt-0 sm:mt-3 w-auto sm:w-96 max-h-[32rem] overflow-hidden rounded-3xl border border-[#ffeede]/90 bg-white/95 shadow-[0_22px_44px_rgba(255,183,88,0.26)]">
                       {/* Header */}
                       <div className="border-b border-amber-200 p-4">
                         <h3 className="text-xl font-bold text-amber-900">Notifications</h3>
@@ -379,8 +474,9 @@ export default function Header() {
                     <AvatarImage preset={avatarPreset} size="small" />}
                 </button>
 
+                {/* AnN edit: Responsive profile popup - fixed position on mobile for proper alignment on 11/18 */}
                 {showProfile && (
-                  <div className="absolute right-0 mt-3 w-64 rounded-3xl border border-[#ffeede]/90 bg-white/95 p-3 text-sm text-amber-700 shadow-[0_22px_44px_rgba(255,183,88,0.26)]">
+                  <div className="fixed sm:absolute left-4 right-4 sm:left-auto sm:right-0 top-20 sm:top-auto mt-0 sm:mt-3 w-auto sm:w-64 rounded-3xl border border-[#ffeede]/90 bg-white/95 p-3 text-sm text-amber-700 shadow-[0_22px_44px_rgba(255,183,88,0.26)]">
                     <Link
                       href="/profile"
                     >
@@ -433,6 +529,225 @@ export default function Header() {
             )}
           </div>
         </div>
+
+        {/* AnN add: Mobile menu button and icons (visible on mobile only) on 11/18 */}
+        <div className="flex md:hidden items-center gap-2">
+          {user && (
+            <>
+              {/* Bell icon for mobile */}
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowNotifications((current) => !current);
+                    setShowProfile(false);
+                    setShowMobileMenu(false);
+                  }}
+                  className="relative flex h-10 w-10 items-center justify-center rounded-full bg-[#ffdca0] text-amber-700 shadow-[0_6px_12px_rgba(255,195,120,0.25)] hover:bg-[#ffc873] transition"
+                >
+                  <BellIcon className="h-5 w-5" />
+                  {unreadCount > 0 && (
+                    <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-xs font-bold text-white">
+                      {unreadCount > 9 ? "9+" : unreadCount}
+                    </span>
+                  )}
+                </button>
+
+                {/* AnN edit: Mobile notification popup with backdrop on 11/18 */}
+                {showNotifications && (
+                  <>
+                    {/* Backdrop overlay for mobile */}
+                    <div
+                      className="md:hidden fixed inset-0 bg-black/30 backdrop-blur-sm z-30"
+                      onClick={() => setShowNotifications(false)}
+                      aria-label="Close notifications"
+                      role="button"
+                    />
+                    <div
+                      className="fixed left-4 right-4 top-20 w-auto max-h-[32rem] overflow-hidden rounded-3xl border border-[#ffeede]/90 bg-white shadow-[0_22px_44px_rgba(255,183,88,0.26)] z-40"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                    <div className="border-b border-amber-200 p-4">
+                      <h3 className="text-xl font-bold text-amber-900">Notifications</h3>
+                    </div>
+                    <div className="max-h-96 overflow-y-auto p-2">
+                      {notifications.length === 0 ? (
+                        <div className="py-12 text-center">
+                          <p className="text-sm text-amber-600">No notifications yet</p>
+                        </div>
+                      ) : (
+                        <>
+                          {notifications.some((n) => {
+                            const today = new Date();
+                            const notifDate = new Date(n.createdAt);
+                            return notifDate.toDateString() === today.toDateString();
+                          }) && (
+                            <>
+                              <p className="px-2 py-2 text-xs font-semibold text-amber-700">Today</p>
+                              {notifications
+                                .filter((n) => {
+                                  const today = new Date();
+                                  const notifDate = new Date(n.createdAt);
+                                  return notifDate.toDateString() === today.toDateString();
+                                })
+                                .map((notification) => (
+                                  <NotiCard
+                                    key={notification.id}
+                                    id={notification.id}
+                                    type={notification.type}
+                                    message={notification.message}
+                                    createdAt={notification.createdAt}
+                                    isRead={notification.isRead}
+                                    relatedUser={notification.relatedUser}
+                                    onMarkRead={handleMarkNotificationRead}
+                                    onAccept={handleAcceptFriend}
+                                    onReject={handleRejectFriend}
+                                  />
+                                ))}
+                            </>
+                          )}
+                          {notifications.some((n) => {
+                            const today = new Date();
+                            const notifDate = new Date(n.createdAt);
+                            return notifDate.toDateString() !== today.toDateString();
+                          }) && (
+                            <>
+                              <p className="px-2 py-2 text-xs font-semibold text-amber-700">Earlier</p>
+                              {notifications
+                                .filter((n) => {
+                                  const today = new Date();
+                                  const notifDate = new Date(n.createdAt);
+                                  return notifDate.toDateString() !== today.toDateString();
+                                })
+                                .map((notification) => (
+                                  <NotiCard
+                                    key={notification.id}
+                                    id={notification.id}
+                                    type={notification.type}
+                                    message={notification.message}
+                                    createdAt={notification.createdAt}
+                                    isRead={notification.isRead}
+                                    relatedUser={notification.relatedUser}
+                                    onMarkRead={handleMarkNotificationRead}
+                                    onAccept={handleAcceptFriend}
+                                    onReject={handleRejectFriend}
+                                  />
+                                ))}
+                            </>
+                          )}
+                        </>
+                      )}
+                    </div>
+                  </div>
+                  </>
+                )}
+              </div>
+
+              {/* Avatar for mobile */}
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowProfile((current) => !current);
+                    setShowNotifications(false);
+                    setShowMobileMenu(false);
+                  }}
+                  className={`flex h-10 w-10 items-center justify-center rounded-full ${avatarPreset?.variant === 'emoji' ? avatarBgClass : 'bg-white'} shadow-[0_12px_24px_rgba(255,183,88,0.32)] transition hover:opacity-90`}
+                >
+                  {avatarPreset && <AvatarImage preset={avatarPreset} size="small" />}
+                </button>
+
+                {/* AnN edit: Mobile profile popup with backdrop on 11/18 */}
+                {showProfile && (
+                  <>
+                    {/* Backdrop overlay for mobile */}
+                    <div
+                      className="md:hidden fixed inset-0 bg-black/30 backdrop-blur-sm z-30"
+                      onClick={() => setShowProfile(false)}
+                      aria-label="Close profile menu"
+                      role="button"
+                    />
+                    <div
+                      className="fixed left-4 right-4 top-20 w-auto rounded-3xl border border-[#ffeede]/90 bg-white p-3 text-sm text-amber-700 shadow-[0_22px_44px_rgba(255,183,88,0.26)] z-40"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <Link href="/profile">
+                        <p className="w-full rounded-2xl bg-amber-100 px-4 py-3 text-sm font-semibold text-amber-700 hover:bg-amber-200 transition-colors mb-2 justify-center text-center">
+                          {user?.username ?? "gatherer"}
+                        </p>
+                      </Link>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowProfile(false);
+                          router.push("/user-settings");
+                        }}
+                        className="w-full rounded-2xl bg-amber-100 px-4 py-3 text-sm font-semibold text-amber-700 hover:bg-amber-200 transition-colors mb-2"
+                      >
+                        Settings
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleSignOut}
+                        className="w-full rounded-2xl bg-amber-100 px-4 py-3 text-sm font-semibold text-amber-700 hover:bg-amber-200 transition-colors"
+                      >
+                        Sign out
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
+            </>
+          )}
+
+          {/* Hamburger menu button */}
+          <button
+            type="button"
+            onClick={() => {
+              setShowMobileMenu((current) => !current);
+              setShowProfile(false);
+              setShowNotifications(false);
+            }}
+            className="flex h-10 w-10 items-center justify-center rounded-full bg-[#ffdca0] text-amber-700 shadow-[0_6px_12px_rgba(255,195,120,0.25)] hover:bg-[#ffc873] transition"
+            aria-label="Toggle menu"
+          >
+            {showMobileMenu ? (
+              <XMarkIcon className="h-6 w-6" />
+            ) : (
+              <Bars3Icon className="h-6 w-6" />
+            )}
+          </button>
+        </div>
+      </div>
+
+      {/* AnN add: Mobile navigation menu with slide animation on 11/18 */}
+      <div className={`md:hidden border-t border-amber-200 bg-amber-50/95 backdrop-blur-md transition-all duration-300 overflow-hidden ${
+        showMobileMenu ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'
+      }`}>
+        <nav className="mx-auto max-w-6xl px-4 py-4 flex flex-col gap-2">
+            {navLinks.map((item) => {
+              if (!user && item.href !== "/explore-recipes") {
+                return null;
+              }
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={`w-full text-center ${isActive(item.href) ? activeNavClasses : baseNavClasses}`}
+                >
+                  {item.label}
+                </Link>
+              );
+            })}
+            {!user && (
+              <Link
+                href="/signin"
+                className={`w-full text-center ${isActive("/signin") ? activeNavClasses : baseNavClasses}`}
+              >
+                Sign in
+              </Link>
+            )}
+        </nav>
       </div>
     </header>
   );

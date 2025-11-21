@@ -90,29 +90,44 @@ export default function HomePage() {
     fetchUserRecipes();
   }, []);
 
-  // Search functionality
-  const handleSearch = async (query: string) => {
+  // Viet edit: Updated handleSearch for DB recipes to filter by name, category, and ingredient
+  const handleSearch = async (
+    query: string,
+    selectedCategories: string[] = [],
+    selectedIngredients: string[] = []
+  ) => {
     setSearchQuery(query);
 
-    if (!query.trim()) {
+    // If no query and no filters, reset to default recipe list
+    if (!query.trim() && selectedCategories.length === 0 && selectedIngredients.length === 0) {
       setSearchResults([]);
       return;
     }
 
     setIsSearching(true);
     try {
-      const response = await fetch(`/api/recipes/search?q=${encodeURIComponent(query)}`);
-      const data = await response.json();
-      setSearchResults(data.recipes || []);
+      // Viet edit: Updated handleSearch to send filters to API
+      const params = new URLSearchParams();
+      if (query.trim()) params.append("q", query.trim());
+      if (selectedCategories.length > 0)
+        params.append("categories", selectedCategories.join(","));
+      if (selectedIngredients.length > 0)
+        params.append("ingredients", selectedIngredients.join(","));
+
+      const res = await fetch(`/api/recipes/search?${params.toString()}`);
+      const data = await res.json();
+      const recipes = data.recipes || [];
+
+      setSearchResults(recipes);
     } catch (err) {
-      console.error('Error searching recipes:', err);
+      console.error("Error searching recipes:", err);
       setSearchResults([]);
     } finally {
       setIsSearching(false);
     }
   };
 
-  const displayedRecipes = searchQuery.trim() ? searchResults : recipes;
+  const displayedRecipes = searchQuery.trim() || searchResults.length > 0 ? searchResults : recipes;
 
   // Open recipe popup
   const openRecipePopUp = (recipe: HomePageRecipe) => {
@@ -251,6 +266,7 @@ export default function HomePage() {
         <SearchBar
           placeholder="Search community recipes..."
           onSearch={handleSearch}
+          source='db'
         />
       </div>
 

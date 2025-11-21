@@ -2,6 +2,7 @@
 'use client';
 
 import { useState } from 'react';
+import { ChatBubbleLeftIcon } from '@heroicons/react/24/outline';
 import AvatarImage from '@/components/AvatarImage';
 import { resolveAvatarPreset } from '@/lib/avatarPresets';
 
@@ -33,6 +34,7 @@ type UserCardProps = {
   buttonDisabled?: boolean;
   onAccept?: () => void;
   onReject?: () => void;
+  onMessageClick?: (userId: number) => void;  // AnN add: Message button handler on 11/19
 };
 
 export default function UserCard({
@@ -43,6 +45,7 @@ export default function UserCard({
   buttonDisabled = false,
   onAccept, // Thu added
   onReject, // Thu added
+  onMessageClick, // AnN add: Message button handler on 11/19
 }: UserCardProps) {
 
   const isAcceptRejectMode = !!onAccept && !!onReject; // Thu added
@@ -94,38 +97,50 @@ export default function UserCard({
         🍜 {user._count.recipes} {user._count.recipes === 1 ? 'recipe' : 'recipes'}
       </p>
 
-      {/* Action button */}
+      {/* Action buttons */}
       {/* AnN fix: Updated to match amber theme on 11/6 */}
-      {isAcceptRejectMode ? (
-        <div className="flex gap-3">
+      <div className="flex flex-col gap-2 w-full">
+        {isAcceptRejectMode ? (
+          <div className="flex gap-3">
+            <button
+              onClick={onAccept}
+              className="px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 text-sm font-medium transition-all"
+            >
+              Accept
+            </button>
+            <button
+              onClick={onReject}
+              className="px-4 py-2 bg-amber-100 text-amber-700 rounded-lg hover:bg-amber-200 text-sm font-medium transition-all"
+            >
+              Reject
+            </button>
+          </div>
+        ) : (
           <button
-            onClick={onAccept}
-            className="px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 text-sm font-medium transition-all"
+            className={`px-8 py-2 rounded-lg text-sm font-medium transition-colors ${
+              buttonText === 'Friends ✓'
+                ? 'bg-amber-600 text-white hover:bg-amber-700'
+                : buttonText === 'Pending'
+                ? 'bg-amber-200 text-amber-700'
+                : 'bg-amber-500 text-white hover:bg-amber-600'
+            }`}
+            onClick={handleButtonClick}
+            disabled={buttonDisabled}
           >
-            Accept
+            {buttonText}
           </button>
+        )}
+
+        {/* AnN add: Message button on 11/19 */}
+        {onMessageClick && (
           <button
-            onClick={onReject}
-            className="px-4 py-2 bg-amber-100 text-amber-700 rounded-lg hover:bg-amber-200 text-sm font-medium transition-all"
+            onClick={() => onMessageClick(user.id)}
+            className="px-8 py-2 rounded-lg text-sm font-medium bg-white text-amber-700 border-2 border-amber-300 hover:bg-amber-50 transition-colors flex items-center justify-center gap-2"
           >
-            Reject
+            <ChatBubbleLeftIcon className="h-4 w-4" /> Message
           </button>
-        </div>
-      ) : (
-        <button
-          className={`px-8 py-2 rounded-lg text-sm font-medium transition-colors ${
-            buttonText === 'Friends ✓'
-              ? 'bg-amber-600 text-white hover:bg-amber-700'
-              : buttonText === 'Pending'
-              ? 'bg-amber-200 text-amber-700'
-              : 'bg-amber-500 text-white hover:bg-amber-600'
-          }`}
-          onClick={handleButtonClick}
-          disabled={buttonDisabled}
-        >
-          {buttonText}
-        </button>
-      )}
+        )}
+      </div>
 
       {/* AnN add: Unfriend confirmation popup on 11/7 */}
       {showUnfriendConfirm && (

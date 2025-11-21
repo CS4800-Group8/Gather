@@ -2,24 +2,66 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
+import { Prisma } from '@prisma/client';
 
 // GET - Get users' recipe by searching
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const query = searchParams.get('q');
+    const categories = (searchParams.get("categories") || "").split(",").filter(Boolean);
+    const ingredients = (searchParams.get("ingredients") || "").split(",").filter(Boolean);
 
-    if (!query) {
-      return NextResponse.json({ recipes: [] });
-    }
+    // Viet edit: Support filtering by name, category, and ingredient
+    const whereClause: Prisma.RecipeWhereInput = {
+      AND: [
+        query
+          ? {
+              OR: [
+                { recipeName: { contains: query, mode: 'insensitive' } },
+                { description: { contains: query, mode: 'insensitive' } },
+              ],
+            }
+          : undefined,
+        categories.length > 0 || ingredients.length > 0
+          ? {
+              OR: [
+                categories.length > 0
+                  ? {
+                      recipeCategories: {
+                        some: {
+                          category: {
+                            categoryName: {
+                              in: categories.map((c) => c.trim()),
+                              mode: 'insensitive',
+                            },
+                          },
+                        },
+                      },
+                    }
+                  : undefined,
+                ingredients.length > 0
+                  ? {
+                      recipeIngredients: {
+                        some: {
+                          ingredient: {
+                            ingredientName: {
+                              in: ingredients.map((i) => i.trim()),
+                              mode: 'insensitive',
+                            },
+                          },
+                        },
+                      },
+                    }
+                  : undefined,
+              ].filter(Boolean),
+            }
+          : undefined,
+      ].filter(Boolean) as Prisma.RecipeWhereInput[],
+    };
 
     const recipes = await prisma.recipe.findMany({
-      where: {
-        OR: [
-          { recipeName: { contains: query, mode: 'insensitive' } },
-          { description: { contains: query, mode: 'insensitive' } },
-        ],
-      },
+      where: whereClause,
       include: {
         user: {
           select: {
