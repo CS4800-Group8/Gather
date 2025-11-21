@@ -4,9 +4,9 @@
 
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import PopupModal from "@/components/PopupModal"; // Viet add: use PopupModal for filter
-import { AdjustmentsHorizontalIcon } from "@heroicons/react/24/outline";
+import { FunnelIcon, MagnifyingGlassIcon } from "@heroicons/react/24/outline"; // AnN edit: Changed to FunnelIcon and MagnifyingGlassIcon for better UX on 20/11
 
 interface SearchBarProps {
   placeholder?: string;
@@ -46,6 +46,18 @@ export default function SearchBar({
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [selectedIngredients, setSelectedIngredients] = useState<string[]>([]);
 
+  // AnN add: Debounce timer to prevent excessive API calls on 20/11
+  const debounceTimer = useRef<NodeJS.Timeout | null>(null);
+
+  // AnN add: Cleanup debounce timer on unmount on 20/11
+  useEffect(() => {
+    return () => {
+      if (debounceTimer.current) {
+        clearTimeout(debounceTimer.current);
+      }
+    };
+  }, []);
+
   // Viet add: Fetch categories and ingredients when popup opens
   useEffect(() => {
     if (isFilterOpen) {
@@ -80,17 +92,22 @@ export default function SearchBar({
       };
       fetchFilters();
     }
-  }, [isFilterOpen]);
+  }, [isFilterOpen, source]);
 
+  // AnN edit: Debounced input handler to prevent excessive API calls on 20/11
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
-    setQuery(value);
-    onSearch(value, selectedCategories, selectedIngredients); // Viet edit: include filters
-  };
+    setQuery(value); // Update UI immediately for responsiveness
 
-  const handleClear = () => {
-    setQuery("");
-    onSearch("", selectedCategories, selectedIngredients);
+    // Clear existing timeout
+    if (debounceTimer.current) {
+      clearTimeout(debounceTimer.current);
+    }
+
+    // Set new timeout - only call onSearch after user stops typing for 300ms
+    debounceTimer.current = setTimeout(() => {
+      onSearch(value, selectedCategories, selectedIngredients);
+    }, 300);
   };
 
   // Viet add: Handle checkbox toggling for category and ingredient
@@ -112,29 +129,20 @@ export default function SearchBar({
     onSearch(query, selectedCategories, selectedIngredients);
   };
 
-  // Viet add: Clear all filters
-  const clearFilters = () => {
+  // AnN edit: Unified clear function - clears both query and filters on 20/11
+  const clearAll = () => {
+    setQuery("");
     setSelectedCategories([]);
     setSelectedIngredients([]);
+    setIsFilterOpen(false);
+    onSearch("", [], []); // Reset to show all recipes
   };
 
   return (
     <div className={`relative ${className}`}>
-      {/* Search Icon */}
+      {/* AnN edit: Modern Heroicons search icon on 20/11 */}
       <div className="absolute left-4 top-1/2 -translate-y-1/2 text-amber-600">
-        <svg
-          width="20"
-          height="20"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        >
-          <circle cx="11" cy="11" r="8"></circle>
-          <path d="m21 21-4.35-4.35"></path>
-        </svg>
+        <MagnifyingGlassIcon className="h-5 w-5" />
       </div>
 
       {/* Search Input */}
@@ -146,36 +154,25 @@ export default function SearchBar({
         className="w-full pl-12 pr-12 py-3 rounded-xl border-2 border-amber-200 bg-white focus:border-amber-400 focus:outline-none focus:ring-2 focus:ring-amber-200 text-amber-900 placeholder-amber-400 transition-all"
       />
 
-      {/* Clear Button (only show when there's text) */}
-      {query && (
+      {/* AnN edit: Unified clear button - replaces X icon and shows for both query and filters on 20/11 */}
+      {(query || selectedCategories.length > 0 || selectedIngredients.length > 0) && (
         <button
-          onClick={handleClear}
-          className="absolute right-14 top-1/2 -translate-y-1/2 text-amber-600 hover:text-amber-800 transition-colors"
-          aria-label="Clear search"
+          onClick={clearAll}
+          className="absolute right-14 top-1/2 -translate-y-1/2 px-2 py-1 rounded-lg bg-amber-100 text-amber-700 hover:bg-amber-200 transition-colors text-xs font-medium"
+          aria-label="Clear search and filters"
         >
-          <svg
-            width="20"
-            height="20"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <line x1="18" y1="6" x2="6" y2="18"></line>
-            <line x1="6" y1="6" x2="18" y2="18"></line>
-          </svg>
+          {selectedCategories.length > 0 || selectedIngredients.length > 0 ? "Clear filters" : "Clear"}
         </button>
       )}
 
       {/* Viet add: Filter button */}
+      {/* AnN edit: Changed to FunnelIcon for clearer filter affordance on 20/11 */}
       <button
         onClick={() => setIsFilterOpen(true)}
-        className="absolute right-3 top-1/2 -translate-y-1/2 
+        className="absolute right-3 top-1/2 -translate-y-1/2
         px-3 py-2 rounded-lg transition-colors hover:bg-amber-100"
       >
-        <AdjustmentsHorizontalIcon className="h-6 w-6 text-gray-500" />
+        <FunnelIcon className="h-6 w-6 text-amber-600" />
       </button>
 
       {/* Viet add: Filter Popup */}
@@ -243,7 +240,7 @@ export default function SearchBar({
           {/* Buttons */}
           <div className="flex justify-end gap-4 mt-6">
             <button
-              onClick={clearFilters}
+              onClick={clearAll}
               className="px-4 py-2 rounded-lg border border-amber-400 text-amber-700 hover:bg-amber-100 transition"
             >
               Clear
