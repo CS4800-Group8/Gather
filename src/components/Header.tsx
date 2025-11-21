@@ -146,6 +146,34 @@ export default function Header() {
   // Polls every 5 seconds when user is logged in
   usePolling(fetchNotifications, 5000, !!user?.id);
 
+  // AnN add: Poll for new messages to show red dot indicator on 20/11
+  const [hasNewMessages, setHasNewMessages] = useState(false);
+
+  const checkNewMessages = async () => {
+    if (!user?.id) return;
+
+    const lastViewed = localStorage.getItem("lastViewedMessages");
+    if (!lastViewed) {
+      // If user has never visited messages, don't show notification
+      return;
+    }
+
+    try {
+      const response = await fetch(
+        `/api/messages/has-new?userId=${user.id}&lastViewed=${lastViewed}`
+      );
+      if (response.ok) {
+        const data = await response.json();
+        setHasNewMessages(data.hasNew || false);
+      }
+    } catch (error) {
+      console.error("Error checking new messages:", error);
+    }
+  };
+
+  // Poll every 5 seconds when user is logged in
+  usePolling(checkNewMessages, 5000, !!user?.id);
+
   // AnN add: Additional optimizations for immediate updates on 11/6
   useEffect(() => {
     if (!user?.id) return;
@@ -287,18 +315,27 @@ export default function Header() {
               }
 
               // AnN add: Render Messages as icon only on 11/19
+              // AnN add: Show red dot when new messages on 20/11
               if (item.href === "/messages") {
                 return (
                   <Link
                     key={item.href}
                     href={item.href}
-                    className={`flex h-11 w-11 items-center justify-center rounded-full ${
+                    className={`relative flex h-11 w-11 items-center justify-center rounded-full ${
                       isActive(item.href)
                         ? "bg-amber-600 text-white shadow-md hover:bg-amber-700"
                         : "bg-[#ffdca0] text-amber-700 shadow-[0_6px_12px_rgba(255,195,120,0.25)] hover:bg-[#ffc873]"
                     } transition`}
                   >
                     <ChatBubbleLeftRightIcon className="h-6 w-6" />
+                    {/* AnN add: Red pulsing dot when new messages on 20/11 */}
+                    {/* AnN fix: Hide dot when user is on messages page on 20/11 */}
+                    {hasNewMessages && !isActive(item.href) && (
+                      <span className="absolute top-1 right-1 flex h-3 w-3 items-center justify-center">
+                        <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-400 opacity-75"></span>
+                        <span className="relative inline-flex h-3 w-3 rounded-full bg-red-500"></span>
+                      </span>
+                    )}
                   </Link>
                 );
               }

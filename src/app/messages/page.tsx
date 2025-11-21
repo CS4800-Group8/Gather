@@ -61,6 +61,13 @@ function MessagesContent() {
     }
   }, []);
 
+  // AnN add: Save timestamp when user visits messages page to clear red dot notification on 20/11
+  useEffect(() => {
+    if (user) {
+      localStorage.setItem("lastViewedMessages", new Date().toISOString());
+    }
+  }, [user]);
+
   if (!user) {
     return (
       <div className="flex min-h-screen items-center justify-center">

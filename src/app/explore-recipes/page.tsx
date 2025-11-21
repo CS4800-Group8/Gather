@@ -4,6 +4,7 @@
 
 import { useEffect, useState } from 'react';
 import Image from 'next/image';
+import { MagnifyingGlassIcon } from '@heroicons/react/24/outline'; // AnN add: Modern search icon on 20/11
 import APIRecipePopup from '@/components/APIRecipePopup'; // AnN add: Reusable API recipe popup component on 11/12
 import SearchBar from '@/components/SearchBar'; // AnN add: Search bar component for finding recipes on 11/12
 
@@ -71,16 +72,27 @@ export default function ExploreRecipesPage() {
   // Now using database-backed CommentSection component instead
 
   // Viet edit: Updated handleSearch to support name, category, and ingredient filters
+  // AnN fix: Optimize to filter existing results instead of refetching when typing with active filters on 20/11
   const handleSearch = async (
     query: string,
-    selectedCategories: string[] = [],
-    selectedIngredients: string[] = []
+    newCategories: string[] = [],
+    newIngredients: string[] = []
   ) => {
+    // AnN fix: Prevent concurrent API calls on 20/11
+    if (isSearching) {
+      return;
+    }
+
+    // Check if filters changed (comparing new params to current state)
+    const categoriesChanged = JSON.stringify(newCategories.sort()) !== JSON.stringify(selectedCategories.sort());
+    const ingredientsChanged = JSON.stringify(newIngredients.sort()) !== JSON.stringify(selectedIngredients.sort());
+
     setSearchQuery(query);
-    setSelectedCategories(selectedCategories);
-    setSelectedIngredients(selectedIngredients);
-    
-    if (!query.trim() && selectedCategories.length === 0 && selectedIngredients.length === 0) {
+    setSelectedCategories(newCategories);
+    setSelectedIngredients(newIngredients);
+
+    // If no filters or query, clear search results
+    if (!query.trim() && newCategories.length === 0 && newIngredients.length === 0) {
       setSearchResults([]);
       return;
     }
@@ -89,21 +101,44 @@ export default function ExploreRecipesPage() {
     try {
       let meals: Meal[] = [];
 
+      // AnN fix: If only query changed (filters still active), filter existing results instead of refetching on 20/11
+      if (query.trim() && (newCategories.length > 0 || newIngredients.length > 0) && searchResults.length > 0 && !categoriesChanged && !ingredientsChanged) {
+        // Filter existing search results by name
+        meals = searchResults.filter(m =>
+          m.strMeal.toLowerCase().includes(query.toLowerCase())
+        );
+        setSearchResults(meals);
+        setIsSearching(false);
+        return;
+      }
+
       // Category filters
-      if (selectedCategories.length > 0) {
-        const categoryPromises = selectedCategories.map((cat) =>
+      // AnN fix: Add error handling for API failures on 20/11
+      if (newCategories.length > 0) {
+        const categoryPromises = newCategories.map((cat) =>
           fetch(`https://www.themealdb.com/api/json/v1/1/filter.php?c=${encodeURIComponent(cat)}`)
+            .catch(err => {
+              console.error(`Failed to fetch category ${cat}:`, err);
+              return null;
+            })
         );
         const categoryResponses = await Promise.all(categoryPromises);
-        const categoryData = await Promise.all(categoryResponses.map((r) => r.json()));
+        const validResponses = categoryResponses.filter(r => r !== null);
+        const categoryData = await Promise.all(validResponses.map((r) => r!.json()));
         const categoryMeals = categoryData.flatMap((d) => d.meals || []);
 
         // Fetch full meal details
+        // AnN fix: Add error handling for detail fetches on 20/11
         const detailedCategoryMeals = await Promise.all(
           categoryMeals.map(async (m: Meal) => {
-            const res = await fetch(`https://www.themealdb.com/api/json/v1/1/lookup.php?i=${m.idMeal}`);
-            const data = await res.json();
-            return data.meals ? data.meals[0] : m;
+            try {
+              const res = await fetch(`https://www.themealdb.com/api/json/v1/1/lookup.php?i=${m.idMeal}`);
+              const data = await res.json();
+              return data.meals ? data.meals[0] : m;
+            } catch (err) {
+              console.error(`Failed to fetch meal details for ${m.idMeal}:`, err);
+              return m; // Return basic meal data if detail fetch fails
+            }
           })
         );
 
@@ -111,20 +146,32 @@ export default function ExploreRecipesPage() {
       }
 
       // Ingredient filters
-      if (selectedIngredients.length > 0) {
-        const ingredientPromises = selectedIngredients.map((ing) =>
+      // AnN fix: Add error handling for API failures on 20/11
+      if (newIngredients.length > 0) {
+        const ingredientPromises = newIngredients.map((ing) =>
           fetch(`https://www.themealdb.com/api/json/v1/1/filter.php?i=${encodeURIComponent(ing)}`)
+            .catch(err => {
+              console.error(`Failed to fetch ingredient ${ing}:`, err);
+              return null;
+            })
         );
         const ingredientResponses = await Promise.all(ingredientPromises);
-        const ingredientData = await Promise.all(ingredientResponses.map((r) => r.json()));
+        const validResponses = ingredientResponses.filter(r => r !== null);
+        const ingredientData = await Promise.all(validResponses.map((r) => r!.json()));
         const ingredientMeals = ingredientData.flatMap((d) => d.meals || []);
 
         // Fetch full meal details
+        // AnN fix: Add error handling for detail fetches on 20/11
         const detailedIngredientMeals = await Promise.all(
           ingredientMeals.map(async (m: Meal) => {
-            const res = await fetch(`https://www.themealdb.com/api/json/v1/1/lookup.php?i=${m.idMeal}`);
-            const data = await res.json();
-            return data.meals ? data.meals[0] : m;
+            try {
+              const res = await fetch(`https://www.themealdb.com/api/json/v1/1/lookup.php?i=${m.idMeal}`);
+              const data = await res.json();
+              return data.meals ? data.meals[0] : m;
+            } catch (err) {
+              console.error(`Failed to fetch meal details for ${m.idMeal}:`, err);
+              return m; // Return basic meal data if detail fetch fails
+            }
           })
         );
 
@@ -135,18 +182,24 @@ export default function ExploreRecipesPage() {
 
       // Name search handling
       if (query.trim()) {
-        if (selectedCategories.length > 0 || selectedIngredients.length > 0) {
+        if (newCategories.length > 0 || newIngredients.length > 0) {
           // Filter within existing meals if filters are applied
           meals = meals.filter(m =>
             m.strMeal.toLowerCase().includes(query.toLowerCase())
           );
         } else {
           // Otherwise, perform a fresh API name search
-          const res = await fetch(
-            `https://www.themealdb.com/api/json/v1/1/search.php?s=${encodeURIComponent(query)}`
-          );
-          const data = await res.json();
-          meals = data.meals || [];
+          // AnN fix: Add error handling for name search API failures on 20/11
+          try {
+            const res = await fetch(
+              `https://www.themealdb.com/api/json/v1/1/search.php?s=${encodeURIComponent(query)}`
+            );
+            const data = await res.json();
+            meals = data.meals || [];
+          } catch (err) {
+            console.error('Failed to fetch name search:', err);
+            meals = []; // Return empty array if search fails
+          }
         }
       }
 
@@ -504,9 +557,12 @@ export default function ExploreRecipesPage() {
           ))
         ) : isSearching ? (
           /* AnN add: Searching state on 11/12 */
+          /* AnN edit: Modern Heroicons search icon on 20/11 */
           <div className="col-span-full">
             <div className="glass-card p-12 text-center">
-              <div className="text-6xl mb-4 animate-pulse">🔍</div>
+              <div className="flex justify-center mb-4">
+                <MagnifyingGlassIcon className="h-24 w-24 text-amber-400 animate-pulse" />
+              </div>
               <h3 className="text-xl font-bold text-amber-900 mb-2">Searching...</h3>
               <p className="text-amber-700">Finding recipes for you</p>
             </div>
@@ -569,9 +625,12 @@ export default function ExploreRecipesPage() {
           ))
         ) : (
           /* AnN add: No results message on 11/12 */
+          /* AnN edit: Modern Heroicons search icon on 20/11 */
           <div className="col-span-full">
             <div className="glass-card p-12 text-center">
-              <div className="text-6xl mb-4">🔍</div>
+              <div className="flex justify-center mb-4">
+                <MagnifyingGlassIcon className="h-24 w-24 text-amber-400" />
+              </div>
               <h3 className="text-xl font-bold text-amber-900 mb-2">No recipes found</h3>
               <p className="text-amber-700">Try searching for a different recipe name</p>
             </div>
