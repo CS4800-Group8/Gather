@@ -1,3 +1,20 @@
+/**
+ * @file Categories API Route (GET/POST /api/categories)
+ *
+ * @description
+ * Provides CRUD functionality for recipe categories (Create + Read).
+ * This route allows creating new categories with case-insensitive uniqueness
+ * checks and fetching all existing categories sorted alphabetically.
+ *
+ * @returns
+ * - POST: JSON response with the created category or validation errors
+ * - GET: List of all categories in ascending alphabetical order
+ *
+ * @dependencies
+ * - Prisma: Category creation and retrieval
+ * - NextResponse: Standard JSON responses for Next.js API routes
+ */
+
 import { NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
 

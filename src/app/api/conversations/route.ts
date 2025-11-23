@@ -1,5 +1,26 @@
+/**
+ * @file Conversations API Route (GET/POST /api/conversations)
+ *
+ * @description
+ * Handles private messaging conversation logic between two users.
+ * Provides:
+ *  - POST: Create a new conversation (or fetch the existing one) between two users.
+ *  - GET: Retrieve all conversations for a given user with metadata about the
+ *         other participant and the most recent message.
+ *
+ * Conversations enforce a normalized ordering of user IDs (smaller → user1, larger → user2)
+ * to prevent duplicate conversation records.
+ *
+ * @returns
+ * - POST: Conversation object (existing or newly created)
+ * - GET: List of conversations with “other user” and last message info
+ *
+ * @dependencies
+ * - Prisma: Conversation lookup, creation, and retrieval
+ * - NextResponse: Standard HTTP JSON responses for Next.js routes
+ */
+
 // AnN add: Conversation API routes on 11/19
-// Handles creating/fetching conversations between two users
 
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";

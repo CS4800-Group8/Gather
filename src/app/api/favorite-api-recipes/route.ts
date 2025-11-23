@@ -1,4 +1,22 @@
-// Manage user's favorite API recipes: add, remove, and list favorites.
+/**
+ * @file Favorite API Recipes Route (GET/POST/DELETE /api/favorite-api-recipes)
+ *
+ * @description
+ * Handles favoriting operations for TheMealDB API recipes.
+ * Provides:
+ *  - POST: Add an API recipe to a user's favorite list
+ *  - DELETE: Remove an API recipe from favorites
+ *  - GET: Retrieve all API recipes favorited by a specific user
+ *
+ * Uses a composite unique key (userId + apiId) to prevent duplicates.
+ *
+ * @returns
+ * Standardized JSON responses indicating success, conflicts, or errors.
+ *
+ * @dependencies
+ * - Prisma: operations on FavoriteAPIRecipe model
+ * - NextResponse: JSON responses for Next.js API routes
+ */
 
 import { NextResponse } from "next/server";
 import prisma from '@/lib/prisma';
