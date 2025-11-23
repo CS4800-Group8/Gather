@@ -1,5 +1,26 @@
+/**
+ * @file Comments API Route (GET/POST/DELETE /api/comments)
+ *
+ * @description
+ * Provides functionality for comments on both user-created recipes
+ * and API-based recipes (TheMealDB). Supports fetching comments, creating new
+ * comments, and deleting comments with strict ownership validation.
+ *
+ * This route uses two identifiers to distinguish recipe types:
+ * - `recipeId` for user recipes (integer FK)
+ * - `apiId` for TheMealDB recipes (string identifier)
+ *
+ * @returns
+ * - GET: List of comments with user information
+ * - POST: Newly created comment with author details
+ * - DELETE: Deletion success message
+ *
+ * @dependencies
+ * - Prisma: Comment creation, retrieval, and deletion
+ * - NextResponse: Standardized JSON responses
+ */
+
 // AnN add: Comment API routes on 11/12
-// Handles fetching, creating, and deleting comments for both user and API recipes
 
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
