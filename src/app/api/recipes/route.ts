@@ -1,3 +1,29 @@
+/**
+ * @file Recipe Management API (POST/GET/DELETE /api/recipes)
+ *
+ * @description
+ * Provides operations for **user-created recipes**.
+ *
+ * Supported operations:
+ *   - POST   → Create a new recipe (with ingredients, categories, images, videos)
+ *   - GET    → Retrieve all recipes for a user (current user or another user)
+ *   - DELETE → Delete a recipe (only if the user owns it)
+ *
+ * Features:
+ *   - Supports photos, instructions, video URLs
+ *   - Automatically links ingredients and categories via join tables
+ *   - Flattens nested Prisma relationships for frontend compatibility
+ *
+ * @returns
+ * - POST:   `{ fullRecipe }`
+ * - GET:    `{ recipes: [...] }`
+ * - DELETE: `{ message: "Recipe deleted successfully" }`
+ *
+ * @dependencies
+ * - Prisma: Recipe, RecipeIngredient, RecipeCategory models
+ * - NextResponse: JSON API formatting
+ */
+
 import { NextResponse } from 'next/server'
 import prisma from '@/lib/prisma';
 

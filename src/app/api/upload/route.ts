@@ -1,3 +1,21 @@
+/**
+ * @file S3 Image Upload API (POST /api/upload)
+ *
+ * @description
+ * Handles uploading image files to AWS S3. This endpoint:
+ *   - Accepts multipart/form-data uploads
+ *   - Validates image type and file size (Vercel 4MB limit)
+ *   - Converts uploaded File → Buffer
+ *   - Calls `uploadToS3()` helper to store the file in AWS S3
+ *   - Returns a public image URL for frontend usage
+ *
+ * Supported file types: images only (image/* MIME types)
+ *
+ * @dependencies
+ * - uploadToS3(): AWS S3 upload helper from @/lib/s3
+ * - NextRequest / NextResponse: Next.js API utilities
+ */
+
 // AnN add: API endpoint for uploading recipe photos to S3 on 10/28
 import { NextRequest, NextResponse } from 'next/server';
 import { uploadToS3 } from '@/lib/s3';
