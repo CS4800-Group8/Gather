@@ -1,3 +1,28 @@
+/**
+ * @file Notifications API Route (GET /api/notifications)
+ *
+ * @description
+ * Retrieves and constructs the notification list for a user.
+ *
+ * This endpoint:
+ *   1. Fetches all raw notification records for the user
+ *   2. Fetches all *pending* friend requests directed at the user
+ *   3. Matches raw notifications to friendships by timestamp proximity
+ *   4. Produces a clean notification list enriched with the requester’s profile
+ *
+ * This logic is required because:
+ *   - A friend request generates both a Friendship and a Notification row
+ *   - They share no direct foreign key relationship
+ *   - Therefore they must be matched heuristically by creation time
+ *
+ * @returns
+ * `{ notifications: [...] }`
+ *
+ * @dependencies
+ * - Prisma: Notification + Friendship queries
+ * - NextResponse: JSON responses
+ */
+
 // AnN add: Notification API routes on 11/6
 // Reuses Thu's Notification model from schema.prisma
 

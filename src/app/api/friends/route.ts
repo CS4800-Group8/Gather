@@ -1,5 +1,24 @@
+/**
+ * @file Friends API Route (GET /api/friends)
+ *
+ * @description
+ * Returns the full list of accepted friends for a given user.
+ * A "friend" is defined as any friendship record where:
+ *   - status === "accepted"
+ *   - AND the user is either the requester or addressee
+ *
+ * This route normalizes results so the frontend always receives an array of
+ * **User objects** representing the other participant in each accepted friendship.
+ *
+ * @returns
+ * - GET: Array of friend user profiles
+ *
+ * @dependencies
+ * - Prisma: Friendship model queries + joined user lookup
+ * - NextResponse: Standard JSON responses for Next.js API routes
+ */
+
 // AnN add: Get user's friend list on 11/13
-// Returns all accepted friends for a given user
 
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
