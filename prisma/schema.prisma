@@ -9,7 +9,8 @@
 //    Friendship,
 //    Comment,
 //    Rating,
-
+//    Conversation,
+//    Message
 
 // ==================== PRISMA SCHEMA ====================
 
