@@ -1,3 +1,25 @@
+/**
+ * @file Community Users API (GET /api/users/all)
+ *
+ * @description
+ * Returns a list of all users **except the current logged-in user**, including:
+ *   - Basic profile info (firstname, lastname, username, avatarId)
+ *   - Recipe count for each user
+ *
+ * This endpoint powers:
+ *   - The Community page
+ *   - User discovery
+ *   - Displaying user cards sorted alphabetically
+ *
+ * Auth:
+ *   - Current user is extracted from `x-user-id` request header
+ *   - The current user is excluded from the response
+ *
+ * @dependencies
+ * - Prisma: User and recipe count queries
+ * - NextResponse: JSON response formatting
+ */
+
 // AnN add: API endpoint to get all users for Community page on 11/4
 // Thu will add friend status checking later
 import { NextResponse } from 'next/server';

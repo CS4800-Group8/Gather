@@ -1,4 +1,27 @@
-// Manage user's recipes: get (especially in search).
+/**
+ * @file Recipe Search API (GET /api/recipes/search)
+ *
+ * @description
+ * Provides advanced search and filtering for **user-created recipes**.
+ * Supports:
+ *   - Text search (recipe name & description)
+ *   - Category-based filtering
+ *   - Ingredient-based filtering
+ *
+ * The search query is highly flexible:
+ *   - omit all params → returns all recipes
+ *   - use 1 param → filtering still works
+ *   - combine text + category + ingredient → AND logic across groups
+ *
+ * Query matching is case-insensitive and uses Prisma relations.
+ *
+ * @returns
+ * `{ recipes: [...] }`
+ *
+ * @dependencies
+ * - Prisma: Recipe, Category, Ingredient join-table queries
+ * - NextResponse: Standard JSON response wrapper
+ */
 
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';

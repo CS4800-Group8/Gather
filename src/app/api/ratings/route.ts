@@ -1,3 +1,27 @@
+/**
+ * @file Ratings API Route (POST/GET /api/ratings)
+ *
+ * @description
+ * Handles creation, updating, and retrieval of recipe ratings for both:
+ *   - User-created recipes (recipeId)
+ *   - API-based recipes (apiId)
+ *
+ * Supports:
+ *   - POST: Upsert user rating (update if exists, create otherwise)
+ *   - GET: Retrieve all ratings, rating count, average score, and current user’s rating
+ *
+ * This unified route allows flexible rating for two recipe types using:
+ *   - Composite unique keys: userId_recipeId OR userId_apiId
+ *
+ * @returns
+ * - POST: The created/updated rating record
+ * - GET: { average, count, ratings, userRating }
+ *
+ * @dependencies
+ * - Prisma: Rating creation and lookup
+ * - NextResponse: Next.js response utility
+ */
+
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 

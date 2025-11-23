@@ -1,3 +1,24 @@
+/**
+ * @file User Detail API (GET /api/users/[id])
+ *
+ * @description
+ * Fetches the profile information of a single user by ID.  
+ * This endpoint is used for:
+ *   - Viewing another user’s profile page
+ *   - Showing user metadata in components such as headers, friend modals, etc.
+ *
+ * Returned user fields:
+ *   - id, username, firstname, lastname, avatarId
+ *   - recipe count (`_count.recipes`)
+ *
+ * @routeParam
+ * - `id`: Dynamic route parameter representing the user ID
+ *
+ * @dependencies
+ * - Prisma: User lookup with relational count
+ * - NextResponse: Standard API JSON response structure
+ */
+          
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 

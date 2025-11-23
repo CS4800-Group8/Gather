@@ -1,4 +1,28 @@
-// Manage user's recipes: get.
+/**
+ * @file All Recipes API Route (GET /api/recipes/all)
+ *
+ * @description
+ * Fetches **all user-created recipes globally**, including:
+ *   - Recipe metadata (name, description, media, timestamps)
+ *   - Recipe owner information (user)
+ *   - Ingredients + quantities
+ *   - Categories
+ *
+ * This endpoint is used for:
+ *   - Home feed (community feed)
+ *
+ * The handler:
+ *   1. Fetches all recipes with joined relations
+ *   2. Sorts by newest created
+ *   3. Transforms nested Prisma structures into flat frontend-friendly objects
+ *
+ * @returns
+ * `{ recipes: [...] }`
+ *
+ * @dependencies
+ * - Prisma: Recipe, User, RecipeIngredient, RecipeCategory models
+ * - NextResponse: JSON response helper
+ */
 
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';

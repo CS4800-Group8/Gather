@@ -1,3 +1,22 @@
+/**
+ * @file Update User Avatar API (PUT /api/user/avatar)
+ *
+ * @description
+ * Updates the logged-in user’s avatar by storing a new `avatarId`
+ * in the Users table. This endpoint:
+ *   - Validates required fields (`userId`, `avatarId`)
+ *   - Updates only the avatar field
+ *   - Returns the updated user profile (without password)
+ *
+ * Typical use cases:
+ *   - Profile settings → user selects a new avatar
+ *   - Onboarding flow → choose default profile image
+ * 
+ * @dependencies
+ * - Prisma: Update user model
+ * - NextResponse: Standard JSON response formatting
+ */
+
 // AnN add: API endpoint to update user avatar on 11/1
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
