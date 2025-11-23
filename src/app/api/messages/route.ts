@@ -1,5 +1,24 @@
+/**
+ * @file Messages API Route (GET/POST /api/messages)
+ *
+ * @description
+ * Implements messaging operations within a conversation. Supports:
+ *   - GET: Fetch all messages belonging to a specific conversation
+ *   - POST: Send a new message in a conversation and update conversation activity
+ *
+ * Messages are returned with sender profile data to support a fully-rendered
+ * chat UI (avatar, name, etc.).
+ *
+ * @returns
+ * - GET: `{ messages: [...] }`
+ * - POST: `{ message: {...} }`
+ *
+ * @dependencies
+ * - Prisma: Message creation, lookup, and conversation timestamp updates
+ * - NextResponse: Standard API JSON response wrapper
+ */
+
 // AnN add: Messages API routes on 11/19
-// Handles fetching and creating messages in conversations
 
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";

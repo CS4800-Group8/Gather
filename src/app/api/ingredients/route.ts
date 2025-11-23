@@ -1,3 +1,23 @@
+/**
+ * @file Ingredients API Route (GET/POST /api/ingredients)
+ *
+ * @description
+ * Provides creation and retrieval of recipe ingredients.
+ * Supports:
+ *   - POST: Create a new ingredient (case-insensitive uniqueness)
+ *   - GET: List all ingredients sorted alphabetically
+ *
+ * A unique constraint (ingredientName, case-insensitive) prevents duplicates.
+ *
+ * @returns
+ * - POST: Newly created ingredient 
+ * - GET: Sorted list of all ingredients in the database
+ *
+ * @dependencies
+ * - Prisma: Ingredient model creation and lookup
+ * - NextResponse: Next.js JSON response utilities
+ */
+
 import { NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
 

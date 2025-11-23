@@ -1,3 +1,26 @@
+/**
+ * @file Friend Request API Route (POST /api/friends/request)
+ *
+ * @description
+ * Handles sending new friend requests between users.
+ * Ensures:
+ *   - User IDs are valid and not identical
+ *   - No duplicate friendship (pending/accepted/rejected) is created
+ *
+ * When a request is successfully created, the route:
+ *   - Creates a new Friendship record with `status = "pending"`
+ *   - Sends a notification to the target user (addressee)
+ *
+ * @returns
+ * - On success: `{ friendship: {...} }`
+ * - On duplicate: `{ message: "Friendship already exists" }`
+ * - On error: `{ error: "...", status: 500 }`
+ *
+ * @dependencies
+ * - Prisma: Friendship + Notification creation and lookup
+ * - NextResponse: Standard Next.js JSON response formatting
+ */
+
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma"; // adjust path if different
 

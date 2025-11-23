@@ -1,3 +1,23 @@
+/**
+ * @file Friend Count API Route (GET /api/friends/count)
+ *
+ * @description
+ * Returns the total number of accepted friends for a specific user.
+ * Counts all friendship records where:
+ *   - status === "accepted"
+ *   - AND the user is either the requester or addressee.
+ *
+ * This endpoint is optimized for fast numeric lookup and does not return friend details,
+ * only the computed count.
+ *
+ * @returns
+ * JSON object containing: { count: number }
+ *
+ * @dependencies
+ * - Prisma: Efficient count query on Friendship model
+ * - NextResponse: Standard Next.js JSON response handling
+ */
+
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 
