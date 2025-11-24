@@ -11,7 +11,8 @@ import {
 } from "@/lib/avatarPresets";
 import AvatarImage from "./AvatarImage"; // An add: Use centralized avatar component on 10/23
 import NotiCard from "./NotiCard"; // AnN add: Notification card component on 11/6
-import { BellIcon, Bars3Icon, XMarkIcon, ChatBubbleLeftRightIcon } from "@heroicons/react/24/outline"; // AnN add: Modern bell icon on 11/6, hamburger menu icons on 11/18, chat icon on 11/19
+import { BellIcon, ChatBubbleLeftRightIcon, HomeIcon, MagnifyingGlassCircleIcon, UserGroupIcon, UserIcon } from "@heroicons/react/24/outline"; // AnN add: Modern bell icon on 11/6, chat icon on 11/19, bottom nav icons on 11/21, UserIcon for sign in on 11/21
+import { HomeIcon as HomeIconSolid, MagnifyingGlassCircleIcon as MagnifyingGlassCircleIconSolid, UserGroupIcon as UserGroupIconSolid, ChatBubbleLeftRightIcon as ChatBubbleLeftRightIconSolid } from "@heroicons/react/24/solid"; // AnN add: Solid icons for active state on bottom nav on 11/21
 import { usePolling } from "@/hooks/usePolling"; // AnN add: Reusable polling hook on 11/19
 
 const navLinks = siteConfig.nav;
@@ -474,16 +475,13 @@ export default function Header() {
                     <AvatarImage preset={avatarPreset} size="small" />}
                 </button>
 
-                {/* AnN edit: Responsive profile popup - fixed position on mobile for proper alignment on 11/18 */}
+                {/* AnN edit: Responsive profile popup - simple layout on 11/18 */}
                 {showProfile && (
                   <div className="fixed sm:absolute left-4 right-4 sm:left-auto sm:right-0 top-20 sm:top-auto mt-0 sm:mt-3 w-auto sm:w-64 rounded-3xl border border-[#ffeede]/90 bg-white/95 p-3 text-sm text-amber-700 shadow-[0_22px_44px_rgba(255,183,88,0.26)]">
-                    <Link
-                      href="/profile"
-                    >
+                    <Link href="/profile" onClick={() => setShowProfile(false)}>
                       <p className="w-full rounded-2xl bg-amber-100 px-4 py-3 text-sm font-semibold text-amber-700 hover:bg-amber-200 transition-colors mb-2 justify-center text-center">
                         {user?.username ?? "gatherer"}
                       </p>
-
                     </Link>
 
                     <button
@@ -642,111 +640,159 @@ export default function Header() {
                   </>
                 )}
               </div>
-
-              {/* Avatar for mobile */}
-              <div className="relative">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowProfile((current) => !current);
-                    setShowNotifications(false);
-                    setShowMobileMenu(false);
-                  }}
-                  className={`flex h-10 w-10 items-center justify-center rounded-full ${avatarPreset?.variant === 'emoji' ? avatarBgClass : 'bg-white'} shadow-[0_12px_24px_rgba(255,183,88,0.32)] transition hover:opacity-90`}
-                >
-                  {avatarPreset && <AvatarImage preset={avatarPreset} size="small" />}
-                </button>
-
-                {/* AnN edit: Mobile profile popup with backdrop on 11/18 */}
-                {showProfile && (
-                  <>
-                    {/* Backdrop overlay for mobile */}
-                    <div
-                      className="md:hidden fixed inset-0 bg-black/30 backdrop-blur-sm z-30"
-                      onClick={() => setShowProfile(false)}
-                      aria-label="Close profile menu"
-                      role="button"
-                    />
-                    <div
-                      className="fixed left-4 right-4 top-20 w-auto rounded-3xl border border-[#ffeede]/90 bg-white p-3 text-sm text-amber-700 shadow-[0_22px_44px_rgba(255,183,88,0.26)] z-40"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      <Link href="/profile">
-                        <p className="w-full rounded-2xl bg-amber-100 px-4 py-3 text-sm font-semibold text-amber-700 hover:bg-amber-200 transition-colors mb-2 justify-center text-center">
-                          {user?.username ?? "gatherer"}
-                        </p>
-                      </Link>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setShowProfile(false);
-                          router.push("/user-settings");
-                        }}
-                        className="w-full rounded-2xl bg-amber-100 px-4 py-3 text-sm font-semibold text-amber-700 hover:bg-amber-200 transition-colors mb-2"
-                      >
-                        Settings
-                      </button>
-                      <button
-                        type="button"
-                        onClick={handleSignOut}
-                        className="w-full rounded-2xl bg-amber-100 px-4 py-3 text-sm font-semibold text-amber-700 hover:bg-amber-200 transition-colors"
-                      >
-                        Sign out
-                      </button>
-                    </div>
-                  </>
-                )}
-              </div>
             </>
           )}
-
-          {/* Hamburger menu button */}
-          <button
-            type="button"
-            onClick={() => {
-              setShowMobileMenu((current) => !current);
-              setShowProfile(false);
-              setShowNotifications(false);
-            }}
-            className="flex h-10 w-10 items-center justify-center rounded-full bg-[#ffdca0] text-amber-700 shadow-[0_6px_12px_rgba(255,195,120,0.25)] hover:bg-[#ffc873] transition"
-            aria-label="Toggle menu"
-          >
-            {showMobileMenu ? (
-              <XMarkIcon className="h-6 w-6" />
-            ) : (
-              <Bars3Icon className="h-6 w-6" />
-            )}
-          </button>
         </div>
       </div>
 
-      {/* AnN add: Mobile navigation menu with slide animation on 11/18 */}
-      <div className={`md:hidden border-t border-amber-200 bg-amber-50/95 backdrop-blur-md transition-all duration-300 overflow-hidden ${
-        showMobileMenu ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'
-      }`}>
-        <nav className="mx-auto max-w-6xl px-4 py-4 flex flex-col gap-2">
-            {navLinks.map((item) => {
-              if (!user && item.href !== "/explore-recipes") {
-                return null;
-              }
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className={`w-full text-center ${isActive(item.href) ? activeNavClasses : baseNavClasses}`}
-                >
-                  {item.label}
-                </Link>
-              );
-            })}
-            {!user && (
-              <Link
-                href="/signin"
-                className={`w-full text-center ${isActive("/signin") ? activeNavClasses : baseNavClasses}`}
-              >
-                Sign in
-              </Link>
+      {/* AnN add: Mobile bottom navigation bar - always visible on 11/21 */}
+      <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 border-t border-amber-300 bg-amber-100/95 backdrop-blur-md shadow-[0_-4px_12px_rgba(255,183,88,0.15)]">
+        <nav className="flex items-center justify-around px-2 py-2">
+          {/* Home - only show when logged in */}
+          {user && (
+            <Link
+              href="/"
+              className="flex flex-col items-center justify-center gap-1 px-3 py-2 rounded-xl transition-colors hover:bg-amber-200/50 min-w-[60px]"
+            >
+              {isActive("/") ? (
+                <HomeIconSolid className="h-6 w-6 text-amber-700" />
+              ) : (
+                <HomeIcon className="h-6 w-6 text-amber-600" />
+              )}
+              <span className={`text-xs font-medium ${isActive("/") ? "text-amber-900" : "text-amber-700"}`}>
+                Home
+              </span>
+            </Link>
+          )}
+
+          {/* Explore */}
+          <Link
+            href="/explore-recipes"
+            className="flex flex-col items-center justify-center gap-1 px-3 py-2 rounded-xl transition-colors hover:bg-amber-200/50 min-w-[60px]"
+          >
+            {isActive("/explore-recipes") ? (
+              <MagnifyingGlassCircleIconSolid className="h-6 w-6 text-amber-700" />
+            ) : (
+              <MagnifyingGlassCircleIcon className="h-6 w-6 text-amber-600" />
             )}
+            <span className={`text-xs font-medium ${isActive("/explore-recipes") ? "text-amber-900" : "text-amber-700"}`}>
+              Explore
+            </span>
+          </Link>
+
+          {/* Community - only show when logged in */}
+          {user && (
+            <Link
+              href="/community"
+              className="flex flex-col items-center justify-center gap-1 px-3 py-2 rounded-xl transition-colors hover:bg-amber-200/50 min-w-[60px]"
+            >
+              {isActive("/community") ? (
+                <UserGroupIconSolid className="h-6 w-6 text-amber-700" />
+              ) : (
+                <UserGroupIcon className="h-6 w-6 text-amber-600" />
+              )}
+              <span className={`text-xs font-medium ${isActive("/community") ? "text-amber-900" : "text-amber-700"}`}>
+                Community
+              </span>
+            </Link>
+          )}
+
+          {/* Messages - only show when logged in */}
+          {user && (
+            <Link
+              href="/messages"
+              className="relative flex flex-col items-center justify-center gap-1 px-3 py-2 rounded-xl transition-colors hover:bg-amber-200/50 min-w-[60px]"
+            >
+              {isActive("/messages") ? (
+                <ChatBubbleLeftRightIconSolid className="h-6 w-6 text-amber-700" />
+              ) : (
+                <ChatBubbleLeftRightIcon className="h-6 w-6 text-amber-600" />
+              )}
+              {/* Red dot for new messages */}
+              {hasNewMessages && !isActive("/messages") && (
+                <span className="absolute top-1 right-2 flex h-2 w-2">
+                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-400 opacity-75"></span>
+                  <span className="relative inline-flex h-2 w-2 rounded-full bg-red-500"></span>
+                </span>
+              )}
+              <span className={`text-xs font-medium ${isActive("/messages") ? "text-amber-900" : "text-amber-700"}`}>
+                Messages
+              </span>
+            </Link>
+          )}
+
+          {/* Profile - only show when logged in */}
+          {user ? (
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowProfile((current) => !current);
+                  setShowNotifications(false);
+                }}
+                className="flex items-center justify-center p-2 rounded-xl transition-colors hover:bg-amber-200/50"
+              >
+                <div className="flex items-center justify-center" style={{ width: '36px', height: '36px' }}>
+                  {avatarPreset && (
+                    <div style={{ transform: 'scale(0.82)', transformOrigin: 'center' }}>
+                      <AvatarImage preset={avatarPreset} size="small" />
+                    </div>
+                  )}
+                </div>
+              </button>
+
+              {/* Profile popup for mobile bottom nav */}
+              {showProfile && (
+                <>
+                  {/* Backdrop overlay */}
+                  <div
+                    className="md:hidden fixed inset-0 bg-black/30 backdrop-blur-sm z-30"
+                    onClick={() => setShowProfile(false)}
+                    aria-label="Close profile menu"
+                    role="button"
+                  />
+                  <div
+                    className="fixed left-4 right-4 top-20 w-auto rounded-3xl border border-[#ffeede]/90 bg-white p-3 text-sm text-amber-700 shadow-[0_22px_44px_rgba(255,183,88,0.26)] z-40"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <Link href="/profile" onClick={() => setShowProfile(false)}>
+                      <p className="w-full rounded-2xl bg-amber-100 px-4 py-3 text-sm font-semibold text-amber-700 hover:bg-amber-200 transition-colors mb-2 justify-center text-center">
+                        {user?.username ?? "gatherer"}
+                      </p>
+                    </Link>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowProfile(false);
+                        router.push("/user-settings");
+                      }}
+                      className="w-full rounded-2xl bg-amber-100 px-4 py-3 text-sm font-semibold text-amber-700 hover:bg-amber-200 transition-colors mb-2"
+                    >
+                      Settings
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleSignOut}
+                      className="w-full rounded-2xl bg-amber-100 px-4 py-3 text-sm font-semibold text-amber-700 hover:bg-amber-200 transition-colors"
+                    >
+                      Sign out
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+          ) : (
+            <Link
+              href="/signin"
+              className="flex flex-col items-center justify-center gap-1 px-3 py-2 rounded-xl transition-colors hover:bg-amber-200/50 min-w-[60px]"
+            >
+              <UserIcon className="h-6 w-6 text-amber-600" />
+              <span className="text-xs font-medium text-amber-700">
+                Sign In
+              </span>
+            </Link>
+          )}
         </nav>
       </div>
     </header>

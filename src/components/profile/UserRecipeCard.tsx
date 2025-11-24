@@ -95,15 +95,15 @@ export default function UserRecipeCard({
         </button>
       )}
 
-      <div className="flex gap-6 p-6">
-        <div className="relative h-48 w-48 flex-shrink-0 rounded-lg overflow-hidden">
+      <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 p-3 sm:p-6">
+        <div className="relative w-full sm:h-48 sm:w-48 sm:flex-shrink-0 h-40 rounded-lg overflow-hidden">
           {recipe.photoUrl ? (
             <Image
               src={recipe.photoUrl}
               alt={recipe.recipeName}
               fill
               className="object-cover group-hover:scale-110 transition-transform duration-300"
-              sizes="192px"
+              sizes="(max-width: 640px) 100vw, 192px"
             />
           ) : (
             <div className="h-full w-full bg-gradient-to-br from-amber-100 to-amber-200 flex items-center justify-center">
@@ -113,7 +113,7 @@ export default function UserRecipeCard({
         </div>
         <div className="flex flex-1 flex-col gap-3">
           <div>
-            <h3 className="text-2xl font-bold text-amber-900 mb-2">{recipe.recipeName}</h3>
+            <h3 className="text-lg sm:text-2xl font-bold text-amber-900 mb-2">{recipe.recipeName}</h3>
             {recipe.description && (
               <p className="text-sm text-amber-700 line-clamp-3">{recipe.description}</p>
             )}
@@ -121,7 +121,7 @@ export default function UserRecipeCard({
             {recipe.ingredients && recipe.ingredients.length > 0 && (
               <div>
                 <p className="text-sm font-semibold text-amber-900">Ingredients:</p>
-                <ul className="text-sm text-amber-800 list-disc list-inside">
+                <ul className="text-xs sm:text-sm text-amber-800 list-disc list-inside">
                   {recipe.ingredients.map((ri) => (
                     <li key={ri.id}>
                       {ri.name} — {ri.quantity}
@@ -137,7 +137,7 @@ export default function UserRecipeCard({
                   {recipe.categories.map((rc) => (
                     <span
                       key={rc.id}
-                      className='bg-amber-100 border border-amber-300 px-3 py-2 rounded-xl text-xs mr-2'>
+                      className='bg-amber-100 border border-amber-300 px-2 py-1 sm:px-3 sm:py-2 rounded-xl text-xs mr-2'>
                       {rc.name}
                     </span>
                   ))}
