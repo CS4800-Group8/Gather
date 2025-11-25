@@ -111,6 +111,33 @@ export async function POST(req: Request) {
       },
     });
 
+    // Create notification for user recipe comments (not API recipes)
+    if (type === "user") {
+      try {
+        // Fetch recipe to get owner and name
+        const recipe = await prisma.recipe.findUnique({
+          where: { recipeId: parseInt(recipeId) },
+          select: { userId: true, recipeName: true },
+        });
+
+        // Only notify if commenting on someone else's recipe
+        if (recipe && recipe.userId !== userId) {
+          await prisma.notification.create({
+            data: {
+              userId: recipe.userId,
+              relatedUserId: userId, // AnN add: Link to commenter for avatar display on 11/25
+              relatedRecipeId: parseInt(recipeId), // AnN add: Link to recipe for click-to-open on 11/25
+              type: "recipe_comment",
+              message: `commented on your recipe "${recipe.recipeName}"`,
+            },
+          });
+        }
+      } catch (notifErr) {
+        // Don't fail the comment if notification fails
+        console.error("Error creating comment notification:", notifErr);
+      }
+    }
+
     return NextResponse.json({ comment }, { status: 201 });
   } catch (error) {
     console.error("Error creating comment:", error);

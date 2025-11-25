@@ -18,7 +18,15 @@ export async function GET(req: Request) {
     const notifications = await prisma.notification.findMany({
       where: { userId },
       orderBy: { createdAt: "desc" },
-      include: {
+      select: {
+        id: true,
+        userId: true,
+        relatedUserId: true, // AnN add: Include relatedUserId on 11/25
+        relatedRecipeId: true, // AnN add: Include relatedRecipeId for click-to-open on 11/25
+        type: true,
+        message: true,
+        isRead: true,
+        createdAt: true,
         user: {
           select: {
             id: true,
@@ -70,7 +78,7 @@ export async function GET(req: Request) {
     }
 
     // AnN add: Enrich notifications with requester info on 11/6
-    const enrichedNotifications = Array.from(validNotifications.entries()).map(
+    const enrichedFriendRequestNotifications = Array.from(validNotifications.entries()).map(
       ([requesterId, notif]) => {
         const friendship = pendingFriendships.find((f) => f.requesterId === requesterId);
         return {
@@ -80,7 +88,38 @@ export async function GET(req: Request) {
       }
     );
 
-    return NextResponse.json({ notifications: enrichedNotifications });
+    // AnN add: Include other notification types (ratings, comments, etc.) on 11/24
+    // AnN update: Fetch relatedUser for avatar display on 11/25
+    const otherNotifications = await Promise.all(
+      notifications
+        .filter((n) => n.type !== "friend_request")
+        .map(async (notif) => {
+          // Fetch related user if relatedUserId exists (for ratings/comments)
+          let relatedUser = null;
+          if (notif.relatedUserId) {
+            relatedUser = await prisma.user.findUnique({
+              where: { id: notif.relatedUserId },
+              select: {
+                id: true,
+                username: true,
+                firstname: true,
+                lastname: true,
+                avatarId: true,
+              },
+            });
+          }
+          return {
+            ...notif,
+            relatedUser,
+          };
+        })
+    );
+
+    // Combine all notifications and sort by date
+    const allNotifications = [...enrichedFriendRequestNotifications, ...otherNotifications]
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+    return NextResponse.json({ notifications: allNotifications });
   } catch (error) {
     console.error("Error fetching notifications:", error);
     return NextResponse.json(

@@ -11,6 +11,8 @@ import {
 } from "@/lib/avatarPresets";
 import AvatarImage from "./AvatarImage"; // An add: Use centralized avatar component on 10/23
 import NotiCard from "./NotiCard"; // AnN add: Notification card component on 11/6
+import UserRecipePopup from "./profile/UserRecipePopup"; // AnN add: Recipe popup for notification click on 11/25
+import { UserRecipe } from "./profile/UserRecipeCard"; // AnN add: Recipe type for popup on 11/25
 import { BellIcon, ChatBubbleLeftRightIcon, HomeIcon, MagnifyingGlassCircleIcon, UserGroupIcon, UserIcon } from "@heroicons/react/24/outline"; // AnN add: Modern bell icon on 11/6, chat icon on 11/19, bottom nav icons on 11/21, UserIcon for sign in on 11/21
 import { HomeIcon as HomeIconSolid, MagnifyingGlassCircleIcon as MagnifyingGlassCircleIconSolid, UserGroupIcon as UserGroupIconSolid, ChatBubbleLeftRightIcon as ChatBubbleLeftRightIconSolid } from "@heroicons/react/24/solid"; // AnN add: Solid icons for active state on bottom nav on 11/21
 import { usePolling } from "@/hooks/usePolling"; // AnN add: Reusable polling hook on 11/19
@@ -31,6 +33,7 @@ interface Notification {
     lastname: string;
     avatarId: string;
   } | null;
+  relatedRecipeId?: number | null; // AnN add: For recipe click on 11/25
 }
 
 // An fix: Made buttons darker and improved contrast
@@ -62,6 +65,9 @@ export default function Header() {
   const [unreadCount, setUnreadCount] = useState(0);
   // AnN add: Mobile menu state on 11/18
   const [showMobileMenu, setShowMobileMenu] = useState(false);
+  // AnN add: Recipe popup state for notification click on 11/25
+  const [selectedRecipe, setSelectedRecipe] = useState<UserRecipe | null>(null);
+  const [showRecipePopup, setShowRecipePopup] = useState(false);
 
   useEffect(() => {
     const loadUser = () => {
@@ -287,7 +293,27 @@ export default function Header() {
     }
   };
 
+  // AnN add: Handle recipe click from notification on 11/25
+  const handleRecipeClick = async (recipeId: number) => {
+    if (!recipeId) return;
+
+    try {
+      const response = await fetch(`/api/recipes/${recipeId}`);
+      if (response.ok) {
+        const data = await response.json();
+        setSelectedRecipe(data.recipe);
+        setShowRecipePopup(true);
+        setShowNotifications(false); // Close notifications panel
+      } else {
+        console.error("Failed to fetch recipe");
+      }
+    } catch (error) {
+      console.error("Error fetching recipe:", error);
+    }
+  };
+
   return (
+    <>
     <header className="fixed top-0 left-0 right-0 z-50 w-full border-b border-amber-300 bg-amber-100/95 backdrop-blur-md shadow-md">
       <div className="mx-auto flex w-full max-w-6xl flex-row items-center justify-between gap-4 px-4 py-3 sm:px-6 sm:py-4 lg:px-8">
         {/* AnN edit: Responsive logo - centered on mobile, top-aligned on desktop on 11/18 */}
@@ -415,9 +441,11 @@ export default function Header() {
                                       createdAt={notification.createdAt}
                                       isRead={notification.isRead}
                                       relatedUser={notification.relatedUser}
+                                      relatedRecipeId={notification.relatedRecipeId}
                                       onMarkRead={handleMarkNotificationRead}
                                       onAccept={handleAcceptFriend}
                                       onReject={handleRejectFriend}
+                                      onRecipeClick={handleRecipeClick}
                                     />
                                   ))}
                               </>
@@ -446,9 +474,11 @@ export default function Header() {
                                       createdAt={notification.createdAt}
                                       isRead={notification.isRead}
                                       relatedUser={notification.relatedUser}
+                                      relatedRecipeId={notification.relatedRecipeId}
                                       onMarkRead={handleMarkNotificationRead}
                                       onAccept={handleAcceptFriend}
                                       onReject={handleRejectFriend}
+                                      onRecipeClick={handleRecipeClick}
                                     />
                                   ))}
                               </>
@@ -597,9 +627,11 @@ export default function Header() {
                                     createdAt={notification.createdAt}
                                     isRead={notification.isRead}
                                     relatedUser={notification.relatedUser}
+                                    relatedRecipeId={notification.relatedRecipeId}
                                     onMarkRead={handleMarkNotificationRead}
                                     onAccept={handleAcceptFriend}
                                     onReject={handleRejectFriend}
+                                    onRecipeClick={handleRecipeClick}
                                   />
                                 ))}
                             </>
@@ -626,9 +658,11 @@ export default function Header() {
                                     createdAt={notification.createdAt}
                                     isRead={notification.isRead}
                                     relatedUser={notification.relatedUser}
+                                    relatedRecipeId={notification.relatedRecipeId}
                                     onMarkRead={handleMarkNotificationRead}
                                     onAccept={handleAcceptFriend}
                                     onReject={handleRejectFriend}
+                                    onRecipeClick={handleRecipeClick}
                                   />
                                 ))}
                             </>
@@ -796,5 +830,17 @@ export default function Header() {
         </nav>
       </div>
     </header>
+
+    {/* AnN add: Recipe popup for notification click on 11/25 - OUTSIDE header for proper z-index */}
+    {showRecipePopup && selectedRecipe && (
+      <UserRecipePopup
+        recipe={selectedRecipe}
+        onClose={() => {
+          setShowRecipePopup(false);
+          setSelectedRecipe(null);
+        }}
+      />
+    )}
+    </>
   );
 }
