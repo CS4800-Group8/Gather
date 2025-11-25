@@ -23,9 +23,10 @@ interface Rating {
 interface RatingSectionProps {
   recipeId: string;
   recipeType: 'api' | 'user';
+  onClose?: () => void; // AnN add: Close popup before navigation on 11/25
 }
 
-export default function RatingSection({ recipeId, recipeType }: RatingSectionProps) {
+export default function RatingSection({ recipeId, recipeType, onClose }: RatingSectionProps) {
   const router = useRouter();
   const [ratings, setRatings] = useState<Rating[]>([]);
   const [currentUserId, setCurrentUserId] = useState<number | null>(null);
@@ -197,13 +198,15 @@ export default function RatingSection({ recipeId, recipeType }: RatingSectionPro
                 className="flex gap-3 p-4 bg-amber-50 rounded-xl hover:bg-amber-100 transition"
               >
                 <button
-                  onClick={() =>
+                  onClick={() => {
+                    // AnN add: Close popup before navigation on 11/25
+                    if (onClose) onClose();
                     router.push(
                       rating.user.id === currentUserId
                         ? '/profile'
                         : `/other-profile?userId=${rating.user.id}`
-                    )
-                  }
+                    );
+                  }}
                   className="flex-shrink-0 hover:opacity-80 transition-opacity"
                 >
                   <AvatarImage preset={avatarPreset} size="small" />
@@ -212,13 +215,15 @@ export default function RatingSection({ recipeId, recipeType }: RatingSectionPro
                 <div className="flex-1">
                   <div className="flex items-center justify-between gap-4 mb-1">
                     <button
-                      onClick={() =>
+                      onClick={() => {
+                        // AnN add: Close popup before navigation on 11/25
+                        if (onClose) onClose();
                         router.push(
                           rating.user.id === currentUserId
                             ? '/profile'
                             : `/other-profile?userId=${rating.user.id}`
-                        )
-                      }
+                        );
+                      }}
                       className="font-semibold text-amber-900 hover:text-amber-700 hover:underline transition-colors"
                     >
                       {rating.user.firstname} {rating.user.lastname}
