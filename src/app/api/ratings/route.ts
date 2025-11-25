@@ -58,6 +58,35 @@ export async function POST(req: Request) {
       },
     });
 
+    // Create notification for user recipe ratings (not API recipes)
+    if (recipeId) {
+      try {
+        // Fetch recipe to get owner and name
+        const recipe = await prisma.recipe.findUnique({
+          where: { recipeId: Number(recipeId) },
+          select: { userId: true, recipeName: true },
+        });
+
+        // Only notify if rating someone else's recipe
+        if (recipe && recipe.userId !== userId) {
+          const stars = "⭐".repeat(ratingValue);
+
+          await prisma.notification.create({
+            data: {
+              userId: recipe.userId,
+              relatedUserId: userId, // AnN add: Link to rater for avatar display on 11/25
+              relatedRecipeId: Number(recipeId), // AnN add: Link to recipe for click-to-open on 11/25
+              type: "recipe_rating",
+              message: `rated your recipe "${recipe.recipeName}" ${stars}`,
+            },
+          });
+        }
+      } catch (notifErr) {
+        // Don't fail the rating if notification fails
+        console.error("Error creating rating notification:", notifErr);
+      }
+    }
+
     return NextResponse.json(rating, { status: 200 });
   } catch (err) {
     console.error("Error adding rating:", err);

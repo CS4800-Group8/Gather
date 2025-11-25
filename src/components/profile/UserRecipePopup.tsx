@@ -23,7 +23,7 @@ function getYouTubeVideoId(url: string): string | null {
 export default function UserRecipePopup({ recipe, onClose }: UserRecipePopupProps) {
   return (
     <div
-      className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+      className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[60] flex items-center justify-center p-4"
       onClick={onClose}
     >
       {/* AnN edit: Changed max-w-4xl to max-w-6xl for wider layout matching APIRecipePopup on 11/12 */}

@@ -162,14 +162,16 @@ model FavoriteAPIRecipe {
 // ==================== NOTIFICATION ====================
 // 
 model Notification {
-  id         Int      @id @default(autoincrement())
-  userId     Int
-  type       String   // e.g., 'friend_request', 'friend_accept'
-  message    String
-  isRead     Boolean  @default(false)
-  createdAt  DateTime @default(now())
+  id              Int      @id @default(autoincrement())
+  userId          Int
+  relatedUserId   Int?     // The user who triggered the notification (rater, commenter, etc.) // AnN added 11/25
+  relatedRecipeId Int?     // The recipe related to the notification // AnN added 11/25
+  type            String   // e.g., 'friend_request', 'friend_accept', 'recipe_rating', 'recipe_comment'
+  message         String
+  isRead          Boolean  @default(false)
+  createdAt       DateTime @default(now())
 
-  user       User     @relation(fields: [userId], references: [id])
+  user            User     @relation(fields: [userId], references: [id])
 }
 
 //
