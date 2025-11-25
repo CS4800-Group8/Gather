@@ -155,11 +155,13 @@ export default function UserRecipePopup({ recipe, onClose }: UserRecipePopupProp
               <RatingSection
                 recipeId={recipe.recipeId.toString()}
                 recipeType="user"
+                onClose={onClose}
               />
 
               <CommentSection
                 recipeId={recipe.recipeId.toString()}
                 recipeType="user"
+                onClose={onClose}
               />
             </div>
           </div>
