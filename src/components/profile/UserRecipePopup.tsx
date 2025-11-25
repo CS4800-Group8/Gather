@@ -59,17 +59,17 @@ export default function UserRecipePopup({ recipe, onClose }: UserRecipePopupProp
 
         {/* AnN edit: Two-column layout - recipe details left, comments right on 11/12 */}
         <div className="overflow-y-auto flex-1 popUp-scrollbar">
-          <div className="grid lg:grid-cols-[1fr,400px] gap-6 p-6">
+          <div className="grid grid-cols-1 md:grid-cols-[1fr,350px] lg:grid-cols-[1fr,400px] gap-4 md:gap-6 p-4 md:p-6">
             {/* Left column: Recipe details */}
             <div>
               {recipe.photoUrl && (
-                <div className="relative w-full h-96 rounded-xl overflow-hidden mb-6">
+                <div className="relative w-full h-48 sm:h-64 md:h-96 rounded-xl overflow-hidden mb-6">
                   <Image
                     src={recipe.photoUrl}
                     alt={recipe.recipeName}
                     fill
                     className="object-cover"
-                    sizes="(max-width: 896px) 100vw, 896px"
+                    sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 896px"
                   />
                 </div>
               )}
