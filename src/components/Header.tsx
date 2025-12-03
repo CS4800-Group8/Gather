@@ -316,11 +316,11 @@ export default function Header() {
   return (
     <>
     <header className="fixed top-0 left-0 right-0 z-50 w-full border-b border-amber-300 bg-amber-100/95 backdrop-blur-md shadow-md">
-      <div className="mx-auto flex w-full max-w-6xl flex-row items-center justify-between gap-4 px-4 py-3 sm:px-6 sm:py-4 lg:px-8">
+      <div className="mx-auto flex w-full max-w-6xl flex-row items-center justify-between gap-4 px-4 py-2 sm:px-6 sm:py-3 lg:px-8">
         {/* AnN edit: Responsive logo - centered on mobile, top-aligned on desktop on 11/18 */}
         {/* AnN update: Support custom logo with fallback icon on 12/1 */}
         <Link href="/" className="flex items-center gap-2 sm:gap-3">
-          <div className="relative flex h-14 w-14 sm:h-16 sm:w-16 items-center justify-center rounded-2xl bg-[#fff3cf] overflow-hidden">
+          <div className="relative flex h-12 w-12 sm:h-14 sm:w-14 items-center justify-center rounded-2xl bg-[#fff3cf] overflow-hidden">
             {siteConfig.logo ? (
               <Image
                 src={siteConfig.logo}
