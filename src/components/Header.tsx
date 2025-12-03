@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image"; // AnN add: For custom logo support on 12/1
 import { usePathname, useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import { siteConfig } from "@/lib/siteConfig";
@@ -317,11 +318,22 @@ export default function Header() {
     <header className="fixed top-0 left-0 right-0 z-50 w-full border-b border-amber-300 bg-amber-100/95 backdrop-blur-md shadow-md">
       <div className="mx-auto flex w-full max-w-6xl flex-row items-center justify-between gap-4 px-4 py-3 sm:px-6 sm:py-4 lg:px-8">
         {/* AnN edit: Responsive logo - centered on mobile, top-aligned on desktop on 11/18 */}
-        <Link href="/" className="flex items-center sm:items-start gap-2 sm:gap-3">
-          <div className="flex h-10 w-10 sm:h-11 sm:w-11 items-center justify-center rounded-2xl bg-[#fff3cf] text-[#ffb86b]">
-            <span className="text-lg sm:text-xl">🥗</span>
+        {/* AnN update: Support custom logo with fallback icon on 12/1 */}
+        <Link href="/" className="flex items-center gap-2 sm:gap-3">
+          <div className="relative flex h-14 w-14 sm:h-16 sm:w-16 items-center justify-center rounded-2xl bg-[#fff3cf] overflow-hidden">
+            {siteConfig.logo ? (
+              <Image
+                src={siteConfig.logo}
+                alt={siteConfig.name}
+                fill
+                className="object-contain p-2"
+                priority
+              />
+            ) : (
+              <span className="text-2xl sm:text-3xl">{siteConfig.logoIcon || "🥗"}</span>
+            )}
           </div>
-          <div className="flex flex-col justify-center sm:justify-start">
+          <div className="flex flex-col justify-center">
             <span className="text-base sm:text-lg md:text-xl font-semibold text-amber-700">
               {siteConfig.name}
             </span>
