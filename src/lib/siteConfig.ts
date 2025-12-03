@@ -9,6 +9,10 @@ export const siteConfig = {
   company: "NVMA Tech",
   description:
     "Bright, simple recipe finder by NVMA Tech. The main content is intentionally minimal so you can plug in your API results.",
+  // AnN add: Logo configuration on 12/1
+  // To use custom logo: add your logo file to /public/logo/ and set logo path below
+  logo: "/logo/nvma-2.png" as string | undefined, // NVMA Tech logo with header-matching background
+  logoIcon: "📖", // Fallback icon when no custom logo is set
   // AnN fix: Moved all nav links to siteConfig for consistency on 11/6
   nav: [
     { href: "/", label: "Home" },
