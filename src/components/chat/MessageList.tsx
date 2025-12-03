@@ -38,6 +38,7 @@ export default function MessageList({
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const prevMessageCountRef = useRef(0);
+  const prevConversationIdRef = useRef<number | null>(null);
   const router = useRouter();
 
   // AnN add: Auto-scroll to bottom when new messages arrive on 11/19
@@ -70,6 +71,20 @@ export default function MessageList({
 
     prevMessageCountRef.current = messages.length;
   }, [messages, currentUserId]);
+
+  // AnN add: Scroll to bottom when opening/returning to any conversation on 11/24
+  useEffect(() => {
+    const conversationChanged = prevConversationIdRef.current !== conversationId;
+
+    if (!conversationId) {
+      // Reset ref when leaving conversation (so returning to same conversation triggers scroll)
+      prevConversationIdRef.current = null;
+    } else if (messages.length > 0 && conversationChanged) {
+      // Scroll when: (1) switching to different conversation, OR (2) returning to same conversation after leaving
+      scrollToBottom();
+      prevConversationIdRef.current = conversationId;
+    }
+  }, [conversationId, messages]);
 
   // AnN add: Fetch messages on 11/19
   const fetchMessages = async () => {

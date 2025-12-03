@@ -1,3 +1,27 @@
+/**
+ * @file Ratings API Route (POST/GET /api/ratings)
+ *
+ * @description
+ * Handles creation, updating, and retrieval of recipe ratings for both:
+ *   - User-created recipes (recipeId)
+ *   - API-based recipes (apiId)
+ *
+ * Supports:
+ *   - POST: Upsert user rating (update if exists, create otherwise)
+ *   - GET: Retrieve all ratings, rating count, average score, and current user’s rating
+ *
+ * This unified route allows flexible rating for two recipe types using:
+ *   - Composite unique keys: userId_recipeId OR userId_apiId
+ *
+ * @returns
+ * - POST: The created/updated rating record
+ * - GET: { average, count, ratings, userRating }
+ *
+ * @dependencies
+ * - Prisma: Rating creation and lookup
+ * - NextResponse: Next.js response utility
+ */
+
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 
@@ -33,6 +57,35 @@ export async function POST(req: Request) {
         value: ratingValue,
       },
     });
+
+    // Create notification for user recipe ratings (not API recipes)
+    if (recipeId) {
+      try {
+        // Fetch recipe to get owner and name
+        const recipe = await prisma.recipe.findUnique({
+          where: { recipeId: Number(recipeId) },
+          select: { userId: true, recipeName: true },
+        });
+
+        // Only notify if rating someone else's recipe
+        if (recipe && recipe.userId !== userId) {
+          const stars = "⭐".repeat(ratingValue);
+
+          await prisma.notification.create({
+            data: {
+              userId: recipe.userId,
+              relatedUserId: userId, // AnN add: Link to rater for avatar display on 11/25
+              relatedRecipeId: Number(recipeId), // AnN add: Link to recipe for click-to-open on 11/25
+              type: "recipe_rating",
+              message: `rated your recipe "${recipe.recipeName}" ${stars}`,
+            },
+          });
+        }
+      } catch (notifErr) {
+        // Don't fail the rating if notification fails
+        console.error("Error creating rating notification:", notifErr);
+      }
+    }
 
     return NextResponse.json(rating, { status: 200 });
   } catch (err) {

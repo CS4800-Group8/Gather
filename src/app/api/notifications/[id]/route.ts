@@ -1,3 +1,29 @@
+/**
+ * @file Notification Detail API Route (PATCH/DELETE /api/notifications/[id])
+ *
+ * @description
+ * Provides operations for interacting with a specific notification by ID:
+ *
+ *   - PATCH: Mark a notification as "read"
+ *   - DELETE: Remove a notification entirely from the database
+ *
+ * These actions allow the frontend to:
+ *   - Clear notification badges
+ *   - Remove dismissed notifications
+ *   - Keep a clean notification history for each user
+ *
+ * @params
+ *  - `id`: The notification ID extracted from the dynamic route segment
+ *
+ * @returns
+ *  - PATCH: Updated notification object
+ *  - DELETE: Success message
+ *
+ * @dependencies
+ * - Prisma: Notification update and deletion
+ * - NextResponse: JSON response handling
+ */
+
 // AnN add: Mark notification as read on 11/6
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";

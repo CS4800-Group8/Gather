@@ -23,7 +23,7 @@ function getYouTubeVideoId(url: string): string | null {
 export default function UserRecipePopup({ recipe, onClose }: UserRecipePopupProps) {
   return (
     <div
-      className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+      className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[60] flex items-center justify-center p-4"
       onClick={onClose}
     >
       {/* AnN edit: Changed max-w-4xl to max-w-6xl for wider layout matching APIRecipePopup on 11/12 */}
@@ -59,17 +59,17 @@ export default function UserRecipePopup({ recipe, onClose }: UserRecipePopupProp
 
         {/* AnN edit: Two-column layout - recipe details left, comments right on 11/12 */}
         <div className="overflow-y-auto flex-1 popUp-scrollbar">
-          <div className="grid lg:grid-cols-[1fr,400px] gap-6 p-6">
+          <div className="grid grid-cols-1 md:grid-cols-[1fr,350px] lg:grid-cols-[1fr,400px] gap-4 md:gap-6 p-4 md:p-6">
             {/* Left column: Recipe details */}
             <div>
               {recipe.photoUrl && (
-                <div className="relative w-full h-96 rounded-xl overflow-hidden mb-6">
+                <div className="relative w-full h-48 sm:h-64 md:h-96 rounded-xl overflow-hidden mb-6">
                   <Image
                     src={recipe.photoUrl}
                     alt={recipe.recipeName}
                     fill
                     className="object-cover"
-                    sizes="(max-width: 896px) 100vw, 896px"
+                    sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 896px"
                   />
                 </div>
               )}
@@ -155,11 +155,13 @@ export default function UserRecipePopup({ recipe, onClose }: UserRecipePopupProp
               <RatingSection
                 recipeId={recipe.recipeId.toString()}
                 recipeType="user"
+                onClose={onClose}
               />
 
               <CommentSection
                 recipeId={recipe.recipeId.toString()}
                 recipeType="user"
+                onClose={onClose}
               />
             </div>
           </div>

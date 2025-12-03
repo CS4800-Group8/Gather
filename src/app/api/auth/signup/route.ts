@@ -1,7 +1,23 @@
+/**
+ * @file Sign-Up API Route (POST /api/auth/signup)
+ *
+ * @description
+ * Handles user registration by validating input, checking for duplicate accounts,
+ * hashing passwords securely, and creating new user records in the database.
+ * This endpoint ensures usernames/emails are unique and enforces password confirmation.
+ *
+ * @returns
+ * JSON response with newly created user data or validation errors.
+ *
+ * @dependencies
+ * - Prisma: User creation and duplicate checking
+ * - bcryptjs: Secure password hashing
+ * - NextResponse: Standard Next.js API JSON response handler
+ */
+
 import { NextResponse } from "next/server";
 import prisma from '@/lib/prisma';
 import bcrypt from "bcryptjs";
-
 
 export async function POST(req: Request) {
   try {

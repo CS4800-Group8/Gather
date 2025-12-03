@@ -1,4 +1,27 @@
-// Manage user's favorite recipes (user-created): add, remove, and list favorites.
+/**
+ * @file Favorite User Recipes Route (GET/POST/DELETE /api/favorite-recipes)
+ *
+ * @description
+ * Handles favorite operations for **user-created recipes**.
+ * Supports:
+ *   - POST: Add a recipe to favorites
+ *   - DELETE: Remove a recipe from favorites
+ *   - GET:
+ *       (1) Retrieve all favorited recipes for a user
+ *       (2) Check if a specific recipe is favorited (mode for UX checks)
+ *
+ * Uses a composite unique constraint (userId + recipeId) to enforce
+ * uniqueness and efficient lookups.
+ *
+ * @returns
+ * - POST: Newly created favorite record
+ * - DELETE: Success confirmation
+ * - GET: Either favorite existence or list of detailed favorite recipes
+ *
+ * @dependencies
+ * - Prisma: FavoriteRecipe model operations 
+ * - NextResponse: Next.js API JSON responses
+ */
 
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";

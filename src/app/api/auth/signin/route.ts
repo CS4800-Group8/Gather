@@ -1,5 +1,22 @@
+/**
+ * @file Sign-In API Route (POST /api/auth/signin)
+ *
+ * @description
+ * Handles user authentication by verifying credentials against stored data.
+ * Accepts either an email or username as the login identifier.
+ * Validates input, checks user existence, verifies password via bcrypt,
+ * and returns sanitized user data on success.
+ *
+ * @returns
+ * JSON response containing either authenticated user details or an error message.
+ *
+ * @dependencies
+ * - Prisma: Database access for user lookup
+ * - bcryptjs: Secure password verification
+ * - NextResponse: Standardized HTTP JSON responses for Next.js API routes
+ */
+
 // An fix: Created signin API route (was missing from dev branch)
-// This route handles user authentication and sign-in
 
 import { NextResponse } from "next/server";
 import prisma from '@/lib/prisma';

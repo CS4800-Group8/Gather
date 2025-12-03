@@ -1,5 +1,26 @@
+/**
+ * @file Comments API Route (GET/POST/DELETE /api/comments)
+ *
+ * @description
+ * Provides functionality for comments on both user-created recipes
+ * and API-based recipes (TheMealDB). Supports fetching comments, creating new
+ * comments, and deleting comments with strict ownership validation.
+ *
+ * This route uses two identifiers to distinguish recipe types:
+ * - `recipeId` for user recipes (integer FK)
+ * - `apiId` for TheMealDB recipes (string identifier)
+ *
+ * @returns
+ * - GET: List of comments with user information
+ * - POST: Newly created comment with author details
+ * - DELETE: Deletion success message
+ *
+ * @dependencies
+ * - Prisma: Comment creation, retrieval, and deletion
+ * - NextResponse: Standardized JSON responses
+ */
+
 // AnN add: Comment API routes on 11/12
-// Handles fetching, creating, and deleting comments for both user and API recipes
 
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
@@ -110,6 +131,33 @@ export async function POST(req: Request) {
         },
       },
     });
+
+    // Create notification for user recipe comments (not API recipes)
+    if (type === "user") {
+      try {
+        // Fetch recipe to get owner and name
+        const recipe = await prisma.recipe.findUnique({
+          where: { recipeId: parseInt(recipeId) },
+          select: { userId: true, recipeName: true },
+        });
+
+        // Only notify if commenting on someone else's recipe
+        if (recipe && recipe.userId !== userId) {
+          await prisma.notification.create({
+            data: {
+              userId: recipe.userId,
+              relatedUserId: userId, // AnN add: Link to commenter for avatar display on 11/25
+              relatedRecipeId: parseInt(recipeId), // AnN add: Link to recipe for click-to-open on 11/25
+              type: "recipe_comment",
+              message: `commented on your recipe "${recipe.recipeName}"`,
+            },
+          });
+        }
+      } catch (notifErr) {
+        // Don't fail the comment if notification fails
+        console.error("Error creating comment notification:", notifErr);
+      }
+    }
 
     return NextResponse.json({ comment }, { status: 201 });
   } catch (error) {

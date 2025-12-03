@@ -21,9 +21,11 @@ interface NotiCardProps {
     lastname: string
     avatarId: string
   } | null
+  relatedRecipeId?: number | null  // AnN add: For recipe notifications - click to open recipe on 11/25
   onMarkRead: (id: number) => void
   onAccept?: (userId: number, notificationId: number) => void  // AnN add: Accept friend request on 11/6
   onReject?: (userId: number, notificationId: number) => void  // AnN add: Reject friend request on 11/6
+  onRecipeClick?: (recipeId: number) => void  // AnN add: Click to open recipe popup on 11/25
 }
 
 export default function NotiCard({
@@ -33,14 +35,28 @@ export default function NotiCard({
   createdAt,
   isRead,
   relatedUser,
+  relatedRecipeId,
   onMarkRead,
   onAccept,
   onReject,
+  onRecipeClick,
 }: NotiCardProps) {
   const [actionLoading, setActionLoading] = useState<"accept" | "reject" | null>(null)
 
   const handleMarkRead = () => {
     onMarkRead(id)
+  }
+
+  // AnN add: Handle click on notification on 11/25
+  const handleClick = () => {
+    // Mark as read if unread
+    if (!isRead) {
+      onMarkRead(id)
+    }
+    // Open recipe popup if this is a recipe notification
+    if (relatedRecipeId && onRecipeClick) {
+      onRecipeClick(relatedRecipeId)
+    }
   }
 
   // AnN add: Handle accept friend request on 11/6
@@ -78,18 +94,35 @@ export default function NotiCard({
     ? resolveAvatarPreset(relatedUser.avatarId)
     : null
 
+  // AnN add: Get notification icon for non-user notifications on 11/24
+  const getNotificationIcon = () => {
+    switch (type) {
+      case "recipe_rating":
+        return "⭐"
+      case "recipe_comment":
+        return "💬"
+      default:
+        return "🔔"
+    }
+  }
+
   return (
     <div
       className={`p-3 rounded-xl mb-2 transition cursor-pointer hover:bg-amber-50 ${
         isRead ? "bg-white" : "bg-amber-50/50"
       }`}
-      onClick={!isRead ? handleMarkRead : undefined}
+      onClick={handleClick}
     >
       <div className="flex gap-3">
         {/* AnN add: Avatar for sender on 11/6 */}
-        {avatarPreset && (
+        {avatarPreset ? (
           <div className="flex-shrink-0">
             <AvatarImage preset={avatarPreset} size="small" />
+          </div>
+        ) : (
+          // AnN add: Icon for non-user notifications on 11/24
+          <div className="flex-shrink-0 w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center text-xl">
+            {getNotificationIcon()}
           </div>
         )}
 

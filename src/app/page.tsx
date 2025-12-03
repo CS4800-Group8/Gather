@@ -359,9 +359,9 @@ export default function HomePage() {
                   {recipe.recipeName}
                 </h3>
 
-                {/* Category */}
-                {recipe.categories && recipe.categories.length > 0 && (
-                  <div className="mb-4">
+                {/* Category - always reserve space for consistent alignment */}
+                <div className="mb-4 min-h-[28px]">
+                  {recipe.categories && recipe.categories.length > 0 && (
                     <div className="flex items-center gap-2 text-amber-700">
                       <span className="text-lg">🍴</span>
                       <span className="text-sm">{recipe.categories[0].name}</span>
@@ -371,8 +371,8 @@ export default function HomePage() {
                         </span>
                       )}
                     </div>
-                  </div>
-                )}
+                  )}
+                </div>
 
                 {/* Owner and Date */}
                 <div className="flex justify-between items-center text-sm text-amber-600 mt-4 pt-4 border-t border-amber-200">

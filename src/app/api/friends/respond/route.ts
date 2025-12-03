@@ -1,3 +1,21 @@
+/**
+ * @file Friend Request Response Route (POST /api/friends/respond)
+ *
+ * @description
+ * Handles user actions on incoming friend requests, allowing the addressee to:
+ *   - ACCEPT → update friendship status to "accepted"
+ *   - REJECT → delete the friendship record (allows future re-sending)
+ *
+ * @returns
+ * - On accept: `{ friendship: updatedRecord }`
+ * - On reject: `{ message: "Friend request rejected and deleted" }`
+ * - On error: JSON describing what went wrong
+ *
+ * @dependencies
+ * - Prisma: Friendship lookup, update, and deletion
+ * - NextResponse: JSON response handling for Next.js routes
+ */
+
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 

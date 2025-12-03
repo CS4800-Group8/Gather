@@ -24,9 +24,10 @@ interface Comment {
 interface CommentSectionProps {
   recipeId: string;           // Recipe ID (works for both types)
   recipeType: 'api' | 'user'; // Type discriminator
+  onClose?: () => void;       // AnN add: Close popup before navigation on 11/25
 }
 
-export default function CommentSection({ recipeId, recipeType }: CommentSectionProps) {
+export default function CommentSection({ recipeId, recipeType, onClose }: CommentSectionProps) {
   const router = useRouter();
   const [comments, setComments] = useState<Comment[]>([]);
   const [newComment, setNewComment] = useState('');
@@ -47,7 +48,11 @@ export default function CommentSection({ recipeId, recipeType }: CommentSectionP
   }, []);
 
   // AnN add: Navigate to user profile on 11/13
+  // AnN update: Close popup before navigating on 11/25
   const handleAvatarClick = (userId: number) => {
+    // Close popup if it exists
+    if (onClose) onClose();
+
     if (userId === currentUserId) {
       // Navigate to own profile
       router.push('/profile');

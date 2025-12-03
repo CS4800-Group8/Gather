@@ -1,3 +1,20 @@
+/**
+ * @file Change Password API Route (POST /api/auth/change-password)
+ *
+ * @description
+ * Handles password update requests for authenticated users.  
+ * This endpoint validates the provided credentials, ensures new password
+ * strength, verifies the user's identity by checking the current password,
+ * hashes the new password using bcrypt, and updates the user record in the database.
+ *
+ * @returns JSON response indicating success or detailed validation errors.
+ *
+ * @dependencies
+ * - Prisma (User lookup + update)
+ * - bcryptjs (Password hashing + comparison)
+ * - Next.js NextResponse (HTTP responses)
+ */
+
 import { NextResponse } from "next/server";
 import prisma from '@/lib/prisma';
 import bcrypt from "bcryptjs";
